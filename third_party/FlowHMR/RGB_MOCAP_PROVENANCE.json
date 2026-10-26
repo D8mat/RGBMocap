@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/flowhmr/flowhmr",
+  "commit": "b23040f10732b59acaad37afbd9fe0fa823c54b3",
+  "runtime": "Native Windows Python 3.10 / PyTorch 2.7.1+cu128",
+  "registered_models_bundled": false
+}

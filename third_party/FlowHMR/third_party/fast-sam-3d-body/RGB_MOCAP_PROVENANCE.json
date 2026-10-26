@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/yangtiming/Fast-SAM-3D-Body",
+  "commit": "d72aa36913a1673ace029d345f437561a85ec9e2",
+  "local_source_changes": false,
+  "compile": false,
+  "weights_bundled": false
+}

@@ -1,0 +1,64 @@
+{
+  "ExMR": {
+    "repository": "https://github.com/twehrbein/ExMR",
+    "commit": "f031badd0488bf5d50b8eba2e722c5a55f323e3f",
+    "runtime": "Native Windows Python 3.12 / Torch 2.8.0+cu128",
+    "weights_bundled": false,
+    "compatibility": "Bounded sequential loaders, local DINOv3 source, Unicode-safe OpenCV JPEG IO; network and native precision unchanged"
+  },
+  "FlowHMR": {
+    "repository": "https://github.com/flowhmr/flowhmr",
+    "commit": "b23040f10732b59acaad37afbd9fe0fa823c54b3",
+    "runtime": "Native Windows Python 3.10 / PyTorch 2.7.1+cu128",
+    "registered_models_bundled": false
+  },
+  "FootMR": {
+    "commit": "9c5b4123b344d74926822c20f182b2af4494dc41",
+    "repository": "https://github.com/twehrbein/FootMR.git"
+  },
+  "GVHMR": {
+    "commit": "ee960bb6e2ea2d381aa97f08e9b71ef320b624b1",
+    "repository": "https://github.com/zju3dv/GVHMR.git"
+  },
+  "HTD-Refine": {
+    "commit": "2fcd6ddef3c4eb75a636062245f80a0136c09b7e",
+    "repository": "https://github.com/ant-research/HTD-Refine.git"
+  },
+  "HaMeR": {
+    "snapshot": "Local adapted source; original notices retained"
+  },
+  "HandFlow": {
+    "snapshot": "Local adapted source; original notices retained"
+  },
+  "KimodoMotionCorrection": {
+    "repository": "https://github.com/nv-tlabs/kimodo",
+    "commit": "e1c219c99b4b94ba48be1fb6a1cbc64ecee4c954",
+    "subdirectory": "MotionCorrection",
+    "patches": [
+      "Explicit contact anchors for bounded windows; input validation and left toe height fix.",
+      "RGBMoCapAnatomical.h: optional native source-relative knee-axis contacts with preserved global ankle rotations. Generic upstream keyframe/toe paths retained. Anatomical mode rejects unsupported mixed constraints instead of silently overwriting them."
+    ]
+  },
+  "OSNet": {
+    "snapshot": "Local adapted source; original notices retained"
+  },
+  "character_import": {
+    "vrm": {
+      "version": "4.10.2",
+      "repository": "https://github.com/saturday06/VRM-Addon-for-Blender",
+      "distribution": "https://extensions.blender.org/add-ons/vrm/"
+    },
+    "mmd_tools": {
+      "version": "4.5.14",
+      "repository": "https://github.com/MMD-Blender/blender_mmd_tools"
+    },
+    "opencc": {
+      "version": "0.1.7",
+      "repository": "https://github.com/yichen0831/opencc-python"
+    },
+    "snapshot": "Locally used add-on source and licensed material resources; see SOURCE_MANIFEST.json for exact file hashes. OpenCC wheel is supplied as editable source and rebuilt during packaging."
+  },
+  "manopth": {
+    "snapshot": "Local adapted source; original notices retained"
+  }
+}

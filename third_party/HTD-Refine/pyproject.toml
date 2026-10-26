@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "htd-refine"
+version = "0.2.0"
+description = "PVA-Net inference and motion refinement for HTD-Refine."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = []
+
+[project.scripts]
+htd-refine-demo = "htd_refine.cli.demo:main"
+htd-refine-pva = "htd_refine.cli.demo_pva_net:main"
+htd-refine-opt = "htd_refine.cli.demo_optimization:main"
+
+[tool.setuptools]
+packages = [
+  "htd_refine",
+  "htd_refine.cli",
+  "pvanet",
+  "pvanet.network",
+  "optimization",
+  "utils",
+  "utils.body_model",
+  "utils.body_model_lite",
+]
+
+[tool.setuptools.package-dir]
+htd_refine = "htd_refine"
+"htd_refine.cli" = "htd_refine/cli"
+pvanet = "pvanet"
+"pvanet.network" = "pvanet/network"
+optimization = "optimization"
+utils = "utils"
+"utils.body_model" = "utils/body_model"
+"utils.body_model_lite" = "utils/body_model_lite"
+
+[tool.setuptools.package-data]
+"utils.body_model" = ["*.pt", "*.pth", "*.npy", "*.json", "*.md"]

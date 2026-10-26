@@ -1,0 +1,13 @@
+# Optional HandFlow worker overlay; base requirements-windows.txt supplies Torch.
+# Install pyrender with --no-deps: its old PyOpenGL pin is incompatible with Windows.
+webdataset==1.0.2
+dill==0.4.1
+freetype-py==2.5.1
+pyglet==1.5.31
+PyOpenGL==3.1.10
+lmdb==3.0.0
+torchdiffeq==0.2.5
+braceexpand==0.1.7
+trimesh==5.1.1
+# Install this overlay with --no-deps to retain the validated base Torch stack.
+ultralytics==8.3.80

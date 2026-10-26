@@ -1,0 +1,13 @@
+# Readable profile pins. Use tools/setup_dev.py for exact wheel URLs, hashes and overlay order.
+# Python 3.10.22
+braceexpand==0.1.7
+dill==0.4.1
+freetype-py==2.5.1
+lmdb==3.0.0
+pyglet==1.5.31
+pyopengl==3.1.10
+pyrender==0.1.45
+torchdiffeq==0.2.5
+trimesh==5.1.1
+ultralytics==8.3.80
+webdataset==1.0.2

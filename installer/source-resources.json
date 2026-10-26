@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "purpose": "Hash-verified editable importer assets and prebuilt correction module; no user assets",
+  "files": [
+    {
+      "path": "third_party/character_import/io_scene_vrm/common/mtoon0.blend",
+      "bytes": 179720,
+      "sha256": "06c15f6485340437043431eff2af8d8037d3eae235e32900882e458aea55fa1d"
+    },
+    {
+      "path": "third_party/character_import/io_scene_vrm/common/mtoon1.blend",
+      "bytes": 334486,
+      "sha256": "0c823711196224e03a7e0b20a6655c7f679648a3eb5d73227012df9a6ffe85d7"
+    },
+    {
+      "path": "third_party/character_import/io_scene_vrm/common/mtoon1_outline.blend",
+      "bytes": 478512,
+      "sha256": "c19dea52cdd863aeed805681e9cb2cbd1ee1163e70e371e16c74409dd03f7639"
+    },
+    {
+      "path": "third_party/character_import/io_scene_vrm/common/mtoon_auto_setup.blend",
+      "bytes": 116081,
+      "sha256": "eef48f028e0989950613b8866395d7020ab2380a17d6b84206592eb04b0913a6"
+    },
+    {
+      "path": "third_party/character_import/io_scene_vrm/common/transparent_z_write.blend",
+      "bytes": 134583,
+      "sha256": "95496e48586a0e8ba3d59e0c9366ba80ebdf029795aa21b59f8642a6c643674d"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon01.bmp",
+      "bytes": 3128,
+      "sha256": "5e2da47c174dbbd0befb547346bdbeed36fa5daa74898ad261bd6720dce31302"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon02.bmp",
+      "bytes": 3128,
+      "sha256": "af1246cd9cf57d833f0eccc1fadbe7c7f88baddf3173bc103d373c2e3e82aed1"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon03.bmp",
+      "bytes": 3128,
+      "sha256": "4268976ada66f2a7c3b5fd84c29d1183fd6069c2fdf2ce5c424f815a2680f25c"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon04.bmp",
+      "bytes": 3128,
+      "sha256": "3e30ab164bc574241f2ac6c12172b6c75799afe5a03d4eb5cdb43c223f23de6e"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon05.bmp",
+      "bytes": 3126,
+      "sha256": "ef1b687f0e5bbc6cd32909f8ebf890fd72cb1b704ebdf366fb7a4e3f8b1fae08"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon06.bmp",
+      "bytes": 3126,
+      "sha256": "a8811f63ecd91f8ff5cc7347011b2cc74c9ff028b1b08bd6438dab03ae9bf8f8"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon07.bmp",
+      "bytes": 3126,
+      "sha256": "b03c8464c66f7359f303a0d3f00e7d5570159fb3b8fe3c712095e59ef75ff4a0"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon08.bmp",
+      "bytes": 3126,
+      "sha256": "b03c8464c66f7359f303a0d3f00e7d5570159fb3b8fe3c712095e59ef75ff4a0"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon09.bmp",
+      "bytes": 3126,
+      "sha256": "b03c8464c66f7359f303a0d3f00e7d5570159fb3b8fe3c712095e59ef75ff4a0"
+    },
+    {
+      "path": "third_party/character_import/mmd_tools/externals/MikuMikuDance/toon10.bmp",
+      "bytes": 3126,
+      "sha256": "b03c8464c66f7359f303a0d3f00e7d5570159fb3b8fe3c712095e59ef75ff4a0"
+    },
+    {
+      "path": "prebuilt/motion-correction/_motion_correction.cp310-win_amd64.pyd",
+      "bytes": 413696,
+      "sha256": "46fea913e302fafa2281842e8b081ba34cfcbc572e2d2f36ac107bc89ed22638"
+    }
+  ]
+}

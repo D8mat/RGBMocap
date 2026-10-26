@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/twehrbein/ExMR",
+  "commit": "f031badd0488bf5d50b8eba2e722c5a55f323e3f",
+  "runtime": "Native Windows Python 3.12 / Torch 2.8.0+cu128",
+  "weights_bundled": false,
+  "compatibility": "Bounded sequential loaders, local DINOv3 source, Unicode-safe OpenCV JPEG IO; network and native precision unchanged"
+}

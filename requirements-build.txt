@@ -1,0 +1,10 @@
+# GUI and build tools; AI packages use the separate, hash-pinned runtime lock.
+PySide6==6.8.3
+PySide6_Addons==6.8.3
+PySide6_Essentials==6.8.3
+shiboken6==6.8.3
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8
+numpy==1.23.5
+opencv-python==4.10.0.84
+psutil==7.2.2

@@ -1,0 +1,7 @@
+{
+  "source": "https://github.com/KaiyangZhou/deep-person-reid",
+  "file": "torchreid/models/osnet.py",
+  "sha256": "c7c1c29187d6330f859c91da229271531920464c7011aec13842a086b2263cae",
+  "license": "MIT",
+  "model": "OSNet x0.25 MSMT17 combineall from official model zoo"
+}

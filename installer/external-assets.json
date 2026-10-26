@@ -1,0 +1,315 @@
+{
+  "schema": 1,
+  "files": [
+    {
+      "path": "third_party/FlowHMR/assets/body_models/smpl_neutral_J_regressor.pt",
+      "bytes": 662187,
+      "sha256": "70e3213bd30fe8d8ce37b54675282745e406f915a51511a003aeff99b6da04cf",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/flowhmr/flowhmr/b23040f10732b59acaad37afbd9fe0fa823c54b3/assets/body_models/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/flowhmr/flowhmr/b23040f10732b59acaad37afbd9fe0fa823c54b3/assets/body_models/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_neutral_J_regressor.pt"
+      ],
+      "origin_note": "Byte-identical to the pinned GVHMR neutral joint regressor. Official upstream mirrors are verified against the same SHA256."
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/dataset/bedlam/resource/vname2lwh.pt",
+      "bytes": 840936,
+      "sha256": "7b81e1b70f79872a89fb5c3df2296f7d8d7f5f1baf1f03afdb2c2046323486d4",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/dataset/bedlam/resource/vname2lwh.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/dataset/bedlam/resource/vname2lwh.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/dataset/bedlam/resource/vname2lwh.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/dataset/bedlam/resource/vname2lwh.pt"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/dataset/rich/resource/cam2params.pt",
+      "bytes": 26211,
+      "sha256": "e260ae6f8f65e8e0a56af2a1130181ec663f3a382147984272111aec74f7c260",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/dataset/rich/resource/cam2params.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/dataset/rich/resource/cam2params.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/dataset/rich/resource/cam2params.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/dataset/rich/resource/cam2params.pt"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/network/hmr2/configs/smpl_mean_params.npz",
+      "bytes": 1310,
+      "sha256": "6fd6dd687800da946d0a0492383f973b92ec20f166a0b829775882868c35fcdd",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/network/hmr2/configs/smpl_mean_params.npz",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/network/hmr2/configs/smpl_mean_params.npz",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/network/hmr2/configs/smpl_mean_params.npz",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/network/hmr2/configs/smpl_mean_params.npz"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/utils/body_model/coco_aug_dict.pth",
+      "bytes": 1759,
+      "sha256": "9d045cc3e507e1f7d91ef89904cdfa26e29cf18710f52f9fd305a88ae5d4e539",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/coco_aug_dict.pth",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/coco_aug_dict.pth",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/coco_aug_dict.pth",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/coco_aug_dict.pth"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/utils/body_model/seg_part_info.npy",
+      "bytes": 59151,
+      "sha256": "a9a9272563da3d16811bc455fb618902d31f3adcf719da2e46197853045a2a10",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/seg_part_info.npy",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/seg_part_info.npy",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/seg_part_info.npy",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/seg_part_info.npy"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+      "bytes": 208935,
+      "sha256": "0fc821a9e79ec3e76d6a9796b96d5bef8cd67055e18497bbe370d8aed9e07e06",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx2smpl_sparse.pt"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/utils/body_model/smplx_verts437.pt",
+      "bytes": 4203,
+      "sha256": "ef0ea64c470a1fea80adb5e4b866c78a792a04f5f98744c9367b15e57bfb4a4d",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx_verts437.pt"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt",
+      "bytes": 2791,
+      "sha256": "f3f4cf476e206d36ac806beab9b728b886c10f1534a74318839391f76ad5ab0a",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+      "bytes": 469227,
+      "sha256": "bacdaf756629493994cc869f4c27d179f5e4a5d06b8797ee3dcb94571522079f",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_coco17_J_regressor.pt"
+      ]
+    },
+    {
+      "path": "third_party/FootMR/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+      "bytes": 662187,
+      "sha256": "70e3213bd30fe8d8ce37b54675282745e406f915a51511a003aeff99b6da04cf",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/flowhmr/flowhmr/b23040f10732b59acaad37afbd9fe0fa823c54b3/assets/body_models/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/flowhmr/flowhmr/b23040f10732b59acaad37afbd9fe0fa823c54b3/assets/body_models/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_neutral_J_regressor.pt"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/dataset/bedlam/resource/vname2lwh.pt",
+      "bytes": 840936,
+      "sha256": "7b81e1b70f79872a89fb5c3df2296f7d8d7f5f1baf1f03afdb2c2046323486d4",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/dataset/bedlam/resource/vname2lwh.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/dataset/bedlam/resource/vname2lwh.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/dataset/bedlam/resource/vname2lwh.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/dataset/bedlam/resource/vname2lwh.pt"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/dataset/rich/resource/cam2params.pt",
+      "bytes": 26211,
+      "sha256": "e260ae6f8f65e8e0a56af2a1130181ec663f3a382147984272111aec74f7c260",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/dataset/rich/resource/cam2params.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/dataset/rich/resource/cam2params.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/dataset/rich/resource/cam2params.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/dataset/rich/resource/cam2params.pt"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/network/hmr2/configs/smpl_mean_params.npz",
+      "bytes": 1310,
+      "sha256": "6fd6dd687800da946d0a0492383f973b92ec20f166a0b829775882868c35fcdd",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/network/hmr2/configs/smpl_mean_params.npz",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/network/hmr2/configs/smpl_mean_params.npz",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/network/hmr2/configs/smpl_mean_params.npz",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/network/hmr2/configs/smpl_mean_params.npz"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/utils/body_model/coco_aug_dict.pth",
+      "bytes": 1759,
+      "sha256": "9d045cc3e507e1f7d91ef89904cdfa26e29cf18710f52f9fd305a88ae5d4e539",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/coco_aug_dict.pth",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/coco_aug_dict.pth",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/coco_aug_dict.pth",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/coco_aug_dict.pth"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/utils/body_model/seg_part_info.npy",
+      "bytes": 59151,
+      "sha256": "a9a9272563da3d16811bc455fb618902d31f3adcf719da2e46197853045a2a10",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/seg_part_info.npy",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/seg_part_info.npy",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/seg_part_info.npy",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/seg_part_info.npy"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+      "bytes": 208935,
+      "sha256": "0fc821a9e79ec3e76d6a9796b96d5bef8cd67055e18497bbe370d8aed9e07e06",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx2smpl_sparse.pt"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/utils/body_model/smplx_verts437.pt",
+      "bytes": 4203,
+      "sha256": "ef0ea64c470a1fea80adb5e4b866c78a792a04f5f98744c9367b15e57bfb4a4d",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx_verts437.pt"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt",
+      "bytes": 2791,
+      "sha256": "f3f4cf476e206d36ac806beab9b728b886c10f1534a74318839391f76ad5ab0a",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_3dpw14_J_regressor_sparse.pt"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+      "bytes": 469227,
+      "sha256": "bacdaf756629493994cc869f4c27d179f5e4a5d06b8797ee3dcb94571522079f",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_coco17_J_regressor.pt"
+      ]
+    },
+    {
+      "path": "third_party/GVHMR/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+      "bytes": 662187,
+      "sha256": "70e3213bd30fe8d8ce37b54675282745e406f915a51511a003aeff99b6da04cf",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/flowhmr/flowhmr/b23040f10732b59acaad37afbd9fe0fa823c54b3/assets/body_models/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/flowhmr/flowhmr/b23040f10732b59acaad37afbd9fe0fa823c54b3/assets/body_models/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_neutral_J_regressor.pt"
+      ]
+    },
+    {
+      "path": "third_party/HTD-Refine/utils/body_model/smplx2smpl_sparse.pt",
+      "bytes": 208935,
+      "sha256": "0fc821a9e79ec3e76d6a9796b96d5bef8cd67055e18497bbe370d8aed9e07e06",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx2smpl_sparse.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx2smpl_sparse.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx2smpl_sparse.pt"
+      ]
+    },
+    {
+      "path": "third_party/HTD-Refine/utils/body_model/smplx_verts437.pt",
+      "bytes": 4203,
+      "sha256": "ef0ea64c470a1fea80adb5e4b866c78a792a04f5f98744c9367b15e57bfb4a4d",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smplx_verts437.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx_verts437.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smplx_verts437.pt"
+      ]
+    },
+    {
+      "path": "third_party/HTD-Refine/utils/body_model/smpl_coco17_J_regressor.pt",
+      "bytes": 469227,
+      "sha256": "bacdaf756629493994cc869f4c27d179f5e4a5d06b8797ee3dcb94571522079f",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_coco17_J_regressor.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_coco17_J_regressor.pt"
+      ]
+    },
+    {
+      "path": "third_party/HTD-Refine/utils/body_model/smpl_neutral_J_regressor.pt",
+      "bytes": 662187,
+      "sha256": "70e3213bd30fe8d8ce37b54675282745e406f915a51511a003aeff99b6da04cf",
+      "urls": [
+        "https://raw.githubusercontent.com/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/zju3dv/GVHMR/ee960bb6e2ea2d381aa97f08e9b71ef320b624b1/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/flowhmr/flowhmr/b23040f10732b59acaad37afbd9fe0fa823c54b3/assets/body_models/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/flowhmr/flowhmr/b23040f10732b59acaad37afbd9fe0fa823c54b3/assets/body_models/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/twehrbein/FootMR/9c5b4123b344d74926822c20f182b2af4494dc41/hmr4d/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://raw.githubusercontent.com/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_neutral_J_regressor.pt",
+        "https://media.githubusercontent.com/media/ant-research/HTD-Refine/2fcd6ddef3c4eb75a636062245f80a0136c09b7e/utils/body_model/smpl_neutral_J_regressor.pt"
+      ]
+    }
+  ]
+}
