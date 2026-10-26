@@ -5,6 +5,22 @@
 A native Windows app that turns video into editable human animation. AI processing
 runs locally, with an English interface for reviewing and exporting motion.
 
+## Sample videos
+
+Click a preview or its link to open the sample video.
+
+### Motion capture
+
+[![Motion capture sample](docs/samples/motion-capture.jpg)](docs/samples/motion-capture.mp4)
+
+[Watch the motion capture sample](docs/samples/motion-capture.mp4)
+
+### Character retargeting
+
+[![Character retargeting sample](docs/samples/character-retargeting.jpg)](docs/samples/character-retargeting.mp4)
+
+[Watch the character retargeting sample](docs/samples/character-retargeting.mp4)
+
 ## Install and run
 
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**

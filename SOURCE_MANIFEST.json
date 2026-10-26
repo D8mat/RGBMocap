@@ -11,8 +11,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 1689,
-      "sha256": "37c73c41da14f8286cef9f72233c9be3737cdc1690ef52aa95c1cb53a3e6cecd"
+      "bytes": 1766,
+      "sha256": "d3503285ae5cf6df8186824a4dbb3cd373018dd386f0dda5e2a2f07178f8b155"
     },
     {
       "path": "LICENSE",
@@ -21,8 +21,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3077,
-      "sha256": "8e411b845c32cb9e945a1c93cb18cc058b51ac313c59e4c15e172f1d2ac51f99"
+      "bytes": 3556,
+      "sha256": "5719e8410281bcca5908a2cea928eff9c1e8f50ff046aebb719f2108354b27de"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -93,6 +93,26 @@
       "path": "docs/images/rgbmocap-workspace.png",
       "bytes": 775295,
       "sha256": "b6ff1d220905d56ba625e3e5243621a3d9d34a1dd3add2373402d87fd0301aea"
+    },
+    {
+      "path": "docs/samples/character-retargeting.jpg",
+      "bytes": 39179,
+      "sha256": "3a07104953043992c47613bbd02adeb507fcb22d9057b21a9fbed933fab1610b"
+    },
+    {
+      "path": "docs/samples/character-retargeting.mp4",
+      "bytes": 12408995,
+      "sha256": "8fce14c6f9042d1bd9799be2b44de3867916257c232ce8e39196b42b406f5c85"
+    },
+    {
+      "path": "docs/samples/motion-capture.jpg",
+      "bytes": 39716,
+      "sha256": "e5474ac5c8a3173c27ea3474ddc2c606b56f4f149c2261b1c77e106427563370"
+    },
+    {
+      "path": "docs/samples/motion-capture.mp4",
+      "bytes": 13808824,
+      "sha256": "6cb138f4586ebed6620a60761d6646d658b2d496a7a166dbe5a07634b34d86a0"
     },
     {
       "path": "install.cmd",
