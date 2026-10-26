@@ -5,10 +5,32 @@ runs locally, with an English interface for reviewing and exporting motion.
 
 ## Install and run
 
-Clone this repository with Git into a writable folder, run `install.cmd`, then
-run `RGBMoCap.cmd`. To update, close the app and run `update.cmd`. Installation
-downloads the pinned runtimes, Blender and FFmpeg; model weights are separate.
-See the [installation guide](docs/USER_GUIDE.md#install) for prerequisites and recovery.
+1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**
+   in a writable folder where you want to install RGB MoCap, then clone the repository:
+
+   ```cmd
+   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
+   cd toyxyz_RGBMocap
+   ```
+
+2. Download and install the required runtimes, Blender and FFmpeg:
+
+   ```cmd
+   install.cmd
+   ```
+
+3. Start the app:
+
+   ```cmd
+   RGBMoCap.cmd
+   ```
+
+   Keep the console open while the app runs. Prepare the AI model files separately
+   using **Model Manager**; some require account registration and manual download.
+
+To update, close the app and run `update.cmd` from the same folder. See the
+[installation guide](docs/USER_GUIDE.md#install) for disk space, prerequisites
+and recovery.
 
 ## Features
 
