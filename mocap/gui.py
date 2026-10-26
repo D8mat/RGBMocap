@@ -1301,6 +1301,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             self.status.setText(event['message'])
         elif kind == "progress":
             message=event.get('message','Processing...')
+            self.log.status_terminal(message)
             self.status.setText((self._task_actor+' · ' if getattr(self,'_task_actor','') else '')+message)
             self.task_state.update(event,time.monotonic())
             self.update_task_progress()
@@ -1313,6 +1314,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             self.failed = True
             self.task_timer.stop();self.task_info.setText('Failed')
             self.status.setText("Processing failed. " + event.get("message", "See the console for details."))
+            self.log.write_terminal(self.status.text())
         elif kind == "complete":
             self.task_state.cached|=bool(event.get('cached',False))
             self.log.append(f"{STAGES.get(event['stage'])}: {event.get('elapsed', 0):.2f} s · {event.get('output')}")

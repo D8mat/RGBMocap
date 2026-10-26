@@ -1,5 +1,6 @@
 """Editor workspace layout; processing and playback live in MainWindow."""
 from .tooltips import tooltip_text, plain_tooltip
+from .console_log import ConsoleLog
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QLabel, QPushButton, QComboBox, QCheckBox,
@@ -510,7 +511,7 @@ def build_workspace(w):
     w.task_info.setObjectName('taskInfo')
     w.task_info.setToolTip(tooltip_text('Step left estimates time for the current step; Total left estimates the remaining queue. Estimates appear once enough timing data is available and may change.'))
     footer.addWidget(w.task_info)
-    w.log = QTextEdit()
+    w.log = ConsoleLog()
     w.log.setReadOnly(True)
     w.log.setUndoRedoEnabled(False)
     w.log.document().setMaximumBlockCount(500)

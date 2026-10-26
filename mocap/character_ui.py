@@ -257,7 +257,9 @@ class CharacterWorkspace:
         text=bytes(self.character_process.readAllStandardOutput()).decode('utf8',errors='replace')
         self.character_buffer=(self.character_buffer+text)[-16000:]
         for line in text.splitlines():
-            if line.startswith('CHARACTER:'):self.character_line=line.partition(':')[2].strip()
+            if line.startswith('CHARACTER:'):
+                self.character_line=line.partition(':')[2].strip()
+                self.log.status_terminal(line.strip())
         self.character_progress()
 
     def character_progress(self):

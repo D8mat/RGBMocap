@@ -101,7 +101,8 @@ have not yet been verified; compatibility reports are welcome.
    The AI runtimes remain separate. Downloads and free disk space are needed;
    the install can take time.
 3. Run `RGBMoCap.cmd`. Keep its console open while the GUI runs; launch errors
-   and exit codes are displayed there. Use **Help > Check System** if needed.
+   and exit codes are displayed there. Processing messages and the app **Console**
+   output also appear there. Use **Help > Check System** if needed.
 4. In **Model Manager**, download or import the selected AI model files. Some
    models require registration and agreement to their provider's terms and must
    be downloaded manually.
