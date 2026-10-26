@@ -1,5 +1,7 @@
 # RGB MoCap
 
+![RGB MoCap workspace showing video tracking and a 3D motion preview](docs/images/rgbmocap-workspace.png)
+
 A native Windows app that turns video into editable human animation. AI processing
 runs locally, with an English interface for reviewing and exporting motion.
 
