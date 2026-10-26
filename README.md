@@ -7,19 +7,17 @@ runs locally, with an English interface for reviewing and exporting motion.
 
 ## Sample videos
 
-Click a preview or its link to open the sample video.
-
 ### Motion capture
 
-[![Motion capture sample](docs/samples/motion-capture.jpg)](docs/samples/motion-capture.mp4)
+https://github.com/user-attachments/assets/b948dd8c-43b9-493a-9d7f-2fae0317695e
 
-[Watch the motion capture sample](docs/samples/motion-capture.mp4)
+[Download original sample](docs/samples/motion-capture.mp4)
 
 ### Character retargeting
 
-[![Character retargeting sample](docs/samples/character-retargeting.jpg)](docs/samples/character-retargeting.mp4)
+https://github.com/user-attachments/assets/1759f1bf-a0d0-409f-84d8-dde9409cfe6f
 
-[Watch the character retargeting sample](docs/samples/character-retargeting.mp4)
+[Download original sample](docs/samples/character-retargeting.mp4)
 
 ## Install and run
 
