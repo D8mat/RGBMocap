@@ -65,7 +65,7 @@ checking existing models.
 | Skeleton and surface fitting | `mocap/source_animation.py`, `source_surface.py`, `surface_roll.py` |
 | Preview and playback | `mocap/viewport.py`, `preview_data.py`, `playback.py`, `video_preview.py` |
 | FBX | `mocap/fbx_export.py`, `fbx_bind.py`, `fbx_writer.py`, `scene_export.py` |
-| Setup | `installer/Setup.cs`, `FolderPicker.cs`, `engine.py`, `runtime-lock.json` |
+| Git setup/update | `install.cmd`, `update.cmd`, `tools/git_bootstrap.ps1`, `tools/git_managed_install.py`, `tools/git_update.py`, `installer/runtime-lock.json` |
 
 Run `app.py` from `.venv` while editing. Worker changes are loaded by their own
 profile processes; C++ changes require rebuilding the native correction module.
@@ -123,7 +123,11 @@ OpenCC's pure-Python wheel is retained as unpacked source under
 are loaded by the worker; do not install these source folders through Blender's
 extension installer.
 
-## Compile and build
+## Legacy standalone installer build
+
+This section describes the older EXE packaging path, not the Git-based
+installation. It is retained for contributors who need to inspect that tooling.
+
 
 ```powershell
 .venv\Scripts\python.exe tools/check_source.py
@@ -174,26 +178,21 @@ Native CMake compilation is defined in
 require a rebuild. The core currently uses AVX compiler options; do not claim
 compatibility with processors that have not been checked.
 
-## Before sharing a release
+## Before publishing source changes
 
-Run the new EXE from the staged app, then test the new Setup in a separate folder.
-Check cancellation/retry, disk space, model imports, one clip per supported model,
-preview playback, correction and FBX import in Blender. A source/build smoke check
-does not replace inference tests on the target hardware.
+Test `install.cmd`, `RGBMoCap.cmd`, and `update.cmd` in a separate writable
+checkout. Check failure/retry, local edits, model preservation, a short clip
+for each supported model, correction, preview, character export and Blender
+import where applicable. A source or smoke check does not replace hardware and
+full-motion testing. See [Source validation](VALIDATION.md) for the recorded scope.
 
-Retain upstream licenses, required corresponding source/build materials and any
-applicable model restrictions. The exact FFmpeg binary and PyAV libraries determine
-their license obligations. Copy the relevant FFmpeg notices/source offer alongside
-your distribution. For Qt, preserve applicable replacement/relinking rights.
-See `THIRD_PARTY_NOTICES.md`; the project MIT grant does not relicense these parts.
-
-## Git upload
-
-Upload this checkout's source and documentation. Do not add ignored environments,
-models, external arrays, build outputs, installers or personal projects. Inspect
-the staged file list before the first push. Host Setup separately and add its real
-download URL to README when available. This source preparation does not create
-a GitHub repository or upload anything.
+Inspect staged files and keep environments, models, external arrays, caches,
+installers and personal projects out of Git. The reviewed prebuilt correction
+module and licensed importer resources are explicit exceptions. Preserve
+third-party licenses, corresponding source/build materials and model terms; see
+[Third-party notices](../THIRD_PARTY_NOTICES.md). The Git installation downloads
+Blender and FFmpeg from their pinned upstream locations; no separate Setup EXE
+or download link is required for this path.
 
 Git attributes preserve exact source bytes for the source manifest, hash-pinned
 runtime registry and unpacked wheel contents. Avoid automatic line-ending rewrites

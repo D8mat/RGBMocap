@@ -66,8 +66,8 @@
     },
     {
       "path": "contributors/motion-correction/README.md",
-      "bytes": 1934,
-      "sha256": "a1e9ac463e655a1293392c0237effeb1385fb34c7f804c9f318018249fe76183"
+      "bytes": 1919,
+      "sha256": "119f1346b597c8a2bc96715fde1092a2e331c4aaa7b79212ebb256eb82860f9a"
     },
     {
       "path": "contributors/motion-correction/build.cmd",
@@ -76,18 +76,18 @@
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 10345,
-      "sha256": "d5641c808f8166803275c2dd3d93061a936584881f74c4f8e4c6831440767313"
+      "bytes": 10409,
+      "sha256": "5fd019ca170de78637430f7f2df459e628d0c6a41b6bfe5414afa96999685779"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 25872,
-      "sha256": "7fb66d2ee6f36faa2e51394be08b790aa4f3f8418c04893cd8856a4565d3e6f0"
+      "bytes": 26967,
+      "sha256": "d93475384797b973cdf5c623cf9f8c3e0812150716d88f846b48f318c5f22110"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 2166,
-      "sha256": "d5ae94c0ed78e92bcf71547072070e3cf5ef9d746a8ae26d297b0d5be18471c7"
+      "bytes": 2719,
+      "sha256": "1ff6eb0dbf6bf49e4477bcfc0bf194565ee882e54dbd6698de5912e9cb5e71d4"
     },
     {
       "path": "install.cmd",

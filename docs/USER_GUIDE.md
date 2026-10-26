@@ -85,24 +85,45 @@ Blender retains its GPL license and bundled notices; see [Third-party notices](.
 not a minimum specification. Other GPUs, drivers and clean Windows installations
 have not yet been verified; compatibility reports are welcome.
 
-1. Install Git for Windows and clone the repository to a writable folder. Avoid
-   protected folders such as Program Files.
-2. Run **install.cmd** with an internet connection. It obtains pinned Python
-   environments, Blender 4.5.0 and FFmpeg 7.1.1, verifies downloads and installs
-   the included prebuilt motion-correction module. AI runtimes remain separate.
-3. Run **RGBMoCap.cmd**. Keep its console open while the GUI runs; launch errors
+1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command
+   Prompt** in a writable folder, then run:
+
+   ```cmd
+   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
+   cd toyxyz_RGBMocap
+   ```
+
+   Avoid protected folders such as Program Files. The commands below are for
+   Command Prompt; in PowerShell, prefix each `.cmd` filename with `.\`.
+2. Run `install.cmd` with an internet connection. It downloads and verifies
+   pinned Python environments, Blender 4.5.0, FFmpeg 7.1.1 and small upstream
+   support files, and installs the included prebuilt motion-correction module.
+   The AI runtimes remain separate. Downloads and free disk space are needed;
+   the install can take time.
+3. Run `RGBMoCap.cmd`. Keep its console open while the GUI runs; launch errors
    and exit codes are displayed there. Use **Help > Check System** if needed.
 4. In **Model Manager**, download or import the selected AI model files. Some
    models require registration and agreement to their provider's terms and must
    be downloaded manually.
 
-To update, close RGB MoCap and run **update.cmd**. It refuses to overwrite
-tracked local edits, pulls fast-forward changes and verifies the runtimes. A
-full verification can take several minutes. If an update is interrupted or
-installation fails, close the app and rerun **install.cmd**; do not delete
-models or projects to retry. A direct `git pull` updates source only: run
-`install.cmd` when dependencies change. Keep your local changes backed up or
-committed before updating.
+To update, close RGB MoCap and run `update.cmd` in the repository folder. It
+refuses to overwrite tracked local edits, requires the `main` branch, pulls only
+fast-forward changes and checks the runtimes. Back up or commit local changes
+before updating. A direct `git pull` updates source only; close the app first,
+and run `install.cmd` if dependencies change. The launcher will ask for setup if
+it detects an incomplete update or a dependency mismatch.
+
+If a download or installation fails, read the console message, check the internet
+connection and free disk space, and rerun `install.cmd`. A completed download may
+be reused. Do not delete `models`, `projects` or the remaining `.setup` state to
+retry. If Git reports a conflict or local changes, resolve or back them up before
+running `update.cmd` again.
+
+On the tested PC, a separate-folder first install took about 10 min 32 sec with
+previously verified package downloads reused; Blender and FFmpeg were downloaded.
+A subsequent code update and runtime verification took about 1 min 55 sec. These
+are single local tests, not estimates for a download with an empty cache or for
+other PCs; connection speed and storage performance affect the time.
 
 Allow at least **32.4 GiB free** for first-time runtime installation before
 models. All supported model files previously measured about 29 GiB; installed
@@ -187,7 +208,7 @@ errors can remain.
 ## Recorded processing time and VRAM
 
 Historical measurements on the tested PC above (30 fps inputs, October 2026),
-recorded before the current installer was built.
+recorded before the current Git-based installation was tested.
 Each duration uses the same input across all three models.
 
 | Video length | Model | Processing time | Peak VRAM (GiB) |
@@ -254,7 +275,7 @@ The app does not need your provider password or access token.
 
 After installing the app in a new location, close both copies of the app and
 copy the **entire `models` folder** from the old installation into the new
-installation folder, beside the new **RGBMoCap.exe**:
+installation folder, beside the new **RGBMoCap.cmd**:
 
 ```text
 Old installation/models/  →  New installation/models/
@@ -271,7 +292,7 @@ from the copied folder to validate it again. Copying can change file timestamps,
 and newer releases may require a different model version; follow the row's
 **Manual Download...** instructions if validation fails.
 
-Let Setup create the new runtime folders; do not copy the old `runtime*`
+Let `install.cmd` create the new runtime folders; do not copy the old `runtime*`
 folders over them. The `models` folder contains model files only. Saved work
 is in separate project folders, which can be copied separately and opened
 with **File → Open Project**.

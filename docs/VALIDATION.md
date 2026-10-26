@@ -1,36 +1,43 @@
 # Source package validation
 
-Prepared on Windows on 27 October 2026. Application modules are copied from the
-current app, including character retargeting, FBX rest-pose handling, VMD export
-and the latest viewport/name/checkbox changes. Source preparation does not change
-inference, motion correction or retargeting calculations.
+The Git-based distribution was tested on the Windows PC listed in the
+[user guide](USER_GUIDE.md#install). It has not been tested on a clean Windows
+installation or on other GPUs or drivers.
 
-Composition checks cover Python syntax, local documentation links, exact
-application-source identity, five separate AI dependency profiles, deterministic
-local wheel reconstruction, auxiliary-data hashes and Git exclusion rules.
-Registered models, user videos, characters, motion, projects, experimental scripts,
-virtual environments, installers and AI instruction documents are excluded.
-The explicitly listed upstream shader libraries/toon ramps remain as licensed
-editable importer resources.
+## Recorded checks
 
-See [Build from source](BUILD.md) for the build and release validation procedure.
-A fresh GUI EXE and Windows Setup were built using this checkout's source and
-the existing development dependencies. The native correction module was reused
-from the reviewed build; its source matches the current checkout. The complete
-Blender 4.5 character runtime and rebuilt OpenCC wheel were staged separately.
-The GUI startup check and VRM/PMX/OpenCC add-on loading passed. All 18 installer
-engine regression cases passed, covering download recovery, cancellation and
-transactional repair. Application payload hashes and installer sizing were also
-checked. No previous application or installer was used as the build input.
+- A separate local Git checkout installed all six pinned runtime profiles using
+  `install.cmd`. Blender and FFmpeg were downloaded and hash checked; previously
+  verified package downloads were reused. Installation took approximately 10 min
+  32 sec on the tested PC. CMD launch and launch-error reporting were checked.
+- ExMR, FlowHMR and GVHMR each processed a one-second video, including inference,
+  correction, rig generation and FBX export. Thirteen worker fingerprint inputs
+  were checked. This does not establish long-video performance on other systems.
+- The included correction module and a contributor rebuild produced identical
+  root positions and local rotation values on the tested clips: 30 frames for
+  each model and 210 additional frames for ExMR and FlowHMR, with automatic,
+  manual and disabled foot contact. Other motions and platforms were not covered.
+- One Mixamo FBX, one VRM and one PMX character were imported and retargeted.
+  Mesh-inclusive and animation-only FBX files were reimported into Blender; bone
+  animation and mesh options were present without armature-object transform keys.
+  A PMX VMD was reimported with Blender MMD Tools. Visual equivalence in the
+  standalone MMD application was not established by that check.
+- A local Git update retained test model and project data and relaunched the GUI;
+  runtime verification took approximately 1 min 55 sec. Twenty automated tests
+  covered simulated download errors, unsafe archive paths, update guards and
+  interrupted replacement. Actual power loss and disk exhaustion were not tested.
+- The public source snapshot was checked for forbidden generated/model payloads,
+  and its manifest hashes matched. Pattern checks found no typical private-path or
+  credential formats in scanned text; such scans cannot prove absence of secrets.
 
-A build check is not a fresh-PC installation or a new inference/retargeting test
-for every model and character. Hardware compatibility remains limited to the
-configurations actually tested in the [user guide](USER_GUIDE.md).
+These checks describe the recorded examples, not a guarantee for every video,
+character or computer. Model weights and registered body data remain separate and
+subject to their providers' terms. Review the applicable third-party notices and
+corresponding source/build requirements before redistributing binaries.
 
-## Version 1.0.1 packaging fix
+## Historical packaging issue
 
-Version 1.0.0 omitted historical requirements files used by worker cache
-fingerprints. This could stop reconstruction after Find People with a
-`requirements-windows.txt` FileNotFoundError. Version 1.0.1 includes those
-unchanged files and rejects incomplete source/staged applications before
-building Setup. Model calculations and managed dependency pins are unchanged.
+The earlier v1.0.0 standalone installer omitted historical requirements files
+used by worker fingerprints. The current source checkout includes those files;
+13 fingerprint inputs were checked in the separate-install test. The current Git
+installation uses `install.cmd`, not the old standalone installer.
