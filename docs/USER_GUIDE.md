@@ -61,10 +61,10 @@ use a simplified color preview.
 
 ### Included Blender runtime
 
-Character-enabled packages include a separate **Blender 4.5 LTS** runtime in
+`install.cmd` installs a separate **Blender 4.5 LTS** runtime in
 `runtime_character`. It runs in the background to import characters, evaluate rig
 constraints, bake bone animation and export character FBX/VMD files. You do not
-need to install or open Blender separately when using these packages. Keep this
+need to install or open Blender separately after running `install.cmd`. Keep this
 folder with the app.
 
 RGB MoCap performs the retargeting/contact calculations and viewport playback.
@@ -127,7 +127,9 @@ are single local tests, not estimates for a download with an empty cache or for
 other PCs; connection speed and storage performance affect the time.
 
 Allow at least **32.4 GiB free** for first-time runtime installation before
-models. All supported model files previously measured about 29 GiB. Download
+models; this includes temporary installation space. The installed app, runtimes
+and all supported models total roughly **42 GiB (45 GB)**, including about
+29 GiB of model files. Download
 caches, videos, projects, characters and exports require additional space, and
 actual sizes can vary. No clean-Windows or other-GPU test is claimed.
 
@@ -155,7 +157,7 @@ metadata can still reference them. Export or back up needed work, then remove an
 unwanted project as a whole. Exported FBX/VMD files in other folders must be
 managed separately.
 
-Keep `models`, `runtime*`, `_internal`, `mocap`, `third_party`, bundled assets and
+Keep `models`, `runtime*`, `mocap`, `third_party`, bundled assets and
 the remaining `.setup` repair files. Deleting these can remove required model
 files or break the app. Downloaded model archives stored elsewhere can be removed after a successful installation/import if you do not
 need an offline copy; keep a backup of manually acquired restricted models.

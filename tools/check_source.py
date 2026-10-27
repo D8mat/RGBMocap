@@ -1,6 +1,6 @@
 """Check source checkout composition without installing or running AI models."""
 from pathlib import Path
-import ast,hashlib,json,os,re,sys
+import ast,hashlib,json,os,re,subprocess,sys
 from runtime_support import cache_dependency_files
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -14,14 +14,21 @@ def main():
     resources={r['path']:r for r in json.loads((ROOT/'installer/source-resources.json').read_text())['files']}
     auxiliary={r['path']:r for r in json.loads((ROOT/'installer/external-assets.json').read_text())['files']}
     def files():
+        # Audit the publishable checkout, not ignored local runtime/model data.
+        # Source ZIPs have no Git metadata and are scanned in full below.
+        if (ROOT/'.git').exists():
+            result=subprocess.run(['git','ls-files','-z'],cwd=ROOT,check=True,capture_output=True)
+            for name in result.stdout.decode('utf-8').split('\0'):
+                if name:yield ROOT/name
+            return
         for folder,dirs,names in os.walk(ROOT):
             relative=Path(folder).relative_to(ROOT)
             dirs[:]=[d for d in dirs if d not in {'.git','__pycache__'} and not (relative==Path('.') and d in SKIP) and (relative/d).as_posix() not in {'tools/bin','third_party/KimodoMotionCorrection/bin'}]
             for name in names:yield Path(folder)/name
     for p in files():
-        if not p.is_file():continue
+        if not p.is_file():
+            errors.append('Missing source file: '+str(p.relative_to(ROOT)));continue
         r=p.relative_to(ROOT);count+=1
-        if r.as_posix().startswith(('tools/bin/','third_party/KimodoMotionCorrection/bin/')):continue
         if r.as_posix() in auxiliary:
             expected=auxiliary[r.as_posix()]
             if expected['bytes']!=p.stat().st_size or expected['sha256']!=hashlib.sha256(p.read_bytes()).hexdigest():errors.append('Changed auxiliary data: '+str(r))
@@ -30,7 +37,7 @@ def main():
             resource=resources.get(r.as_posix())
             if not resource or resource['sha256']!=hashlib.sha256(p.read_bytes()).hexdigest() or resource['bytes']!=p.stat().st_size:
                 errors.append('Generated or model payload: '+str(r))
-        if p.name.lower() in {'agents.md','claude.md','codex.md','gemini.md'}:errors.append('AI instruction file: '+str(r))
+        if p.name.lower() in {'agents.md','claude.md','codex.md','gemini.md'} and r.as_posix()!='AGENTS.md':errors.append('AI instruction file: '+str(r))
         if p.suffix=='.py':
             try:ast.parse(p.read_text(encoding='utf-8-sig'),filename=str(r))
             except (SyntaxError,UnicodeError) as exc:errors.append(str(exc))

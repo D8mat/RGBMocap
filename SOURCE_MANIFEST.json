@@ -91,18 +91,18 @@
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 8009,
-      "sha256": "8d21664e704cb718dcfccd81db2d4340cb4cb6f1d0f756752786f2670ba8be89"
+      "bytes": 8021,
+      "sha256": "43d8d7f477a2f9eeb76f8a3c9f5bbfb54ce22e95b903bad568566bd6bd980944"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 27077,
-      "sha256": "c87c33176e1214cbd44487ee774d6b4d0abb900d5383723c6e0b9926c450485a"
+      "bytes": 27164,
+      "sha256": "dd9c07ae0cfddd10f1ab157376220bdf5218ba2b124ecfeb2ceb2ff4a058ca9d"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 2380,
-      "sha256": "6a0220b903dd66142574fdca0c9c0175db40307a780f8da00ef1a58c5ea3a876"
+      "bytes": 3817,
+      "sha256": "689d72e826477b6306300a1a7a1ae2fc61b1817240479657e3fb19c68b787369"
     },
     {
       "path": "docs/images/rgbmocap-workspace.png",
@@ -886,8 +886,8 @@
     },
     {
       "path": "installer/source-resources.json",
-      "bytes": 3526,
-      "sha256": "0d5cac0fdac39e58cd68009a8c28d43ba911e223f1f41ebba4d3484824c51bf7"
+      "bytes": 3925,
+      "sha256": "35143421169b9e6e4c4e7955376038313577be417d45477bb965af8bacc33cfb"
     },
     {
       "path": "installer/verify_runtime.py",
@@ -12216,8 +12216,8 @@
     },
     {
       "path": "tools/check_source.py",
-      "bytes": 3157,
-      "sha256": "2e5fe97de4e5ee5d3d2f2d0b98e244dfb0105b1fedff4d906167f9b81f0d2741"
+      "bytes": 3587,
+      "sha256": "a668a3f17e2900e33513ad3e7face34083bd75884aee19797e9d3d1b2cfecd1a"
     },
     {
       "path": "tools/download_models.py",

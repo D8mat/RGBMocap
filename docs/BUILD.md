@@ -117,7 +117,7 @@ OpenCC dictionaries and editable shader libraries. The five small `.blend` shade
 libraries and ten standard toon ramps are explicitly listed and hash checked in
 `installer/source-resources.json`; they are not sample characters or motion files.
 OpenCC's pure-Python wheel is retained as unpacked source under
-`installer/runtime_sources/` and reconstructed only in release staging. The add-ons
+`installer/runtime_sources/` and rebuilt in temporary staging during runtime setup. The add-ons
 are loaded by the worker; do not install these source folders through Blender's
 extension installer.
 

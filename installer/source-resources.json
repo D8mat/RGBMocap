@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "purpose": "Hash-verified editable importer assets and prebuilt correction module; no user assets",
+  "purpose": "Hash-verified importer assets, prebuilt correction module and approved README samples; no model weights or private project data",
   "files": [
     {
       "path": "third_party/character_import/io_scene_vrm/common/mtoon0.blend",
@@ -81,6 +81,16 @@
       "path": "prebuilt/motion-correction/_motion_correction.cp310-win_amd64.pyd",
       "bytes": 413696,
       "sha256": "46fea913e302fafa2281842e8b081ba34cfcbc572e2d2f36ac107bc89ed22638"
+    },
+    {
+      "path": "docs/samples/motion-capture.mp4",
+      "bytes": 13808824,
+      "sha256": "6cb138f4586ebed6620a60761d6646d658b2d496a7a166dbe5a07634b34d86a0"
+    },
+    {
+      "path": "docs/samples/character-retargeting.mp4",
+      "bytes": 12408995,
+      "sha256": "8fce14c6f9042d1bd9799be2b44de3867916257c232ce8e39196b42b406f5c85"
     }
   ]
 }

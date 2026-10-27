@@ -30,6 +30,30 @@ installation or on other GPUs or drivers.
   and its manifest hashes matched. Pattern checks found no typical private-path or
   credential formats in scanned text; such scans cannot prove absence of secrets.
 
+## Latest published-source audit (2026-10-27)
+
+The audit started from Git commit `1daf49c` and used the existing installed
+runtimes and legitimately acquired local model files. All test scripts and
+outputs were kept outside the public checkout.
+
+- 150 targeted regression checks passed for project saving, model selection,
+  character handling, export options, runtime guards and update transactions.
+- Each of the three AI models processed 30 new frames through correction and FBX
+  export. Blender imported all three 52-bone source rigs with `Hips` as root;
+  sampled integer and fractional animation frames contained finite transforms.
+- Mixamo FBX, VRM and PMX imports, retargeting and six character FBX exports
+  passed. Reimported FBX rest-joint positions matched the imported character's
+  original rest pose within 0.1 mm; no armature-object transform keys were found.
+  The PMX VMD also loaded with Blender MMD Tools.
+- The source checker was corrected to accept the approved README samples and
+  root agent guide, ignore untracked local model data, and still reject model
+  files accidentally tracked by Git. Archive and Git-checkout cases were tested.
+- Local documentation links resolved. The source manifest was refreshed after
+  the small documentation and checker fixes.
+
+This audit did not repeat fresh installation, long-clip performance testing,
+interactive playback, standalone MMD playback or testing on other GPUs.
+
 These checks describe the recorded examples, not a guarantee for every video,
 character or computer. Model weights and registered body data remain separate and
 subject to their providers' terms. Review the applicable third-party notices and
