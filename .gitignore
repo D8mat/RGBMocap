@@ -64,6 +64,7 @@ __pycache__/
 *.pem
 *.key
 AGENTS.md
+!/AGENTS.md
 CLAUDE.md
 GEMINI.md
 CODEX.md

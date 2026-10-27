@@ -86,6 +86,7 @@ archives need additional space. See the [storage details](docs/USER_GUIDE.md#ins
 
 - [User guide: installation, controls and settings](docs/USER_GUIDE.md)
 - [Development and builds](docs/BUILD.md)
+- [Agent operating and development guide](docs/AGENT_GUIDE.md)
 - [Source validation](docs/VALIDATION.md)
 - [Third-party notices and model terms](THIRD_PARTY_NOTICES.md)
 

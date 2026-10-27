@@ -11,8 +11,13 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 1766,
-      "sha256": "d3503285ae5cf6df8186824a4dbb3cd373018dd386f0dda5e2a2f07178f8b155"
+      "bytes": 1779,
+      "sha256": "17d30ce547db81fd30f41c73cf78e98cf1599f77673d3eff13a0afdeab82a51f"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 1102,
+      "sha256": "159916b0a06ec56680276d943593c4f7024f4876cfba8b08aed24f4f2f6eb27f"
     },
     {
       "path": "LICENSE",
@@ -21,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3433,
-      "sha256": "7bf9664df2d53677ce111a5cadff7fc07544b44bff9994448b98943cfc093070"
+      "bytes": 3496,
+      "sha256": "ff06f6b4402c4ffc3439debff7a2496b4356260dd9f8e4bacb3981874eee56a0"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -78,6 +83,11 @@
       "path": "contributors/motion-correction/build.cmd",
       "bytes": 476,
       "sha256": "d437d701a73316f74cfaac7a3e0508feb8c631a03c5b5f21e7b6c6402c298fe7"
+    },
+    {
+      "path": "docs/AGENT_GUIDE.md",
+      "bytes": 11316,
+      "sha256": "e6fe11f9f6e419df90abe5d1ac0b7160656a83c2e5f805853ec4e78205dc2d7d"
     },
     {
       "path": "docs/BUILD.md",
