@@ -2,7 +2,7 @@
 
 The Git source distribution uses `install.cmd`, `RGBMoCap.cmd`, and `update.cmd`
 for installation, launch and updates. For the native motion-correction module see
-[contributor build instructions](../contributors/motion-correction/README.md).
+[developer build instructions](../developer-build/motion-correction/README.md).
 
 ## Prerequisites
 
@@ -125,7 +125,7 @@ extension installer.
 
 Native CMake compilation is defined in
 `third_party/KimodoMotionCorrection/CMakeLists.txt`. Source changes to that backend
-require a rebuild; see the [contributor build instructions](../contributors/motion-correction/README.md).
+require a rebuild; see the [developer build instructions](../developer-build/motion-correction/README.md).
 The core currently uses AVX compiler options; do not claim compatibility with
 processors that have not been checked.
 

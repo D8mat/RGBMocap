@@ -13,7 +13,7 @@ installation or on other GPUs or drivers.
 - ExMR, FlowHMR and GVHMR each processed a one-second video, including inference,
   correction, rig generation and FBX export. Thirteen worker fingerprint inputs
   were checked. This does not establish long-video performance on other systems.
-- The included correction module and a contributor rebuild produced identical
+- The included correction module and a developer rebuild produced identical
   root positions and local rotation values on the tested clips: 30 frames for
   each model and 210 additional frames for ExMR and FlowHMR, with automatic,
   manual and disabled foot contact. Other motions and platforms were not covered.

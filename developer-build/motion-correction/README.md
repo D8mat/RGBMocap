@@ -1,4 +1,4 @@
-# Motion correction: contributor build
+# Motion correction: developer build
 
 The editable C++ and Python source is **`../../third_party/KimodoMotionCorrection/`**. This is the single canonical copy of the modified NVIDIA Kimodo MotionCorrection source; see its `UPSTREAM.json`, `LICENSE`, `notices/`, `CMakeLists.txt` and `src/cpp/`. It includes RGB MoCap's anatomical and contact changes. Do not replace it with an unmodified upstream build.
 

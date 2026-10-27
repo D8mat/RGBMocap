@@ -75,24 +75,24 @@
       "sha256": "dd979b5fc133646599fbee417048997b6114088f2eb257b3ed6f61df24545e89"
     },
     {
-      "path": "contributors/motion-correction/README.md",
-      "bytes": 1919,
-      "sha256": "119f1346b597c8a2bc96715fde1092a2e331c4aaa7b79212ebb256eb82860f9a"
+      "path": "developer-build/motion-correction/README.md",
+      "bytes": 1917,
+      "sha256": "8956b1687f5db922169eee413b88d3d8772346e48b8bd72b1eab5d9d8437f9ca"
     },
     {
-      "path": "contributors/motion-correction/build.cmd",
+      "path": "developer-build/motion-correction/build.cmd",
       "bytes": 476,
       "sha256": "d437d701a73316f74cfaac7a3e0508feb8c631a03c5b5f21e7b6c6402c298fe7"
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 11366,
-      "sha256": "f30fa0de3bbdda93cce8ef5bb2eb588015507e96845e5e6ef3cf67aff487a2c7"
+      "bytes": 11372,
+      "sha256": "319e485c2d15b495af8983bb12b9d608654a8e7a145d336a2ee52347d9ca5f41"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 8007,
-      "sha256": "0098f5c63fc553aeec2cf437fd7b3131b392e78a6142867d3a15da512bd7efd5"
+      "bytes": 8009,
+      "sha256": "8d21664e704cb718dcfccd81db2d4340cb4cb6f1d0f756752786f2670ba8be89"
     },
     {
       "path": "docs/USER_GUIDE.md",
@@ -101,8 +101,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 2382,
-      "sha256": "937cb012ab5f3b6aaab5d35bd84fa0c7d94174de316e2323e209c3af5fe286c3"
+      "bytes": 2380,
+      "sha256": "6a0220b903dd66142574fdca0c9c0175db40307a780f8da00ef1a58c5ea3a876"
     },
     {
       "path": "docs/images/rgbmocap-workspace.png",
