@@ -1,6 +1,10 @@
 """Presentation-only worker entry; inference/cache identities stay unchanged."""
 import json,runpy,sys
 
+for stream in (sys.stdout,sys.stderr):
+    if hasattr(stream,'reconfigure'):
+        stream.reconfigure(encoding='utf-8',errors='backslashreplace')
+
 
 def emit(kind,**value):
     print('@@MOCAP@@'+json.dumps(dict(type=kind,**value)),flush=True)

@@ -3280,7 +3280,7 @@ class SAM3DBody(BaseModel):
         _ik_timing['projection'] = (time.time() - t_proj) * 1000
 
         # Print IK timing
-        print(f"  ┌─────────────────────────────────────────────────────────────")
+        print("  +-------------------------------------------------------------+")
         print(f"  | [postprocess_ik breakdown]:")
         print(f"  |   - criteria_fusion: {_ik_timing['criteria_fusion']:.3f} ms  (hand fusion condition computation)")
         print(f"  |     - criteria_prep:       {_ik_detail.get('criteria_prep', 0):.3f} ms  (condition preparation)")
@@ -3292,7 +3292,7 @@ class SAM3DBody(BaseModel):
         print(f"  |   - projection:      {_ik_timing['projection']:.3f} ms  (2D projection)")
         total_ik = sum(_ik_timing.values())
         print(f"  |   total:             {total_ik:.3f} ms")
-        print(f"  └─────────────────────────────────────────────────────────────")
+        print("  +-------------------------------------------------------------+")
         print(f"          [run_inference] step3_postprocess_ik: {time.time() - t0:.4f}s")
         print(f"        [run_inference] TOTAL: {time.time() - run_inference_start:.4f}s")
 
