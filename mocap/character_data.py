@@ -11,12 +11,14 @@ class CharacterLoader(QThread):
     changed=Signal()
     failed=Signal(str,str)
     evicted=Signal(str)
+    preparing=Signal(str)
     def __init__(self,parent=None):
-        super().__init__(parent);self.condition=Condition();self.pending=OrderedDict();self.data={};self.windows={};self.stop=False;self.epoch=0;self.errors=set()
-    def request(self,path,frame=0):
+        super().__init__(parent);self.condition=Condition();self.pending=OrderedDict();self.data={};self.windows={};self.stop=False;self.epoch=0;self.errors=set();self.texture_sources={}
+    def request(self,path,frame=0,texture_source=None):
         key=str(path)
         with self.condition:
             if key in self.errors:return
+            if texture_source is not None:self.texture_sources[key]=str(texture_source)
             self.pending[key]=(frame,self.epoch);self.condition.notify()
     def frame(self,path,index):
         key=str(path)
@@ -32,12 +34,12 @@ class CharacterLoader(QThread):
         self.request(path,index);return None
     def reset(self):
         with self.condition:
-            self.epoch+=1;self.pending.clear();self.windows.clear();self.errors.clear();self.condition.notify()
+            self.epoch+=1;self.pending.clear();self.windows.clear();self.errors.clear();self.texture_sources.clear();self.condition.notify()
     def close(self):
         with self.condition:self.stop=True;self.condition.notify()
         self.wait()
         with self.condition:
-            self.pending.clear();self.windows.clear();self.data.clear()
+            self.pending.clear();self.windows.clear();self.data.clear();self.texture_sources.clear()
     def run(self):
         arrays=OrderedDict();epoch=-1
         try:
@@ -63,6 +65,23 @@ class CharacterLoader(QThread):
                         asset['key']=key
                         from .name_overlay import character_samples
                         asset['name_samples']=character_samples(asset)
+                        from .character_textures import load,validate_geometry
+                        source=str(Path(self.texture_sources.get(key,key)).resolve())
+                        textures=next((v['textures'] for v in self.data.values() if v.get('textures',{}).get('key')==source),None)
+                        if textures is None:
+                            self.preparing.emit('Loading original character textures...')
+                            textures=load(source,asset,lambda:self.stop or requested!=self.epoch)
+                        else:validate_geometry(textures['metadata'],asset)
+                        asset['textures']=textures
+                        # Shared images count once across rest/animated takes. Keep
+                        # texture residency bounded independently of clip length.
+                        def resident_bytes():
+                            unique={v['textures']['key']:v['textures']['bytes'] for v in self.data.values()}
+                            unique[source]=textures['bytes']
+                            return sum(unique.values())
+                        if resident_bytes()>2048*1024**2:
+                            raise ValueError('Character textures exceed the 2 GB loaded-preview limit. Open fewer characters in this project.')
+                        if self.stop or requested!=self.epoch:continue
                         a=FrameArray(p/'preview-frames.npy');arrays[key]=a
                         if a.shape[-2:]!=(4,4) or a.shape[1]>4096:raise ValueError('Invalid character animation palette')
                         self.data[key]=asset
@@ -76,6 +95,7 @@ class CharacterLoader(QThread):
                     self.ready.emit(key,dict(asset=self.data[key],frames=a.shape[0],palette=a.shape[1]))
                     self.changed.emit()
                 except Exception as exc:
+                    if self.stop or requested!=self.epoch:continue
                     with self.condition:self.errors.add(key)
                     self.failed.emit(key,str(exc))
         finally:

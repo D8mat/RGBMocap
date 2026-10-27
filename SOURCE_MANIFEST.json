@@ -86,8 +86,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 11372,
-      "sha256": "319e485c2d15b495af8983bb12b9d608654a8e7a145d336a2ee52347d9ca5f41"
+      "bytes": 11497,
+      "sha256": "e83a93812b8ab368595202d33313d92c2ba1b5a43ace1361fba6734d222f1437"
     },
     {
       "path": "docs/BUILD.md",
@@ -96,13 +96,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 27164,
-      "sha256": "dd9c07ae0cfddd10f1ab157376220bdf5218ba2b124ecfeb2ceb2ff4a058ca9d"
+      "bytes": 27504,
+      "sha256": "adca6d25a2c46ad71b7319cfb6e7b25ac12820df4d9d9ec8c5ee1b8f11138e73"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 4911,
-      "sha256": "8f5d4a81659420bf939ee394b9005bcfa988e00f42a1b346e3c7090d16f5bade"
+      "bytes": 6413,
+      "sha256": "1d7d6ba9c064699c3d864dd9f8cabbf55d0ee5e4ab4256513eb1e98ec41d9c70"
     },
     {
       "path": "docs/images/rgbmocap-workspace.png",
@@ -946,8 +946,8 @@
     },
     {
       "path": "mocap/character_data.py",
-      "bytes": 4629,
-      "sha256": "bc4ce431193e5dabfe03f0853a41923cb19eeb70cb49c04f130ce2b6ad546e0b"
+      "bytes": 6278,
+      "sha256": "77a20ec5e67cb0c3ba11faa969c69b79e2f50f02851ccc4be64b24c2758e497d"
     },
     {
       "path": "mocap/character_export_dialog.py",
@@ -956,13 +956,18 @@
     },
     {
       "path": "mocap/character_gl.py",
-      "bytes": 3033,
-      "sha256": "4c26ad91fd2d90b00470342856052afba7054c9002ce1109a43e6fa1cb1f7e26"
+      "bytes": 7166,
+      "sha256": "3402f72a07ca3ef91821b33d5408d86c70db3330cd9fcd9351403aeaeba2447b"
+    },
+    {
+      "path": "mocap/character_textures.py",
+      "bytes": 4763,
+      "sha256": "c6fc076605cb60e60d081e059a694869ea8bb63ca555b741a1b7586343974e03"
     },
     {
       "path": "mocap/character_ui.py",
-      "bytes": 20079,
-      "sha256": "031e926548715c3784ed790dbbb3d7931ef528cbd4830ad04d6143129211f9fd"
+      "bytes": 20360,
+      "sha256": "afbf6182f4dbf6377268aa1dc22515b06e658387eebf4ebd803f43be26b8ccd5"
     },
     {
       "path": "mocap/compute_policy.py",
@@ -1316,8 +1321,13 @@
     },
     {
       "path": "mocap/retarget/blender_io.py",
-      "bytes": 12567,
-      "sha256": "85523cfe0101b991d622fe9c8a10d92dae2dc214a2601f8329c0ee82d9d924af"
+      "bytes": 13050,
+      "sha256": "fd5a61ade1be86471e90f6f8c6aa743d74614b5d33fcaf7ead9fe5058936055c"
+    },
+    {
+      "path": "mocap/retarget/blender_textures.py",
+      "bytes": 4136,
+      "sha256": "92227e679f25e44da457803baf75a0aa112c55ee6b5e551ba9d85ff16ee6d247"
     },
     {
       "path": "mocap/retarget/bounded_stabilizer.py",

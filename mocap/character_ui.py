@@ -18,6 +18,7 @@ class CharacterWorkspace:
         self.character_loader.evicted.connect(lambda key:self.character_assets.pop(key,None))
         self.character_loader.changed.connect(self.motion_view.update)
         self.character_loader.failed.connect(lambda key,msg:self.status.setText('Character preview: '+msg))
+        self.character_loader.preparing.connect(lambda msg:self.status.setText(msg) if self.character_process is None else None)
         self.character_loader.start()
         self.character_timer=QTimer(self);self.character_timer.setInterval(500)
         self.character_timer.timeout.connect(self.character_progress)
@@ -311,6 +312,7 @@ class CharacterWorkspace:
     def character_ready(self,key,data):
         if self.character_loader.stop:return
         self.character_assets[key]=data
+        if self.status.text()=='Loading original character textures...':self.status.setText('Character preview ready.')
         if self.motion_view.joints is None and not self.motion_view._camera_initialized:
             v=data['asset']['vertices'];lo=v.min(0);hi=v.max(0)
             self.motion_view.scene_center=(lo+hi)*.5
@@ -333,6 +335,6 @@ class CharacterWorkspace:
                 path=self.character_path(c['animation']+'/'+take['folder']);frame=int((time_-take['start'])*take['fps']+1e-6);transform=take.get('transform')
             data=self.character_assets.get(str(path))
             if not data:
-                self.character_loader.request(path,frame);continue
+                self.character_loader.request(path,frame,self.character_path(c['asset']));continue
             matrix=self.character_loader.frame(path,frame)
             if matrix is not None:yield c,data,matrix,frame,transform

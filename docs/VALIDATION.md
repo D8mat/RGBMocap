@@ -71,6 +71,27 @@ interactive playback, standalone MMD playback or testing on other GPUs.
   public checkout. These checks did not repeat standalone MMD playback or test
   other GPUs, network shares or every possible Windows path.
 
+## Original-resolution character textures (2026-10-27)
+
+- Mixamo FBX, VRM and PMX samples retained their original image dimensions and UVs.
+  A pre-existing PMX asset prepared its texture cache without reimport or retargeting.
+  Sampled GPU-deformed vertex buffers were unchanged, including a 474-frame take.
+- Isolated 1920 x 1080 GPU checks ran 600 draws per sample, excluding the first 50
+  from timing statistics. Original-texture median / p95 draw times were
+  0.108 / 0.264 ms (FBX), 0.331 / 0.536 ms (VRM), 0.466 / 0.697 ms (PMX rest),
+  and 0.411 / 0.617 ms (PMX animation). The largest recorded draw was 2.50 ms.
+  These are isolated renderer measurements, not complete application frame times.
+- Twelve renderer load/close cycles kept the handle count constant. Process RAM
+  rose about 13 MiB during warm-up and stabilized in the last three cycles.
+  Three loader playback/seek cycles had no missing animation windows, constant
+  handles and less than 0.1 MiB additional RAM. Timer lateness reached 15.7 ms;
+  these checks do not establish video/audio synchronization or universal FPS.
+  Cancelling background texture preparation shut the loader down in 0.107 seconds.
+- Original images are cached once per character on CPU and uploaded once per
+  loaded renderer, with mipmaps for distant viewing. Motion buffers remain bounded.
+  Full PBR materials and general translucent-material sorting are not implemented.
+  Tests and generated character assets remained outside the public checkout.
+
 These checks describe the recorded examples, not a guarantee for every video,
 character or computer. Model weights and registered body data remain separate and
 subject to their providers' terms. Review the applicable third-party notices and

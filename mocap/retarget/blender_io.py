@@ -86,6 +86,9 @@ def import_character(filename, out):
     metadata=dict(kind=kind,name=filename.stem,vertices=count,bones=len(arm.data.bones))
     if kind=='pmx':metadata['mmd_import_scale']=.08
     Path(io_path(out/'import.json')).write_text(json.dumps(metadata),encoding='utf8')
+    from .blender_textures import extract
+    report('Preparing original-resolution textures')
+    extract(out)
 
 
 def vertex_colors(obj):
@@ -175,6 +178,12 @@ def preview(out,arm,keyed,n):
 def main(args):
     mode,folder,*rest=args;out=Path(folder)
     if mode=='import':import_character(Path(rest[0]),out)
+    elif mode=='textures':
+        kind=json.loads(Path(io_path(out/'import.json')).read_text(encoding='utf8'))['kind']
+        if kind not in {'mixamo','vrm','pmx'}:raise ValueError('Unsupported character kind')
+        bpy.ops.wm.open_mainfile(filepath=io_path(out/f'{kind}-rest.blend'),load_ui=False)
+        from .blender_textures import extract
+        extract(out)
     elif mode=='bake':
         from . import blender_bake
         blender_bake.OUT=out

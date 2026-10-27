@@ -56,8 +56,12 @@ the first animation frame does not replace the rest pose. Existing retargeted
 characters can be exported again to use the corrected FBX rest-pose handling.
 
 Known humanoid mappings are automatic; custom bone mapping is not yet available.
-Files missing required body bones are rejected with a message. Viewport materials
-use a simplified color preview.
+Files missing required body bones are rejected with a message. The viewport shows
+base-color textures at their original resolution, with simplified lighting rather
+than a full material/physics renderer. Existing characters prepare a texture cache
+in the background on first display; reimporting or retargeting is not required.
+Textures are reused during playback. Oversized textures produce a clear error
+instead of being silently reduced in resolution.
 
 ### Included Blender runtime
 
