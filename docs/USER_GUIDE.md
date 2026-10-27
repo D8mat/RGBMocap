@@ -4,8 +4,7 @@
 
 A native Windows app for turning video into human motion, reviewing the body mesh
 and animation bones, correcting hand/foot contacts, retargeting motion to humanoid
-characters, and exporting animation for Blender or MMD. Processing runs locally
-in an English interface.
+characters, and exporting animation for Blender or MMD. Processing runs locally.
 
 ## Character retargeting
 

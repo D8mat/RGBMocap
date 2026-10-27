@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3496,
-      "sha256": "ff06f6b4402c4ffc3439debff7a2496b4356260dd9f8e4bacb3981874eee56a0"
+      "bytes": 3467,
+      "sha256": "698773d90917a037e3f078ab480680e37537d8ad91c05c63b0567892de9ac157"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -96,8 +96,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 27101,
-      "sha256": "c2542747c00d81a532d96542f22b5aba33fdb6131e79e195511c1fb1cc9d78d6"
+      "bytes": 27077,
+      "sha256": "c87c33176e1214cbd44487ee774d6b4d0abb900d5383723c6e0b9926c450485a"
     },
     {
       "path": "docs/VALIDATION.md",
