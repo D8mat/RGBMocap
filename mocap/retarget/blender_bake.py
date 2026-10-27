@@ -1,7 +1,7 @@
 import bpy,sys,json,time,numpy as np
 from pathlib import Path
 from mathutils import Matrix
-from .file_paths import io_path
+from .file_paths import io_path, save_blend
 A=np.array([[1.,0,0],[0,0,-1],[0,1,0]])
 def curves(action):
     return action.fcurves if hasattr(action, 'fcurves') else next((b for l in action.layers for s in l.strips for b in s.channelbags)).fcurves
@@ -40,11 +40,11 @@ def align(a, b):
 def bake(kind, label, method):
     start = time.perf_counter()
     timings = {}
-    bpy.ops.wm.open_mainfile(filepath=str(OUT / (kind + '-rest.blend')))
-    rig = json.loads((OUT / (kind + '-rig.json')).read_text(encoding='utf8'))
+    bpy.ops.wm.open_mainfile(filepath=io_path(OUT / (kind + '-rest.blend')))
+    rig = json.loads(Path(io_path(OUT / (kind + '-rig.json'))).read_text(encoding='utf8'))
     arm = bpy.data.objects[rig['armature']]
     arm.animation_data_clear()
-    data = np.load(OUT / (label + '-' + kind + '-' + method + '.npz'))
+    data = np.load(io_path(OUT / (label + '-' + kind + '-' + method + '.npz')))
     n = len(data['root'])
     mapped = {name: i for (i, name) in enumerate(data['names'].tolist())}
     bones = list(arm.data.bones)
@@ -52,7 +52,7 @@ def bake(kind, label, method):
     rest = np.array([arm.matrix_world @ b.head_local for b in bones])
     R0 = np.array([rotation(np.array(arm.matrix_world @ b.matrix_local)[:3, :3]) for b in bones])
     parents = np.array([indices[b.parent.name] if b.parent else -1 for b in bones])
-    source_entry = next((e for e in json.loads((OUT / 'sources.json').read_text()) if e['label'] == label))
+    source_entry = next((e for e in json.loads(Path(io_path(OUT / 'sources.json')).read_text()) if e['label'] == label))
     folder = Path(source_entry['folder'])
     info = source_entry['info']
     source_frames = np.load(io_path(folder / info['frames_file']), mmap_mode='r')
@@ -60,7 +60,7 @@ def bake(kind, label, method):
     source_names = info['names']
     source_rest = source_asset['rest']
     extra = {}
-    base = np.load(OUT / (label + '-' + kind + '-rotation.npz'))
+    base = np.load(io_path(OUT / (label + '-' + kind + '-rotation.npz')))
     for (j, name) in enumerate(source_names[22:], 22):
         side = 'left' if name.startswith('Left') else 'right'
         hand = 20 if side == 'left' else 21
@@ -157,8 +157,8 @@ def bake(kind, label, method):
     assert all((c.data_path.startswith('pose.bones[') for c in curves(arm.animation_data.action)))
     timings['fk_and_action_seconds'] = time.perf_counter() - fk_start
     scene=bpy.context.scene
-    fps=float(np.load(OUT/'motion-source.npz')['fps'])
+    fps=float(np.load(io_path(OUT/'motion-source.npz'))['fps'])
     scene.frame_start=1;scene.frame_end=n;scene.render.fps=round(fps);scene.render.fps_base=round(fps)/fps
     scene.frame_set(1)
-    bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'animation.blend'))
+    save_blend(OUT/'animation.blend')
     return arm, sorted(keyed)

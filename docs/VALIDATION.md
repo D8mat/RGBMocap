@@ -54,6 +54,23 @@ outputs were kept outside the public checkout.
 This audit did not repeat fresh installation, long-clip performance testing,
 interactive playback, standalone MMD playback or testing on other GPUs.
 
+## Character preview and long-path fixes (2026-10-27)
+
+- Final preview windows no longer reload themselves. Loader checks covered
+  1, 2, 10, 111, 112 and 400 frames, exact frame retrieval, bounded windows and
+  worker shutdown. An isolated five-second character viewport check loaded once
+  and performed no redraws after warm-up. This is an idle-loop check, not a
+  playback FPS or whole-desktop performance guarantee.
+- A 474-frame PMX animation was baked and reopened under a 295-character data
+  path. All 215 animation channels retained exactly the same key values as the
+  short-path baseline; no armature-object animation keys were added.
+- Animation-only FBX and PMX VMD exports succeeded at 289-character destination
+  paths. Blender reimport checks found finite sampled FBX poses and no object
+  transform keys. Short- and long-path VMD outputs were byte-identical.
+- Test scripts, character assets and generated outputs remained outside the
+  public checkout. These checks did not repeat standalone MMD playback or test
+  other GPUs, network shares or every possible Windows path.
+
 These checks describe the recorded examples, not a guarantee for every video,
 character or computer. Model weights and registered body data remain separate and
 subject to their providers' terms. Review the applicable third-party notices and

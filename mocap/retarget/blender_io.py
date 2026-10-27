@@ -7,6 +7,7 @@ import numpy as np
 import bpy
 import addon_utils
 from .mapping import A, PARENTS, body_mapping, body_trajectory_root
+from .file_paths import io_path, save_blend
 
 
 def report(message):
@@ -14,7 +15,7 @@ def report(message):
 
 
 def import_character(filename, out):
-    out.mkdir(parents=True,exist_ok=True)
+    Path(io_path(out)).mkdir(parents=True,exist_ok=True)
     kind={'.fbx':'mixamo','.vrm':'vrm','.pmx':'pmx'}[filename.suffix.lower()]
     bpy.ops.wm.read_factory_settings(use_empty=True)
     addons=Path(__file__).resolve().parents[2]/'third_party/character_import'
@@ -26,7 +27,7 @@ def import_character(filename, out):
     elif kind=='vrm':
         addon_utils.enable('io_scene_vrm',default_set=True,persistent=False)
         bpy.ops.import_scene.vrm(filepath=str(filename))
-        with filename.open('rb') as f:
+        with open(io_path(filename),'rb') as f:
             if f.read(4)!=b'glTF':raise ValueError('Invalid VRM container')
             f.read(8);length,chunk=struct.unpack('<II',f.read(8))
             if length>32*1024*1024:raise ValueError('VRM metadata is too large')
@@ -74,17 +75,17 @@ def import_character(filename, out):
     count=sum(len(o.data.vertices) for o in meshes)
     if not 0<count<=1_000_000:raise ValueError('Character preview supports 1 to 1,000,000 vertices.')
     rig=dict(kind=kind,armature=arm.name,semantic=semantic,trajectory_root=trajectory_root,bones=[dict(name=b.name,parent=b.parent.name if b.parent else None) for b in arm.data.bones],meshes=[dict(name=o.name,vertices=len(o.data.vertices)) for o in meshes])
-    (out/f'{kind}-rig.json').write_text(json.dumps(rig,ensure_ascii=False),encoding='utf8')
-    np.savez(out/f'{kind}-canonical.npz',rest=rest,names=mapping,parents=PARENTS)
+    Path(io_path(out/f'{kind}-rig.json')).write_text(json.dumps(rig,ensure_ascii=False),encoding='utf8')
+    np.savez(io_path(out/f'{kind}-canonical.npz'),rest=rest,names=mapping,parents=PARENTS)
     from .blender_geometry import register
     report('Registering soles, palms and humanoid proportions')
     register(out,kind,rig,arm,mapping,rest)
     bpy.ops.file.pack_all()
-    bpy.ops.wm.save_as_mainfile(filepath=str(out/f'{kind}-rest.blend'))
+    save_blend(out/f'{kind}-rest.blend')
     preview(out,arm,None,1)
     metadata=dict(kind=kind,name=filename.stem,vertices=count,bones=len(arm.data.bones))
     if kind=='pmx':metadata['mmd_import_scale']=.08
-    (out/'import.json').write_text(json.dumps(metadata),encoding='utf8')
+    Path(io_path(out/'import.json')).write_text(json.dumps(metadata),encoding='utf8')
 
 
 def vertex_colors(obj):
@@ -127,7 +128,8 @@ def vertex_colors(obj):
 
 def preview(out,arm,keyed,n):
     from .selective_fbx import body_dependencies
-    kind=json.loads((out/'import.json').read_text())['kind'] if (out/'import.json').exists() else next(p.stem.split('-')[0] for p in out.glob('*-rig.json'))
+    metadata=Path(io_path(out/'import.json'))
+    kind=json.loads(metadata.read_text())['kind'] if metadata.exists() else next(p.stem.split('-')[0] for p in Path(io_path(out)).glob('*-rig.json'))
     dynamic=set(keyed or [])|body_dependencies(kind,arm)
     if not keyed:dynamic={b.name for b in arm.data.bones}
     dynamic={name for name in dynamic if name in arm.data.bones}
@@ -157,8 +159,8 @@ def preview(out,arm,keyed,n):
     from mocap.mesh_data import adjacency
     vertices=np.concatenate(vertices).astype('float32');faces=np.asarray(faces,np.uint32)
     offsets,neighbors=adjacency(faces,len(vertices))
-    np.savez(out/'preview.npz',vertices=vertices,colors=np.concatenate(colors),faces=faces,weights=np.asarray(influences,np.float32),rows=np.asarray(rows,np.uint32),offsets=offsets,neighbors=neighbors)
-    frames=np.lib.format.open_memmap(out/'preview-frames.npy',mode='w+',dtype='float32',shape=(n,len(palette)+1,4,4))
+    np.savez(io_path(out/'preview.npz'),vertices=vertices,colors=np.concatenate(colors),faces=faces,weights=np.asarray(influences,np.float32),rows=np.asarray(rows,np.uint32),offsets=offsets,neighbors=neighbors)
+    frames=np.lib.format.open_memmap(io_path(out/'preview-frames.npy'),mode='w+',dtype='float32',shape=(n,len(palette)+1,4,4))
     C=np.eye(4);C[:3,:3]=A.T
     rest_inv={name:(arm.matrix_world@arm.data.bones[name].matrix_local).inverted() for name in palette}
     for i in range(n):
@@ -179,7 +181,7 @@ def main(args):
         arm,keyed=blender_bake.bake(rest[0],'motion','stance')
         n=bpy.context.scene.frame_end
         preview(out,arm,keyed,n)
-        (out/'bake.json').write_text(json.dumps(dict(keyed_bones=keyed,frames=n,object_animation_channels=0)),encoding='utf8')
+        Path(io_path(out/'bake.json')).write_text(json.dumps(dict(keyed_bones=keyed,frames=n,object_animation_channels=0)),encoding='utf8')
     elif mode=='export':
         from .selective_fbx import body_only_sampler,body_dependencies
         from mathutils import Matrix
@@ -188,17 +190,17 @@ def main(args):
         options=json.loads(rest[4]) if len(rest)>4 else {}
         fmt=options.get('format','fbx')
         if fmt not in {'fbx','vmd'}:raise ValueError('Unsupported character export format')
-        kind=json.loads((folder/'import.json').read_text(encoding='utf8'))['kind']
+        kind=json.loads(Path(io_path(folder/'import.json')).read_text(encoding='utf8'))['kind']
         if fmt=='vmd':
             if kind!='pmx':raise ValueError('VMD export requires a PMX character')
             from .vmd_export import export_vmd
             export_vmd(folder,target,transform,rest[3])
             return
-        bpy.ops.wm.open_mainfile(filepath=str(folder/'animation.blend'),load_ui=False)
+        bpy.ops.wm.open_mainfile(filepath=io_path(folder/'animation.blend'),load_ui=False)
         arm=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE')
         arm.name=rest[3]
-        info=json.loads((folder/'bake.json').read_text(encoding='utf8'))
-        kind=json.loads((folder/'import.json').read_text(encoding='utf8'))['kind']
+        info=json.loads(Path(io_path(folder/'bake.json')).read_text(encoding='utf8'))
+        kind=json.loads(Path(io_path(folder/'import.json')).read_text(encoding='utf8'))['kind']
         if transform is not None:
             C=np.eye(4);C[:3,:3]=A
             M=Matrix((C@np.asarray(transform)@C.T).tolist())
@@ -214,9 +216,9 @@ def main(args):
             with body_only_sampler(arm,set(info['keyed_bones'])|body_dependencies(kind,arm)):
                 # Explicit terminal markers keep Blender's Ignore Leaf Bones
                 # option from removing real terminal finger bones.
-                bpy.ops.export_scene.fbx(filepath=str(temp),use_selection=True,object_types=types,add_leaf_bones=True,
+                bpy.ops.export_scene.fbx(filepath=io_path(temp),use_selection=True,object_types=types,add_leaf_bones=True,
                     bake_anim=True,bake_anim_use_all_bones=False,bake_anim_use_all_actions=False,bake_anim_use_nla_strips=False,
                     bake_anim_simplify_factor=0.,use_mesh_modifiers=True,path_mode='COPY',embed_textures=True)
-            temp.replace(target)
-        finally:temp.unlink(missing_ok=True)
+            Path(io_path(temp)).replace(io_path(target))
+        finally:Path(io_path(temp)).unlink(missing_ok=True)
     else:raise ValueError('Unknown character operation')

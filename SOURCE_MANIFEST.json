@@ -101,8 +101,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 3817,
-      "sha256": "689d72e826477b6306300a1a7a1ae2fc61b1817240479657e3fb19c68b787369"
+      "bytes": 4911,
+      "sha256": "8f5d4a81659420bf939ee394b9005bcfa988e00f42a1b346e3c7090d16f5bade"
     },
     {
       "path": "docs/images/rgbmocap-workspace.png",
@@ -946,8 +946,8 @@
     },
     {
       "path": "mocap/character_data.py",
-      "bytes": 4343,
-      "sha256": "4277e64cfe7eec62d048864857bccf82e80f01a87ed6ff5f7be8cedb1255e994"
+      "bytes": 4629,
+      "sha256": "bc4ce431193e5dabfe03f0853a41923cb19eeb70cb49c04f130ce2b6ad546e0b"
     },
     {
       "path": "mocap/character_export_dialog.py",
@@ -1301,8 +1301,8 @@
     },
     {
       "path": "mocap/retarget/blender_bake.py",
-      "bytes": 8258,
-      "sha256": "abe950f2b0ecc8777ff0ac802b145273383d7f3ad0372004c90e2502ba68df5f"
+      "bytes": 8296,
+      "sha256": "bde63f85766f36611a5b488f59ad4c11e73d1324528af18a8ac994ca58e7daa3"
     },
     {
       "path": "mocap/retarget/blender_entry.py",
@@ -1311,13 +1311,13 @@
     },
     {
       "path": "mocap/retarget/blender_geometry.py",
-      "bytes": 3795,
-      "sha256": "03e0fb48d06494fa771581ac91476972ff1f1ac11f21648573bb78364cc95a8c"
+      "bytes": 3837,
+      "sha256": "08e807facc8f54a341aeeace379cc471aa8fb2c8bdedabfdd8da8d015a0ff7ce"
     },
     {
       "path": "mocap/retarget/blender_io.py",
-      "bytes": 12339,
-      "sha256": "55b2f0bc4dae651fd0c4ebffe55e5deef137e8655a5cbfdb167d7cc0f179eb05"
+      "bytes": 12567,
+      "sha256": "85523cfe0101b991d622fe9c8a10d92dae2dc214a2601f8329c0ee82d9d924af"
     },
     {
       "path": "mocap/retarget/bounded_stabilizer.py",
@@ -1331,8 +1331,8 @@
     },
     {
       "path": "mocap/retarget/file_paths.py",
-      "bytes": 411,
-      "sha256": "2daf10db98efe1ae9ecb518d83bf60dc65ddadfce1aa1d684a2abdd289aa306f"
+      "bytes": 1426,
+      "sha256": "34bbf11ddb08a4e88b02bf3759a0d31899b4616cac17c46751a03461d4871dbb"
     },
     {
       "path": "mocap/retarget/foot_calibration.py",
@@ -1391,8 +1391,8 @@
     },
     {
       "path": "mocap/retarget/vmd_export.py",
-      "bytes": 8619,
-      "sha256": "31159383d7f014381d58a75b50398a434e46f14465cd29f0e411affdc6ef69cc"
+      "bytes": 8742,
+      "sha256": "97ba9c1164a72f9250c1a024b094f4c3d627615904834f283df73e2d3f8de5f8"
     },
     {
       "path": "mocap/retarget/worker.py",

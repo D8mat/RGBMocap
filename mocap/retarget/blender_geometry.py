@@ -1,5 +1,6 @@
 import bpy,json,numpy as np
 from .mapping import A
+from .file_paths import io_path
 def register(OUT,kind,rig,arm,mapping,rest):
  mapped={name:i for i,name in enumerate(mapping)};bone_map={}
  if kind=='pmx':
@@ -46,4 +47,4 @@ def register(OUT,kind,rig,arm,mapping,rest):
   assert len(hand_ids)>3,(kind,side,'palm')
   payload.update({f'palm_v{side}':v[hand_ids],f'palm_w{side}':W[hand_ids],f'palm_ids{side}':hand_ids})
   counts.append(dict(foot_vertices=len(ids),sole_vertices=len(bottom),palm_vertices=len(hand_ids),shin_weighted_sole_vertices=int((W[bottom,shin]>.5).sum())))
- np.savez(OUT/(kind+'-contact-geometry.npz'),**payload)
+ np.savez(io_path(OUT/(kind+'-contact-geometry.npz')),**payload)

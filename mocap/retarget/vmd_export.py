@@ -5,6 +5,7 @@ camera, morph or physics data is generated. Outputs target the same PMX rig.
 """
 import json,math,struct,sys,uuid
 from pathlib import Path
+from .file_paths import io_path
 import bpy,addon_utils
 from mathutils import Matrix,Quaternion
 
@@ -54,10 +55,10 @@ def export_vmd(folder,target,transform,label):
     from mmd_tools.core.vmd.importer import BoneConverter
     from .mapping import A
     import numpy as np
-    bpy.ops.wm.open_mainfile(filepath=str(folder/'animation.blend'),load_ui=False)
+    bpy.ops.wm.open_mainfile(filepath=io_path(folder/'animation.blend'),load_ui=False)
     arm=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE')
-    info=json.loads((folder/'bake.json').read_text(encoding='utf8'))
-    rig=json.loads((folder/'pmx-rig.json').read_text(encoding='utf8'))
+    info=json.loads(Path(io_path(folder/'bake.json')).read_text(encoding='utf8'))
+    rig=json.loads(Path(io_path(folder/'pmx-rig.json')).read_text(encoding='utf8'))
     names=set(info['keyed_bones']);compensate={}
     # Native PMX grant/cancel rules still run in MMD, even when the Blender
     # bake muted them. Cancel that contribution instead of applying it twice.
@@ -83,7 +84,7 @@ def export_vmd(folder,target,transform,label):
     needed=set(names)
     needed.update(arm.pose.bones[n].mmd_bone.additional_transform_bone for n in compensate)
     sample_bones=[pb for pb in arm.pose.bones if pb.name in needed]
-    scale=json.loads((folder/'import.json').read_text(encoding='utf8')).get('mmd_import_scale',.08)
+    scale=json.loads(Path(io_path(folder/'import.json')).read_text(encoding='utf8')).get('mmd_import_scale',.08)
     converters={pb.name:BoneConverter(pb,1./scale,invert=True) for pb in sample_bones}
     ik=set()
     for pb in arm.pose.bones:
@@ -101,7 +102,7 @@ def export_vmd(folder,target,transform,label):
     temp=target.with_name('.'+target.stem+'-'+uuid.uuid4().hex+'.partial.vmd')
     previous={};linear=bytes([20]*4+[20]*4+[107]*4+[107]*4)*4
     try:
-        with temp.open('wb') as f:
+        with open(io_path(temp),'wb') as f:
             f.write(b'Vocaloid Motion Data 0002'.ljust(30,b'\0'))
             # The header is informational; bone names remain strict and exact.
             title=label.encode('cp932',errors='replace')[:20]
@@ -148,5 +149,5 @@ def export_vmd(folder,target,transform,label):
             f.write(struct.pack('<4I',0,0,0,0)) # morph, camera, light, shadow
             f.write(struct.pack('<IIBI',1,0,1,len(ik_names)))
             for name in ik_names:f.write(name+b'\0') # disable IK: retain baked FK contacts
-        temp.replace(target)
-    finally:temp.unlink(missing_ok=True)
+        Path(io_path(temp)).replace(io_path(target))
+    finally:Path(io_path(temp)).unlink(missing_ok=True)

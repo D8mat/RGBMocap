@@ -23,7 +23,10 @@ class CharacterLoader(QThread):
         with self.condition:
             window=self.windows.get(key)
             if window and window[0]<=index<window[0]+len(window[1]):
-                if index>=window[0]+len(window[1])*3//4:
+                # A final window already contains every remaining frame.
+                # Reloading it emits ready/changed and can create a repaint loop,
+                # especially for imported characters with a one-frame rest pose.
+                if window[0]+len(window[1])<window[2] and index>=window[0]+len(window[1])*3//4:
                     self.pending[key]=(index,self.epoch);self.condition.notify()
                 return window[1][index-window[0]]
         self.request(path,index);return None
@@ -69,7 +72,7 @@ class CharacterLoader(QThread):
                     block=np.asarray(a[start:min(a.shape[0],start+count)]).copy()
                     with self.condition:
                         if requested!=self.epoch:continue
-                        self.windows[key]=(start,block)
+                        self.windows[key]=(start,block,a.shape[0])
                     self.ready.emit(key,dict(asset=self.data[key],frames=a.shape[0],palette=a.shape[1]))
                     self.changed.emit()
                 except Exception as exc:
