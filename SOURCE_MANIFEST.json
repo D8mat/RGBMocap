@@ -36,8 +36,8 @@
     },
     {
       "path": "app.py",
-      "bytes": 3851,
-      "sha256": "2edafc13db292074489392e372adb639a43ae9e48bd587b6f6269047090366d0"
+      "bytes": 4294,
+      "sha256": "9eac82d35698e304cb8e85424f4cf517cf29187f4a56ac1b4a210a922af846c1"
     },
     {
       "path": "assets/fonts/NotoSansKR.ttf",
@@ -63,6 +63,11 @@
       "path": "assets/icons/play.svg",
       "bytes": 139,
       "sha256": "192ac38e467f7688e70fbe6fd46316c80e3a740004ef3fbddbec970f61d88cfe"
+    },
+    {
+      "path": "assets/rgbmocap-icon.png",
+      "bytes": 5246,
+      "sha256": "dd979b5fc133646599fbee417048997b6114088f2eb257b3ed6f61df24545e89"
     },
     {
       "path": "contributors/motion-correction/README.md",

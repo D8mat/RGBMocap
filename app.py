@@ -21,11 +21,20 @@ def main():
     parser.add_argument('--smoke-render-mode',choices=['raw','box','mixamo'],default='box',help=argparse.SUPPRESS)
     parser.add_argument('--smoke-bone-overlay',choices=['on','off'])
     args = parser.parse_args()
+    # Give Windows a stable app identity so the taskbar uses the app icon.
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("toyxyz.RGBMoCap")
+        except (AttributeError, OSError):
+            pass
     from PySide6.QtWidgets import QApplication
+    from PySide6.QtGui import QIcon
     from PySide6.QtCore import QTimer
     from mocap.gui import MainWindow
     from mocap.theme import configure_application
     app = QApplication(sys.argv[:1])
+    app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "assets" / "rgbmocap-icon.png")))
     configure_application(app)
     window = MainWindow(args.video)
     window.bone_overlay.setChecked(args.smoke_bone_overlay=='on' if args.smoke_bone_overlay else args.smoke_render_mode!='raw')
