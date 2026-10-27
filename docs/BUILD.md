@@ -1,9 +1,7 @@
-# Windows source and release build
+# Windows development guide
 
-The source distribution uses `install.cmd`, `RGBMoCap.cmd`, and `update.cmd`
-for ordinary installation, launch and updates. The executable installer build
-steps below describe the older packaging path; they are not required for Git
-installation. For the native motion-correction module see
+The Git source distribution uses `install.cmd`, `RGBMoCap.cmd`, and `update.cmd`
+for installation, launch and updates. For the native motion-correction module see
 [contributor build instructions](../contributors/motion-correction/README.md).
 
 ## Prerequisites
@@ -44,9 +42,9 @@ The source lock is never silently replaced from the developer's installed pip se
 
 The root `requirements-windows.txt`, `requirements-flow-windows.txt` and
 `requirements-hand-windows.txt` are historical cache-fingerprint inputs, retained
-byte-for-byte so existing worker receipts remain comparable. They are bundled
-with the application and checked by both release builders. Do not use them to
-install the managed runtimes; use `tools/setup_dev.py` and the runtime lock above.
+byte-for-byte so existing worker receipts remain comparable. Keep them in the
+source checkout. Do not use them to install managed runtimes; use
+`tools/setup_dev.py` and the runtime lock above.
 
 When changing model dependencies, review its profile and overlay relationship in
 `mocap/runtime_registry.py`, update the corresponding lock deliberately and rerun
@@ -123,60 +121,13 @@ OpenCC's pure-Python wheel is retained as unpacked source under
 are loaded by the worker; do not install these source folders through Blender's
 extension installer.
 
-## Legacy standalone installer build
-
-This section describes the older EXE packaging path, not the Git-based
-installation. It is retained for contributors who need to inspect that tooling.
-
-
-```powershell
-.venv\Scripts\python.exe tools/check_source.py
-.venv\Scripts\python.exe tools/build_release.py
-```
-
-The builder:
-
-1. Freezes the current GUI from `app.py` using PyInstaller.
-2. Stages current application and adapted upstream source; no earlier release
-   or installed application is used.
-3. Verifies auxiliary data and builds the CPython 3.10 native correction module.
-4. Adds FFmpeg tools/notices and a complete separate `runtime_character` copied
-   from the supplied Blender 4.5 distribution, then writes the application manifest.
-5. Compiles the C# Windows Setup and appends its verified application payload,
-   runtime lock and helper. AI runtimes are downloaded by Setup; Blender's character
-   runtime is embedded. Model weights are not embedded. Disk estimates include
-   the additional character runtime.
-
-Example with explicit paths:
-
-```powershell
-.venv\Scripts\python.exe tools/build_release.py `
-  --asset-root D:\AcquiredAssets `
-  --ffmpeg-dir C:\Tools\ffmpeg\bin `
-  --blender-dir C:\Tools\Blender-4.5 `
-  --output releases\RGBMoCap-1.0.1-setup-windows-x64.exe
-```
-
-`--app-only` creates the staged app without Setup. `--work` selects temporary
-build output. `--native-deps` points to a local Eigen/pybind11 source cache;
-otherwise CMake fetches its pinned dependencies. `--native-module` is intended
-for an already reviewed build of this source for CPython 3.10 x64. All build
-products are ignored by Git.
-
-`mocap/__init__.py` supplies the application version. Keep `pyproject.toml` and
-the runtime lock's release version consistent. The builder records this version
-in the application metadata, Windows executable properties and Setup; it rejects
-a mismatched staged app. Dependency profile pins remain independently reviewed.
-
-The builder uses `--blender-dir`, `RGBMOCAP_BLENDER`, PATH or a standard Blender 4.5
-installation, in that order. It rejects other Blender versions. It does not copy
-personal preferences or extensions from the user's Windows profile. Retain the
-runtime's Blender license/source information when distributing the resulting app.
+## Native motion-correction module
 
 Native CMake compilation is defined in
 `third_party/KimodoMotionCorrection/CMakeLists.txt`. Source changes to that backend
-require a rebuild. The core currently uses AVX compiler options; do not claim
-compatibility with processors that have not been checked.
+require a rebuild; see the [contributor build instructions](../contributors/motion-correction/README.md).
+The core currently uses AVX compiler options; do not claim compatibility with
+processors that have not been checked.
 
 ## Before publishing source changes
 
@@ -191,8 +142,7 @@ installers and personal projects out of Git. The reviewed prebuilt correction
 module and licensed importer resources are explicit exceptions. Preserve
 third-party licenses, corresponding source/build materials and model terms; see
 [Third-party notices](../THIRD_PARTY_NOTICES.md). The Git installation downloads
-Blender and FFmpeg from their pinned upstream locations; no separate Setup EXE
-or download link is required for this path.
+Blender and FFmpeg from their pinned upstream locations.
 
 Git attributes preserve exact source bytes for the source manifest, hash-pinned
 runtime registry and unpacked wheel contents. Avoid automatic line-ending rewrites

@@ -34,10 +34,3 @@ These checks describe the recorded examples, not a guarantee for every video,
 character or computer. Model weights and registered body data remain separate and
 subject to their providers' terms. Review the applicable third-party notices and
 corresponding source/build requirements before redistributing binaries.
-
-## Historical packaging issue
-
-The earlier v1.0.0 standalone installer omitted historical requirements files
-used by worker fingerprints. The current source checkout includes those files;
-13 fingerprint inputs were checked in the separate-install test. The current Git
-installation uses `install.cmd`, not the old standalone installer.

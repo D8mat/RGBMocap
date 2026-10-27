@@ -16,8 +16,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 1102,
-      "sha256": "159916b0a06ec56680276d943593c4f7024f4876cfba8b08aed24f4f2f6eb27f"
+      "bytes": 1052,
+      "sha256": "50d15b04e6ede35be222bc5210de6631dc5037162b848e1c7fca437018fac3f4"
     },
     {
       "path": "LICENSE",
@@ -86,23 +86,23 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 11406,
-      "sha256": "4aa8e538adbf562070f5d252b28540c3c3bbe0637a549609d9c1bda1c1cb589e"
+      "bytes": 11366,
+      "sha256": "f30fa0de3bbdda93cce8ef5bb2eb588015507e96845e5e6ef3cf67aff487a2c7"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 10409,
-      "sha256": "5fd019ca170de78637430f7f2df459e628d0c6a41b6bfe5414afa96999685779"
+      "bytes": 8007,
+      "sha256": "0098f5c63fc553aeec2cf437fd7b3131b392e78a6142867d3a15da512bd7efd5"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 27187,
-      "sha256": "c26c60558b4e1f393e3fe821c49655125064f467ec19af772d81697d6ee7ce00"
+      "bytes": 27101,
+      "sha256": "c2542747c00d81a532d96542f22b5aba33fdb6131e79e195511c1fb1cc9d78d6"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 2719,
-      "sha256": "1ff6eb0dbf6bf49e4477bcfc0bf194565ee882e54dbd6698de5912e9cb5e71d4"
+      "bytes": 2382,
+      "sha256": "937cb012ab5f3b6aaab5d35bd84fa0c7d94174de316e2323e209c3af5fe286c3"
     },
     {
       "path": "docs/images/rgbmocap-workspace.png",

@@ -128,10 +128,9 @@ are single local tests, not estimates for a download with an empty cache or for
 other PCs; connection speed and storage performance affect the time.
 
 Allow at least **32.4 GiB free** for first-time runtime installation before
-models. All supported model files previously measured about 29 GiB; installed
-app and runtime size was approximately 12–13 GiB in the previous package.
-Download caches, videos, projects, characters and exports require additional
-space, and actual sizes can vary. No clean-Windows or other-GPU test is claimed.
+models. All supported model files previously measured about 29 GiB. Download
+caches, videos, projects, characters and exports require additional space, and
+actual sizes can vary. No clean-Windows or other-GPU test is claimed.
 
 ## Storage and cleanup
 
