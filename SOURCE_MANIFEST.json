@@ -86,8 +86,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 11316,
-      "sha256": "e6fe11f9f6e419df90abe5d1ac0b7160656a83c2e5f805853ec4e78205dc2d7d"
+      "bytes": 11406,
+      "sha256": "4aa8e538adbf562070f5d252b28540c3c3bbe0637a549609d9c1bda1c1cb589e"
     },
     {
       "path": "docs/BUILD.md",
@@ -96,8 +96,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 27041,
-      "sha256": "1cbf35f221be0670a4278c475419dfc98fc5bcead0230699809284d5ef6b1fae"
+      "bytes": 27187,
+      "sha256": "c26c60558b4e1f393e3fe821c49655125064f467ec19af772d81697d6ee7ce00"
     },
     {
       "path": "docs/VALIDATION.md",

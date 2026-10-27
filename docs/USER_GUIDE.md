@@ -101,8 +101,9 @@ have not yet been verified; compatibility reports are welcome.
    The AI runtimes remain separate. Downloads and free disk space are needed;
    the install can take time.
 3. Run `RGBMoCap.cmd`. Keep its console open while the GUI runs; launch errors
-   and exit codes are displayed there. Processing messages and the app **Console**
-   output also appear there. Use **Help > Check System** if needed.
+   and exit codes are displayed there. Processing messages and app **Console** output
+   are also sent there, but very long or high-volume output can be truncated or
+   dropped. Use **Help > Check System** if needed.
 4. In **Model Manager**, download or import the selected AI model files. Some
    models require registration and agreement to their provider's terms and must
    be downloaded manually.
@@ -266,7 +267,7 @@ The app does not need your provider password or access token.
 
 | Used by | Registered or access-controlled files |
 | --- | --- |
-| ExMR / GVHMR | [SMPL-X v1.1 neutral](https://smpl-x.is.tue.mpg.de/download.php): import `models/smplx/SMPLX_NEUTRAL.npz`. |
+| ExMR / GVHMR | [SMPL-X v1.1 neutral](https://smpl-x.is.tue.mpg.de/download.php): import `models/smplx/SMPLX_NEUTRAL.npz` from the downloaded archive. The app stores it under `models/body_models/smplx/`. |
 | FlowHMR | [AMASS SMPL-H neutral](https://mano.is.tue.mpg.de/download.php): Extended SMPL+H model, `smplh/neutral/model.npz` (16 shape components). |
 | ExMR / GVHMR HandFlow | [MANO](https://mano.is.tue.mpg.de/download.php): `MANO_RIGHT.pkl` from `mano_v1_2.zip`. |
 | ExMR / FlowHMR | [SAM 3D Body](https://huggingface.co/facebook/sam-3d-body-dinov3): supported `model.ckpt`, `model_config.yaml` and `assets/mhr_model.pt`, each in its matching row. |
