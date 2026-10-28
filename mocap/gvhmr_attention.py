@@ -9,7 +9,7 @@ from types import MethodType
 
 
 def predict(model,data,project,emit):
-    """Budget before allocation, and retry dense OOM once with released traceback."""
+    """Select full-context attention and recover once from an actual dense OOM."""
     import gc
     import torch
     from .compute_policy import gvhmr_plan,gpu_reserve
@@ -24,8 +24,6 @@ def predict(model,data,project,emit):
         return min(free+allocated,room+gpu_reserve(total)),total
     free,total=capacity()
     selected=gvhmr_plan(frames,free,total)
-    if not selected['fits']:
-        raise RuntimeError('Not enough free GPU memory for full-context GVHMR. Close GPU apps or trim the clip.')
     atomic_json(project/'gvhmr_attention_plan.json',selected)
     emit('compute_plan',**selected)
     failed=False
@@ -40,9 +38,10 @@ def predict(model,data,project,emit):
     gc.collect();torch.cuda.empty_cache()
     free,total=capacity()
     low=gvhmr_plan(frames,0,total)
-    if frames<=2048 or low['estimated_bytes']>free-gpu_reserve(total):
+    if frames<=2048:
         raise RuntimeError('Not enough free GPU memory for full-context GVHMR. Close GPU apps or trim the clip.')
-    low.update(fits=True,reduced_after_oom=True)
+    low.update(reduced_after_oom=True,
+               fits=low['estimated_bytes']<=max(0,free-gpu_reserve(total)))
     atomic_json(project/'gvhmr_attention_plan.json',low)
     emit('compute_plan',**low)
     with torch.inference_mode(),query_split(model,True):

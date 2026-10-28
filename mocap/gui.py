@@ -1360,27 +1360,31 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             self.status.setText('Cancelling project save...')
             self.cancel_button.setEnabled(False)
             return
+        from shiboken6 import isValid
+        pending=getattr(self,'cancel_process',None)
+        if pending is not None and isValid(pending) and pending.state()!=QProcess.NotRunning:
+            return
         self.task_timer.stop();self.task_state.active=False;self.task_info.setText('Stopping...')
         self.guard_timer.stop()
         self.cancelled = True
         self.jobs.clear()
         worker = self.process
-        if worker and worker.processId():
+        if worker and isValid(worker) and worker.processId():
             if os.name == "nt":
                 # Stop FFmpeg/other descendants before losing their parent PID.
                 helper = QProcess(self)
                 self.cancel_process = helper
                 def fallback(error):
-                    if error == QProcess.FailedToStart and self.process is worker:
+                    if error == QProcess.FailedToStart and self.process is worker and isValid(worker):
                         worker.kill()
-                        from shiboken6 import isValid
+                    if error == QProcess.FailedToStart:
+                        if self.cancel_process is helper:self.cancel_process=None
                         if isValid(helper):helper.deleteLater()
                 helper.errorOccurred.connect(fallback)
                 def cancelled(code, _):
-                    if code and self.process is worker:
+                    if code and self.process is worker and isValid(worker):
                         worker.kill()
-                    self.cancel_process = None
-                    from shiboken6 import isValid
+                    if self.cancel_process is helper:self.cancel_process=None
                     if isValid(helper):helper.deleteLater()
                 helper.finished.connect(cancelled)
                 helper.start("taskkill.exe", ["/PID", str(worker.processId()), "/T", "/F"])

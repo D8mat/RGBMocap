@@ -329,6 +329,21 @@ Use **Console** for details and errors. Loading or unmeasured work shows activit
 instead of an invented percentage. FlowHMR is limited to 5,000 frames per take
 (about 166.7 seconds); available memory may require a shorter clip.
 
+Processing is allowed to start without a predicted RAM/VRAM minimum. While it
+runs, the app monitors actual available RAM and Windows allocation headroom.
+If either becomes low, it stops the processing job and shows the available memory
+in the error message. The app also reports actual CPU/GPU allocation failures.
+Completed stages are retained for retry. Low Memory can reduce supported batch
+sizes, but cannot guarantee that every model or video fits. A sudden large
+allocation can still fail before the next monitor check.
+
+GPU allocator budgets use ComfyUI's external-use margin: 600 MiB on Windows,
+or 700 MiB on GPUs larger than 15 GiB, subtracted from currently free VRAM.
+All three model paths use this rule; FlowHMR/ExMR no longer subtract fixed
+3/2 GiB or impose an additional 95/90% ceiling. Inference working memory is
+part of the allowed budget. This is not a guarantee of free VRAM: other apps
+and allocations outside PyTorch can still consume it.
+
 ## Motion Correction
 
 Contact correction reduces sliding when feet or palms rest on a support. It uses

@@ -10,7 +10,18 @@ def ram_reserve(total):
 
 
 def gpu_reserve(total):
-    return max(.75*GIB,min(1.5*GIB,total*.10))
+    """ComfyUI's external-use margin, separate from inference working memory."""
+    mib=1024**2
+    return (600+(100 if total>15*GIB else 0))*mib if os.name=='nt' else 400*mib
+
+
+def gpu_memory_fraction(free,total):
+    """Budget the CUDA allocator from current free VRAM, without a second cap.
+
+    Model weights, activations and temporary inference buffers share this budget.
+    It does not cap non-PyTorch allocations or reserve memory against other apps.
+    """
+    return max(0.,min(1.,(free-gpu_reserve(total))/total))
 
 
 def worker_threads(stage, logical=None):
@@ -80,31 +91,14 @@ def image_plan(stage,free_vram,available_ram,mode=None):
             'halo_frames':720,'precision':'float32','flip_test':True,'mode':mode}
 
 
-def resource_error(stage,frames,available_ram,total_ram,free_vram=None,total_vram=None):
-    """Conservative admission estimates, not a claim of universal memory bounds."""
-    frames=max(0,frames)
-    fixed={'track':2.,'people':2.2,'person':1.,'pva':5.,'gvhmr':4.,'features':4.,'refine':2.2,
-           'footmr':3.5,'handflow':10.,'correct':.8,'export':1.,'mesh':1.}.get(stage,.5)*GIB
-    per_frame={'track':512,'pva':2048,'features':8192,'gvhmr':16384,'refine':8192,
-               'footmr':16384,'handflow':32768,'correct':8192,'export':16384,'mesh':16384}.get(stage,4096)
-    required=fixed+frames*per_frame+ram_reserve(total_ram)
-    if available_ram<required:
-        return (f'Not enough available RAM for {stage}. Need about {required/GIB:.1f} GiB including '
-                f'the system reserve; {available_ram/GIB:.1f} GiB available. Close other apps or trim the clip.')
-    if free_vram is not None:
-        # Include whole-sequence intermediates and the selected attention path.
-        gpu={'track':.6,'pva':5.2,'gvhmr':3.,'features':3.,'refine':.3,'footmr':3.,'handflow':3.8}.get(stage,.3)*GIB
-        if stage=='pva':gpu=(3.5+.014*min(max(4,frames),120))*GIB
-        # Upstream explicitly materializes an 8-head FP32 attention matrix,
-        # plus another score/softmax buffer. This is quadratic, not image batching.
-        if stage=='gvhmr':gpu=gvhmr_plan(frames,free_vram,total_vram or free_vram)['estimated_bytes']
-        if stage=='refine':gpu+=frames*262144
-        reserve=gpu_reserve(total_vram or free_vram)
-        if free_vram<gpu+reserve:
-            return (f'Not enough free GPU memory for {stage} and this clip length. Estimated need '
-                    f'{(gpu+reserve)/GIB:.1f} GiB including the desktop reserve; '
-                    f'{free_vram/GIB:.1f} GiB free. Close GPU apps or trim the clip.')
-    return None
+def memory_pressure_message(available,total,commit=None):
+    """Report measured system pressure, never a predicted stage allocation."""
+    reserve=ram_reserve(total)
+    if available>=reserve and (commit is None or commit>=GIB):return None
+    detail=f'Available RAM {available/GIB:.2f} GiB (system reserve {reserve/GIB:.2f} GiB)'
+    if commit is not None:detail+=f'; Windows allocation headroom {commit/GIB:.2f} GiB'
+    return ('Processing stopped because available system memory is low. '+detail+
+            '. Close other apps or use a shorter clip. Completed stages can be reused.')
 
 
 def retry_cuda(operation,batch,on_retry,oom_type=None,cleanup=None):

@@ -2,7 +2,7 @@
 import ctypes
 import os
 import time
-from .compute_policy import GIB,ram_reserve,idle_timeout
+from .compute_policy import memory_pressure_message,idle_timeout
 
 
 class PerformanceInfo(ctypes.Structure):
@@ -51,10 +51,11 @@ class ProcessingGuard:
         except psutil.NoSuchProcess:return None
         except psutil.AccessDenied:pass
         memory=psutil.virtual_memory();commit=commit_headroom()
-        low=memory.available<ram_reserve(memory.total) or (commit is not None and commit<GIB)
+        message=memory_pressure_message(memory.available,memory.total,commit)
+        low=message is not None
         self.low_samples=self.low_samples+1 if low else 0
-        if self.low_samples>=2:
-            return 'Processing stopped to protect system memory. Close other apps, select Low Memory, or trim the clip. Completed stages can be reused.'
+        critical=memory.available<256*1024**2 or (commit is not None and commit<256*1024**2)
+        if self.low_samples>=2 or critical:return message
         if idle_timeout(self.last_output,self.last_cpu_change,now):
             return 'Processing stopped after 180 seconds without output or CPU activity. The app is still available; retry or use a shorter clip.'
         return None

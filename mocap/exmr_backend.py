@@ -8,6 +8,8 @@ import gc, hashlib, json, math, os, sys, time
 import numpy as np
 from .paths import ROOT, HOME, UPSTREAM
 from .storage import atomic_json, sha256
+from .resource_cache import code_hash
+from .compute_policy import gpu_memory_fraction
 from .result_artifacts import file_stat
 from .exmr_options import saved
 
@@ -34,19 +36,6 @@ def scene_root(project):
         raise ValueError('Invalid ExMR scene path')
     return root
 
-
-def admission(stage,n,ram,vram=None):
-    gib=1024**3
-    if n<1:raise ValueError('ExMR clip is empty')
-    # Entire temporal context is retained. Attention has quadratic buffers;
-    # admission and an allocator cap fail safely instead of shortening a take.
-    temporal=max(5.,2.+8*4*4*n*n/gib)
-    gpu={'exmr_preprocess':max(12.,temporal),'exmr_features':6.,'exmr':temporal}[stage]
-    required_ram={'exmr_preprocess':max(23.,temporal+5.),'exmr_features':16.,'exmr':max(10.,gpu+5.)}[stage]
-    if ram<(required_ram+4)*gib:
-        raise MemoryError(f'ExMR needs about {required_ram+4:.1f} GiB available RAM for this stage and the desktop. Close other apps or trim the clip.')
-    if vram is not None and vram<(gpu+2)*gib:
-        raise MemoryError(f'ExMR needs about {gpu+2:.1f} GiB free VRAM including desktop headroom for this stage. Close GPU apps or trim the clip.')
 
 
 def activate():
@@ -151,7 +140,7 @@ def identity(project,stage):
             'exmr_features':('image_io.py','body_features.py','hand_features.py'),
             'exmr':(),
         }[stage]},
-        code=sha256(Path(__file__)),upstream=sha256(UPSTREAM/'ExMR/RGB_MOCAP_PROVENANCE.json'))
+        code=code_hash(Path(__file__)),upstream=sha256(UPSTREAM/'ExMR/RGB_MOCAP_PROVENANCE.json'))
 
 
 def frame_dir(project,n):
@@ -191,12 +180,20 @@ def validate_native(native,n):
     if tuple(native['static_conf_logits'].shape)!=(n,6) or not torch.isfinite(native['static_conf_logits']).all():raise ValueError('Invalid ExMR contact predictions')
 
 
+def complete_stage(project,stage,output,elapsed,cached,emit):
+    state=json.loads((project/'project.json').read_text(encoding='utf-8'))
+    state.setdefault('stages',{})[stage]=dict(status='complete',output=str(output),elapsed=elapsed)
+    atomic_json(project/'project.json',state)
+    emit('complete',stage=stage,cached=cached,elapsed=0 if cached else elapsed,output=str(output))
+
+
 def run_stage(project,stage,result,emit,force=False):
     import torch,cv2,psutil
     from .models import missing,BY_KEY
     from .engines import save_tensor
     project=Path(project);state=json.loads((project/'project.json').read_text(encoding='utf-8'));n=state['frames']
     if stage not in STAGES or result not in ('auto','initial','corrected_initial'):raise ValueError('Unsupported ExMR stage/result')
+    if n<1:raise ValueError('ExMR clip is empty')
     absent=missing(stage)
     if absent:raise ValueError('Open ExMR Model Manager and prepare: '+', '.join(m.name for m in absent))
     signature=identity(project,stage);receipt=project/(stage+'_receipt.json');pending=project/(stage+'_pending.json')
@@ -205,7 +202,7 @@ def run_stage(project,stage,result,emit,force=False):
     cached=False
     try:
         old=json.loads(receipt.read_text(encoding='utf-8'))
-        cached=not pending.exists() and old['identity']==signature and all(file_stat(project/k)==v for k,v in old['outputs'].items())
+        cached=not force and not pending.exists() and old['identity']==signature and all(file_stat(project/k)==v for k,v in old['outputs'].items())
         if cached:
             for name in outputs:
                 if name.endswith('.pt'):
@@ -214,10 +211,10 @@ def run_stage(project,stage,result,emit,force=False):
                     elif stage!='exmr' and (len(value)!=n or not torch.isfinite(value).all()):cached=False
     except (OSError,ValueError,KeyError,RuntimeError,EOFError):cached=False
     if cached:
-        emit('complete',stage=stage,cached=True,elapsed=0,output=str(project/outputs[0]));return
+        complete_stage(project,stage,project/outputs[0],old.get('elapsed',0),True,emit);return
     if not torch.cuda.is_available():raise RuntimeError('ExMR requires a supported NVIDIA CUDA GPU. Check System in Help for details.')
-    started=time.monotonic();admission(stage,n,psutil.virtual_memory().available,torch.cuda.mem_get_info()[0])
-    free,total=torch.cuda.mem_get_info();torch.cuda.set_per_process_memory_fraction(min(.9,(free-2*1024**3)/total))
+    started=time.monotonic()
+    free,total=torch.cuda.mem_get_info();torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
     torch.set_num_threads(4);cv2.setNumThreads(2);torch.manual_seed(0);np.random.seed(0)
     torch.cuda.reset_peak_memory_stats();atomic_json(pending,dict(identity=signature))
     # Invalidate the old source generation as soon as new observations begin.
@@ -274,4 +271,4 @@ def run_stage(project,stage,result,emit,force=False):
         elapsed=time.monotonic()-started,ground_snap=False,native_precision=True))
     pending.unlink(missing_ok=True)
     if stage=='exmr':(project/'exmr_pending.json').unlink(missing_ok=True)
-    emit('complete',stage=stage,cached=False,elapsed=time.monotonic()-started,output=str(project/outputs[0]))
+    complete_stage(project,stage,project/outputs[0],time.monotonic()-started,False,emit)

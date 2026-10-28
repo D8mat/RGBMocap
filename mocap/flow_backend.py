@@ -8,6 +8,7 @@ import gc, hashlib, json, math, os, sys, uuid
 import numpy as np
 from .paths import ROOT, UPSTREAM
 from .storage import atomic_json, sha256
+from .compute_policy import gpu_memory_fraction
 from .result_artifacts import file_stat
 
 VERSION=1
@@ -38,27 +39,11 @@ def camera_interval(frames,requested=0):
     return requested or max(1,math.ceil((frames-1)/127))
 
 
-def admission(stage,frames,available_ram,free_vram=None,interval=1):
-    gib=1024**3
+def validate_length(frames):
+    """Retain the pinned model's real context limit, without memory estimates."""
     if frames<1:raise ValueError('The motion clip is empty')
-    # Preserve whole-sequence context and the pinned 5000-frame RoPE limit.
     if frames>MAX_FRAMES:
         raise ValueError(f'FlowHMR supports up to {MAX_FRAMES:,} frames ({MAX_FRAMES/30:.1f} seconds at 30 fps). Trim the timeline clip; full temporal context is retained.')
-    if stage=='flow_camera' and interval==-1:
-        if available_ram<5*gib:raise MemoryError('Static camera needs available RAM including a desktop reserve')
-        return
-    samples=min(frames,math.ceil((frames-1)/interval)+1) if interval>0 else frames
-    # FP32 MATH attention holds three score-size buffers over both N-frame
-    # branches, with 16 heads. Measured at 4191 and 5000 frames on the pinned
-    # runtime; includes model/intermediate headroom, without changing attention.
-    motion_gpu=max(4*gib,2*gib+3*16*4*(2*frames)**2)
-    required=(7+.0003*samples*samples)*gib if stage=='flow_camera' else 5*gib if stage=='flow_features' else motion_gpu
-    ram={'flow_camera':26,'flow_features':15,'flowhmr':12,'flow_export':3}.get(stage,3)*gib
-    if stage=='flowhmr':ram=max(ram,motion_gpu+7*gib)
-    if available_ram<ram+4*gib:
-        raise MemoryError(f'FlowHMR {stage} needs about {(ram/gib+4):.1f} GiB of available RAM including a desktop reserve. Close other apps or use a shorter clip.')
-    if free_vram is not None and free_vram<required+3*gib:
-        raise MemoryError(f'FlowHMR needs about {(required+3*gib)/gib:.1f} GiB free GPU memory for this stage and the desktop. Use Automatic camera sampling, close GPU apps, or trim the clip.')
 
 
 def activate():
@@ -310,12 +295,8 @@ def run_stage(project,stage,result,emit,force=False):
     if stage!='flow_export' and not static:
         if not torch.cuda.is_available():raise RuntimeError('FlowHMR requires a supported NVIDIA CUDA GPU.')
         free,total=torch.cuda.mem_get_info()
-    admission(stage,n,psutil.virtual_memory().available,free,interval)
-    if stage=='flow_features':
-        # Fail before lengthy SAM extraction when the following full-context
-        # generation cannot fit; camera/SAM sampling never reduces motion frames.
-        admission('flowhmr',n,psutil.virtual_memory().available,free,interval)
-    if free is not None:torch.cuda.set_per_process_memory_fraction(max(.01,min(.95,(free-3*1024**3)/total)))
+    validate_length(n)
+    if free is not None:torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
     if not static:activate()
     atomic_json(pending,dict(stage=stage,started=time.time()))
     if stage=='flow_camera':output=camera(project,emit,force=force)
@@ -356,7 +337,7 @@ def run_post(project,stage,result,emit,force=False):
     if kind not in ('initial','corrected_initial'):raise ValueError('FlowHMR supports original or corrected original motion only')
     absent=missing('flow_export')
     if absent:raise ValueError('Import the SMPL-H neutral body model in FlowHMR Model Manager.')
-    admission('flow_export',json.loads((project/'project.json').read_text(encoding='utf-8'))['frames'],psutil.virtual_memory().available)
+    validate_length(json.loads((project/'project.json').read_text(encoding='utf-8'))['frames'])
     activate()
     from .flow_placement import ensure_group
     ensure_group(project)

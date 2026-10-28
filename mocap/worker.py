@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .paths import ROOT
 from .storage import atomic_json, sha256
+from .resource_cache import code_hash
 from .motion_tools import MOTION_TOOLS, resolve_motion_result, RESULTS, result_sources, result_options, result_is_current, base_result, body_result, has_handflow, require_supported_project, UnsupportedMotionTool
 
 PREFIX = "@@MOCAP@@"
@@ -95,7 +96,7 @@ def fingerprint(stage, project, result="auto", _worker_hash=None, _legacy_routin
         'compute_policy.py':'a5953e6dfe424c30c2992e5e84c3c78e2dc4217c3658f8a7ae622bafdefe484b'}
     if stage=='export':
         sources.extend(Path(__file__).with_name(name) for name in ('mixamo_rig.py','mixamo_data.py','mixamo_native.py','bvh_bind.py','source_pose_fit.py'))
-    identity = {"stage": stage, "code": [(_worker_hash if _worker_hash and p == Path(__file__) else predecessor[p.name] if _legacy_routing and p.name in predecessor else non_generator[p.name] if stage!='export' and p.name in non_generator else sha256(p)) for p in sources], "inputs": [], "models": []}
+    identity = {"stage": stage, "code": [(_worker_hash if _worker_hash and p == Path(__file__) else predecessor[p.name] if _legacy_routing and p.name in predecessor else non_generator[p.name] if stage!='export' and p.name in non_generator else code_hash(p)) for p in sources], "inputs": [], "models": []}
     if stage in ('gvhmr','features'):
         import torch
         identity['runtime']=[str(torch.__version__),torch.version.cuda,torch.backends.cudnn.version(),
@@ -150,7 +151,7 @@ def main() -> int:
     parser.add_argument('--correction-mode',choices=['flat','multi_level'],default='flat')
     parser.add_argument('--pelvis-offset',type=float,default=0.)
     args = parser.parse_args()
-    from .compute_policy import configure_worker_cpu,resource_error,gpu_reserve,GIB
+    from .compute_policy import configure_worker_cpu,gpu_memory_fraction,GIB
     threads=configure_worker_cpu(args.stage)
     os.environ['RGB_MOCAP_STAGE']=args.stage
     if args.project:
@@ -256,10 +257,8 @@ def main() -> int:
             if args.stage=='people':
                 if not torch.cuda.is_available():raise RuntimeError('A supported NVIDIA CUDA GPU is required for person detection.')
                 free,total=torch.cuda.mem_get_info()
-            problem=resource_error('track',manifest['frames'],memory.available,memory.total,free,total)
-            if problem:raise RuntimeError(problem)
             if free is not None:
-                torch.cuda.set_per_process_memory_fraction(max(.01,min(.95,(free-gpu_reserve(total))/total)))
+                torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
             from .person_tracking import discover,prepare_person
             if args.stage=='people':
                 output=discover(project,emit)
@@ -328,10 +327,8 @@ def main() -> int:
                 raise RuntimeError('A supported NVIDIA CUDA GPU is required for this model. Check System in Help for details.')
             free,total=torch.cuda.mem_get_info()
         memory=psutil.virtual_memory()
-        problem=resource_error(args.stage,manifest.get('frames',0),memory.available,memory.total,free,total if free is not None else None)
-        if problem:raise RuntimeError(problem)
         if free is not None:
-            torch.cuda.set_per_process_memory_fraction(max(.01,min(.95,(free-gpu_reserve(total))/total)))
+            torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
         plan=dict(stage=args.stage,threads=threads,mode=os.environ.get('RGB_MOCAP_COMPUTE_MODE','auto'),
              frames=manifest.get('frames',0),available_ram_gib=round(memory.available/GIB,2),
              free_vram_gib=round(free/GIB,2) if free is not None else None)
