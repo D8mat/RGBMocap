@@ -75,9 +75,10 @@ class Sapiens2Keypoints:
 
         # built on the GPU: initializing the weights on the CPU takes ~8 s, and the checkpoint
         # replaces them anyway
-        with torch.device(device):
+        # Building and deserializing models can result in double usage of f32 VRam, which is not user-friendly for low memory users. 
+        with torch.device("cpu"):
             model = MODELS.build(copy.deepcopy(MODEL_CFG))
-        model.load_state_dict(load_file(str(checkpoint), device=device))
+        model.load_state_dict(load_file(str(checkpoint), device="cpu"))
         model.data_preprocessor = MODELS.build(copy.deepcopy(DATA_PREPROCESSOR_CFG))
         model.to(device).eval()
         model.backbone.half()
