@@ -25,8 +25,8 @@ https://github.com/user-attachments/assets/1759f1bf-a0d0-409f-84d8-dde9409cfe6f
    in a writable folder where you want to install RGB MoCap, then clone the repository:
 
    ```cmd
-   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
-   cd toyxyz_RGBMocap
+   git clone https://github.com/D8mat/RGBMocap.git
+   cd RGBMocap
    ```
 
 2. Download and install the required runtimes, Blender and FFmpeg:
