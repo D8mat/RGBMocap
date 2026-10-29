@@ -1126,8 +1126,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 96943,
-      "sha256": "c6b12bc8e39e51708cd9b735d78f18370a1d8ae2cbc0430860119ef75d54d952"
+      "bytes": 96982,
+      "sha256": "5d512efa531bd6d5a4fe0ad608911ceeaf26b416b23d85e3781e37b56ce2ff2f"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1296,8 +1296,8 @@
     },
     {
       "path": "mocap/project_workspace_ui.py",
-      "bytes": 8736,
-      "sha256": "a49d009da0adcfb911936526db1769270b76692ee6cf6f0dc737782841f1263f"
+      "bytes": 8749,
+      "sha256": "889e9099732ae0c2c03a3b00ac9c30bc658083b5f5cda5f858c6f87e2fe87de6"
     },
     {
       "path": "mocap/resource_cache.py",

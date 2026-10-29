@@ -121,7 +121,7 @@ class ModelWorkspace:
             workspace.set_active(root,model,target if (target/'project.json').is_file() else None,view)
             self._workspace_pending_view=view
             self.restore_workspace_view(view)
-            self.setWindowTitle('RGB MoCap | '+root.name)
+            self.setWindowTitle('RGB MoCap Alien Studio | '+root.name)
             self.update_readiness()
             return True
         except (OSError,ValueError,KeyError) as error:

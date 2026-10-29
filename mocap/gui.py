@@ -324,7 +324,7 @@ from .character_ui import CharacterWorkspace
 class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
-        self.setWindowTitle("RGB MoCap | Motion Workspace")
+        self.setWindowTitle("RGB MoCap Alien Studio | Motion Workspace")
         self.resize(1440, 880)
         self.setMinimumSize(1100, 700)
         self.video_path = None
@@ -611,7 +611,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             self.reset_people()
             self.motion_view.auto_fit = True
             self.video_path, self.project, self.info = path, None, None
-            self.setWindowTitle('RGB MoCap | Motion Workspace')
+            self.setWindowTitle('RGB MoCap Alien Studio | Motion Workspace')
             self.flow_sampling.setCurrentIndex(self.flow_sampling.findData(0))
             self.fast_sam.setChecked(True)
             self.exmr_camera.setCurrentIndex(0)
@@ -693,7 +693,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         self.workspace_project_loaded(project,manifest)
         from .project_storage import storage_root
         saved_root=storage_root(project,manifest)
-        self.setWindowTitle('RGB MoCap | '+(saved_root.name if saved_root else 'Motion Workspace'))
+        self.setWindowTitle('RGB MoCap Alien Studio | '+(saved_root.name if saved_root else 'Motion Workspace'))
         pipeline = manifest.get("pipeline", {})
         from .flow_camera import saved_interval
         from .flow_sam import saved_fast_sam
