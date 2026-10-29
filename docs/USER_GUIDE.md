@@ -174,7 +174,7 @@ need an offline copy; keep a backup of manually acquired restricted models.
 4. For several people, use **Find person** and check who to reconstruct.
 5. Click **Reconstruct 3D**. Review the video, mesh and **Bone Overlay** together.
 6. Adjust correction settings or contact timings, then click **Apply Correction**.
-7. **File → Export FBX** saves the displayed, applied animation.
+7. **File → Export Motion** saves the displayed, applied animation.
 
 To animate a character, follow [Character retargeting](#character-retargeting),
 then use **Export Character...** for FBX or, for PMX, VMD.
@@ -401,7 +401,7 @@ depth and contacts between people are estimates; collision avoidance is not prov
 
 ## FBX and Blender
 
-**File → Export FBX** follows the displayed, applied result. Each checked
+**File → Export Motion** follows the displayed, applied result. Each checked
 person/take gets a separate named file and rig; duplicate filenames get suffixes.
 People exports use the viewport's shared placement. Takes retain their own frame
 counts; align their start times when combining different source intervals.
@@ -409,8 +409,15 @@ counts; align their start times when combining different source intervals.
 Source-person exports use a 52-bone hierarchy with **Hips** as root and plain
 anatomical names. It retains
 actor lengths, SMPL-neutral curved limbs/feet, calibrated rest axes and straight
-open fingers. FBX stores rest transforms separately; no T-pose frame is inserted.
-BVH is internal compatibility data only.
+open fingers. FBX stores rest transforms separately; inserting a T-pose frame is optional.
+Export Motion offers FBX, BVH for 3ds Max Biped, and generic BVH for Blender.
+The Biped profile uses Character Studio bone names and uniform ZXY rotation
+channels; direct 3ds Max import has not yet been verified. BVH uses metres and Y-up.
+Enable Insert T-pose at frame 0 to prepend one reference frame without removing
+any original animation. Importers may number the first frame as 1. Save opens
+the output file picker (or a folder picker for multiple takes), and completion
+shows the saved paths. If motion is unavailable, the export dialog explains
+whether to select a take, Apply Correction, or Prepare Preview.
 
 **Export Character...** preserves the imported target character's own hierarchy
 and original rest pose; it does not replace them with the 52-bone source rig.
