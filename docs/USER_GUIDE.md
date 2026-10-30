@@ -436,3 +436,22 @@ See [Build from source](BUILD.md) for environment setup, editing and release bui
 Original RGB MoCap code/documentation uses the [MIT License](../LICENSE).
 Third-party code, derived modifications, weights and body data keep their own
 terms; see [Third-party notices](../THIRD_PARTY_NOTICES.md).
+
+### Blender project with camera video
+
+Choose **File > Export Motion > Blender project + video (.blend)**, then Save
+and choose a destination filename. Export creates a new subfolder containing
+the `.blend` project, `video.mp4`, and a short README. Existing folders are kept;
+a numbered folder is created when needed. Each selected person/take gets its
+own bundle. Copy the entire subfolder to another computer.
+
+The project contains the 52-bone animation and a camera with the processed
+take's video as its background. Press Numpad 0 for camera view and Space to
+play. The video uses a relative path. Timing uses the processed clip's frame
+rate; optional T-pose adds frame 0 and shifts video and motion to frame 1.
+The camera uses the stored reference pose and intrinsics; this export does not
+reconstruct a moving camera. Background video is visible in the viewport,
+not in renders. Source character mesh and audio are not included.
+
+Export requires the installed Blender runtime and a current source preview.
+Open the resulting project in Blender 4.5 or newer.

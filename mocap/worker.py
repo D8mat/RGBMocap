@@ -130,7 +130,7 @@ def emit(kind: str, **data) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=["diagnose", "prepare", "download", "import_model", "mesh", "rig", "save_fbx", "copy_bvh", "track", "pva", "features", "gvhmr", "refine", "footmr", "handflow", "correct", "export", "people", "person", 'flow_camera','flow_features','flowhmr','flow_export','exmr_preprocess','exmr_features','exmr'])
+    parser.add_argument("stage", choices=["diagnose", "prepare", "download", "import_model", "mesh", "rig", "save_fbx", "save_blend", "copy_bvh", "track", "pva", "features", "gvhmr", "refine", "footmr", "handflow", "correct", "export", "people", "person", 'flow_camera','flow_features','flowhmr','flow_export','exmr_preprocess','exmr_features','exmr'])
     parser.add_argument("--project", type=Path)
     parser.add_argument("--video", type=Path)
     parser.add_argument("--start", type=float, default=0)
@@ -194,6 +194,11 @@ def main() -> int:
             from .models import import_model_file
             result=import_model_file(args.model,args.video)
             emit('downloaded',path=str(result),model=args.model)
+            return 0
+        if args.stage=='save_blend':
+            from .blend_export import run
+            count=run(args.output,emit)
+            emit('complete',stage='save_blend',files=count,elapsed=time.monotonic()-started)
             return 0
         if args.stage=='copy_bvh':
             from .export_copy import run

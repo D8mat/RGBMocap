@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-10-29",
+  "date": "2026-10-30",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -86,8 +86,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 12375,
-      "sha256": "607fd407c37350324464a615b85f82b0d76a75699e124d33ff0009955004d638"
+      "bytes": 12408,
+      "sha256": "d41ae5a7d4e617c712970a107c9bd767b4f08a0c9e43013310a4d2c37debce0c"
     },
     {
       "path": "docs/BUILD.md",
@@ -96,8 +96,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 29065,
-      "sha256": "df87a034f3bd287de155deefba0213c93b6c527ad72f9fd9b8626226ee033534"
+      "bytes": 30149,
+      "sha256": "3e7fccc7e5b7668307efc946aa0b9bd8fffa16bff3f8a52ca2ac5899e2fdbf75"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -915,6 +915,16 @@
       "sha256": "4ae8d95bf6c808217dc79b963331f5dd2b853434795e8a335bfb6229d460a298"
     },
     {
+      "path": "mocap/blend_export.py",
+      "bytes": 6910,
+      "sha256": "bfa8f628dad656a889a3f77ae43fad786576014513e9e3bcb1dc0e77b55ce7cb"
+    },
+    {
+      "path": "mocap/blend_export_scene.py",
+      "bytes": 3012,
+      "sha256": "dd72ffe185d9397af67e4ccbe7cf40fead764939bc1e98d01d89c5233f55602e"
+    },
+    {
       "path": "mocap/bone_gl.py",
       "bytes": 1193,
       "sha256": "d9db5db73b7b7409e929e4d3f27b7b284b4708b44389ee244d5c238bd703bec9"
@@ -1126,8 +1136,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 96982,
-      "sha256": "5d512efa531bd6d5a4fe0ad608911ceeaf26b416b23d85e3781e37b56ce2ff2f"
+      "bytes": 98056,
+      "sha256": "febc0d165594a8e5d496b85aae8c6f6bbe5d71782be45eb0f6f9344b810198be"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1476,8 +1486,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 2666,
-      "sha256": "7b4014aecfb677a09099cbac61cb8ff5b65381e0ad0645fe9a38619cc3c7e57d"
+      "bytes": 3207,
+      "sha256": "5315e3ccb15d3c911bfb89708431a1d3d39fb4f418e065082022318dae0775a8"
     },
     {
       "path": "mocap/source_pose_fit.py",
@@ -1556,8 +1566,8 @@
     },
     {
       "path": "mocap/worker.py",
-      "bytes": 26537,
-      "sha256": "cc57dff7d2f90e0f5b61acfd18611c5847b3d3c4ac0f34d354395ce46597dbc6"
+      "bytes": 26789,
+      "sha256": "02154733ab5403500813c8ba7c6090618180536279240f2bdc6f357a3d84cecf"
     },
     {
       "path": "mocap/worker_progress.py",

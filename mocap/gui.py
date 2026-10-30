@@ -30,6 +30,7 @@ STAGES["mesh"] = "Prepare SMPL-X Mesh"
 STAGES['rig']='Prepare Bone Preview'
 STAGES['save_fbx']='Save FBX'
 STAGES['copy_bvh']='Save BVH'
+STAGES['save_blend']='Save Blender Project'
 STAGES["footmr"] = "Refine Ankles / FootMR"
 STAGES["handflow"] = "Infer Fingers / HandFlow"
 STAGES['correct'] = 'Motion Correction'
@@ -1146,7 +1147,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
                                    (f' · Elapsed {duration(elapsed)}' if elapsed is not None else ''))
             self.progress.setRange(0, 100)
             self.progress.setValue(0 if self.failed or self.cancelled else 100)
-            if self.current_stage in ('save_fbx','copy_bvh'):
+            if self.current_stage in ('save_fbx','copy_bvh','save_blend'):
                 # Saving a derived file does not replace scene/preview data.
                 # Reloading the people scene here moves a following camera.
                 if not self.failed and not self.cancelled:
@@ -1620,6 +1621,15 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         from .storage import atomic_json
         request=self.project/('.fbx-export-'+uuid.uuid4().hex+'.json')
         rows=[]
+        if files and files[0][3].suffix.lower()=='.blend':
+            bundles=[];used=set()
+            for project,kind,source,target in files:
+                folder=target.with_suffix('');number=2
+                while folder.exists() or str(folder).casefold() in used:
+                    folder=target.parent/(target.stem+'_'+str(number));number+=1
+                used.add(str(folder).casefold())
+                bundles.append((project,kind,source,folder/target.name))
+            files=bundles
         try:
             for project,kind,source,target in files:
                 row=dict(project=str(project),kind=kind,source=str(source),target=str(target))
@@ -1635,7 +1645,9 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         atomic_json(request,rows)
         self._motion_export_targets=[str(target) for _,_,_,target in files]
         self._fbx_export_cleanup=(request,[target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial') for _,_,_,target in files])
-        stage='copy_bvh' if files[0][3].suffix.lower()=='.bvh' else 'save_fbx'
+        stage={'.blend':'save_blend','.bvh':'copy_bvh'}.get(files[0][3].suffix.lower(),'save_fbx')
+        if stage=='save_blend':
+            self._fbx_export_cleanup=(request,[target.parent.with_name('.'+target.parent.name+'.rgbmocap-'+request.stem+'.partial') for _,_,_,target in files])
         self.start_jobs([(stage,['--project',str(self.project),'--output',str(request)])])
 
     def cleanup_fbx_export(self):
@@ -1643,7 +1655,11 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         if pending:
             request,paths=pending
             for path in [request,*paths]:
-                try:path.unlink(missing_ok=True)
+                try:
+                    if path.is_dir() and path.resolve().parent==path.parent.resolve() and path.name.startswith('.') and path.name.endswith('.rgbmocap-'+request.stem+'.partial'):
+                        import shutil
+                        shutil.rmtree(path)
+                    else:path.unlink(missing_ok=True)
                 except OSError:pass
             self._fbx_export_cleanup=None
 
