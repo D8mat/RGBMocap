@@ -19,6 +19,15 @@ https://github.com/user-attachments/assets/1759f1bf-a0d0-409f-84d8-dde9409cfe6f
 
 [Download original sample](docs/samples/character-retargeting.mp4)
 
+### Camera view
+
+Preview the animated skeleton over the source video using the export camera,
+with optional background rotation refinement.
+
+[![Camera view preview](docs/images/camera-view-preview.jpg)](https://github.com/D8mat/RGBMocap/blob/main/docs/samples/camera-view.mp4)
+
+[Watch camera view demo](https://github.com/D8mat/RGBMocap/blob/main/docs/samples/camera-view.mp4) · [Download original sample](docs/samples/camera-view.mp4)
+
 ## Install and run
 
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**

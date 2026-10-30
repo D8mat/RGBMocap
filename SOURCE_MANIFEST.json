@@ -11,8 +11,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 1779,
-      "sha256": "17d30ce547db81fd30f41c73cf78e98cf1599f77673d3eff13a0afdeab82a51f"
+      "bytes": 1813,
+      "sha256": "102fa070d896f321296fd294a99e6200c0a8b2882ac3659c8a3d97268809600e"
     },
     {
       "path": "AGENTS.md",
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3452,
-      "sha256": "5599beb4883f24d933a5dae7fe410eb22e040d05c249855af464a9bfe3bf55cb"
+      "bytes": 3899,
+      "sha256": "5a96b669a2aae83177a910a6245e1ada8a954d578d06b4908a644e3fb64be4bb"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -110,9 +110,19 @@
       "sha256": "b665941c63abce970922b8ab2c4e10fa37643baf6b0b8de6079285303850ef38"
     },
     {
+      "path": "docs/images/camera-view-preview.jpg",
+      "bytes": 56808,
+      "sha256": "2dda8c409d4c42d143b8505317a5062940ab942babe9743e800965cc4a83b922"
+    },
+    {
       "path": "docs/images/rgbmocap-workspace.png",
       "bytes": 775295,
       "sha256": "b6ff1d220905d56ba625e3e5243621a3d9d34a1dd3add2373402d87fd0301aea"
+    },
+    {
+      "path": "docs/samples/camera-view.mp4",
+      "bytes": 24571079,
+      "sha256": "7596f58f97d5eacd8093ab47175c184f3c1ddf05e1df364e66264eba910d42b8"
     },
     {
       "path": "docs/samples/character-retargeting.jpg",
@@ -891,8 +901,8 @@
     },
     {
       "path": "installer/source-resources.json",
-      "bytes": 3925,
-      "sha256": "35143421169b9e6e4c4e7955376038313577be417d45477bb965af8bacc33cfb"
+      "bytes": 4097,
+      "sha256": "496b3880e6d0fa8020a30a044560c95eafaf7963558b02602d5edd688e689817"
     },
     {
       "path": "installer/verify_runtime.py",
