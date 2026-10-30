@@ -1,3 +1,5 @@
+Edited for custom use. Original by: [https://github.com/toyxyz/toyxyz_RGBMocap](https://github.com/toyxyz/toyxyz_RGBMocap)
+
 # RGB MoCap
 
 ![RGB MoCap workspace showing video tracking and a 3D motion preview](docs/images/rgbmocap-workspace.png)
