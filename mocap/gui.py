@@ -458,6 +458,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         self.exmr_smoothing.setEnabled(not self.busy)
         self.analyze_button.setVisible(tool.key=='gvhmr')
         self.sync_correction_floor_preview()
+        if hasattr(self,'camera_preview'):self.camera_preview.check()
 
     def sync_correction_floor_preview(self):
         self.motion_view.correction_floor_applicable=self.correction_mode.currentData()=='flat'
@@ -791,6 +792,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         # 3D and overlays advance only when the corresponding decoded image is ready.
         self.motion_view.index = index
         self.motion_view.scene_time=self.source_offset+index/(self.info['fps'] if self.info else 30)
+        if hasattr(self,'camera_preview'):self.camera_preview.seek()
         self.motion_view.update()
         if self.timer.isActive():
             now = time.perf_counter()
@@ -853,6 +855,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
 
     def shutdown_preview(self):
         self.stop_playback()
+        if hasattr(self,'camera_preview'):self.camera_preview.close()
         if hasattr(self,'character_loader'):
             self.character_loader.close();self.character_assets.clear()
         self.scene_loader.stop()
@@ -1580,6 +1583,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             self.export_character(self.selected_character());return
         from .source_export_dialog import SourceExportDialog
         dialog=SourceExportDialog(self)
+        self.camera_preview.apply_export(dialog)
         if dialog.exec()!=QDialog.Accepted:return
         self._source_export_options=dialog.options()
         if self.export_checked_people():return
@@ -1636,6 +1640,10 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
                 row['rig_name']=self.export_person_name(project)
                 row['prepend_tpose']=getattr(self,'_source_export_options',{}).get('prepend_tpose',False)
                 row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
+                row['animate_camera']=getattr(self,'_source_export_options',{}).get('animate_camera',True)
+                row['camera_translation']=getattr(self,'_source_export_options',{}).get('camera_translation',False)
+                row['background_refine']=getattr(self,'_source_export_options',{}).get('background_refine',False)
+                row['camera_translation_scale']=getattr(self,'_source_export_options',{}).get('camera_translation_scale',1.0)
                 if self.people_root is not None:
                     from .scene_export import context
                     row['scene']=context(self.people_root,project)

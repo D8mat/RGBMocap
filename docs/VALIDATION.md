@@ -175,3 +175,24 @@ These checks describe the recorded examples, not a guarantee for every video,
 character or computer. Model weights and registered body data remain separate and
 subject to their providers' terms. Review the applicable third-party notices and
 corresponding source/build requirements before redistributing binaries.
+
+
+## Local background camera refinement (2026-10-30)
+
+- A 354-frame FlowHMR take accepted 40 of 59 rotation-fit samples. Across accepted
+  samples the median held-out background error changed from 4.52 to 1.22 pixels
+  at 960-pixel analysis width. Rejected samples retain the original rotation;
+  these numbers do not describe every interpolated frame or physical accuracy.
+- Synthetic tests covered rotation recovery with mismatches, no-change/static
+  rejection, insufficient matches and scale/parallax rejection. Real-take checks
+  confirmed unchanged camera centers and initial pose, proper rotations and
+  agreement of preview/export coordinates with experimental translation enabled.
+- An actual Blender bundle was reopened and all 354 camera matrices matched;
+  the optional initial T-pose held the first camera pose and video remained relative.
+- Three offscreen worker/decode/seek/close cycles passed with background fitting
+  enabled. The largest sampled event-loop gap was 141 ms including opening,
+  grabbing and cleanup, so this is not a real-time playback performance guarantee.
+  Main-window construction and empty-project toggling also passed.
+- No model inference, metric camera translation reconstruction, full 6DoF solve
+  or validation across other videos was performed. Test artifacts remain outside
+  the source checkout. Existing model and motion files were not regenerated.

@@ -95,14 +95,19 @@
       "sha256": "43d8d7f477a2f9eeb76f8a3c9f5bbfb54ce22e95b903bad568566bd6bd980944"
     },
     {
+      "path": "docs/UPSTREAM_PORTS.md",
+      "bytes": 1190,
+      "sha256": "b7f10ca3cfdc2b8378f677bf78e1a32ad9600ac41060a1eece1956c652fbc9f2"
+    },
+    {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 30149,
-      "sha256": "3e7fccc7e5b7668307efc946aa0b9bd8fffa16bff3f8a52ca2ac5899e2fdbf75"
+      "bytes": 33635,
+      "sha256": "60390aea97445b0b8a8a3800a161f560c6ff2611be1387eab477aedd1e01ab9c"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 12060,
-      "sha256": "a14e63734693e32d8af7eb7d5e9263c2976b133d18de787a184c3a1941983f26"
+      "bytes": 13479,
+      "sha256": "b665941c63abce970922b8ab2c4e10fa37643baf6b0b8de6079285303850ef38"
     },
     {
       "path": "docs/images/rgbmocap-workspace.png",
@@ -915,14 +920,19 @@
       "sha256": "4ae8d95bf6c808217dc79b963331f5dd2b853434795e8a335bfb6229d460a298"
     },
     {
+      "path": "mocap/blend_camera_track.py",
+      "bytes": 4194,
+      "sha256": "f2f210c7c51aa3357f3baccf430dc279c7a566dd4798c40c56d155d62b523e1a"
+    },
+    {
       "path": "mocap/blend_export.py",
-      "bytes": 6910,
-      "sha256": "bfa8f628dad656a889a3f77ae43fad786576014513e9e3bcb1dc0e77b55ce7cb"
+      "bytes": 9060,
+      "sha256": "fcc80d9ddfac749bebf6eb8a15f3b0dc5d4783e3a079ba8f1e6a3535c00bd5e8"
     },
     {
       "path": "mocap/blend_export_scene.py",
-      "bytes": 3012,
-      "sha256": "dd72ffe185d9397af67e4ccbe7cf40fead764939bc1e98d01d89c5233f55602e"
+      "bytes": 4032,
+      "sha256": "8fa84fcf77d3d7f6dc32d9ea62ad3e4555aa9b08687aa657516e2c16b370877f"
     },
     {
       "path": "mocap/bone_gl.py",
@@ -953,6 +963,26 @@
       "path": "mocap/cache_compat.py",
       "bytes": 2926,
       "sha256": "5735ce813903ef8af41cf5badec055479d4c788912f7735e2d4d63e2917dd701"
+    },
+    {
+      "path": "mocap/camera_alignment.py",
+      "bytes": 1955,
+      "sha256": "07103b7fb060244308a9e213b2f8e7fa06227a8b6bdf07a4aeaca601bed9dcea"
+    },
+    {
+      "path": "mocap/camera_background.py",
+      "bytes": 7666,
+      "sha256": "079938e18b72ae76328fe1d5f44c5593ffa9b70b2d1653cfeb5cab81a7c8ff27"
+    },
+    {
+      "path": "mocap/camera_preview_data.py",
+      "bytes": 3151,
+      "sha256": "4fc6c5e69924954465cea9f600c96ff18f0e1d265b8e4cf294329a7354edbc5b"
+    },
+    {
+      "path": "mocap/camera_preview_ui.py",
+      "bytes": 8427,
+      "sha256": "a812a8974f16d40752efd7834d49900a40e021b30224c1d68b98c24688f57fbd"
     },
     {
       "path": "mocap/capture.py",
@@ -1136,8 +1166,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 98056,
-      "sha256": "febc0d165594a8e5d496b85aae8c6f6bbe5d71782be45eb0f6f9344b810198be"
+      "bytes": 98785,
+      "sha256": "f1967b5544c10b59c1f056c0874817d3ffb273c9668c11f521e8dee59973c497"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1486,8 +1516,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 3207,
-      "sha256": "5315e3ccb15d3c911bfb89708431a1d3d39fb4f418e065082022318dae0775a8"
+      "bytes": 5931,
+      "sha256": "3c8d49df1a27acc3ccf2451f0006d77e34469f23d40f42668deee681f9e6d8ba"
     },
     {
       "path": "mocap/source_pose_fit.py",
@@ -1566,8 +1596,8 @@
     },
     {
       "path": "mocap/worker.py",
-      "bytes": 26789,
-      "sha256": "02154733ab5403500813c8ba7c6090618180536279240f2bdc6f357a3d84cecf"
+      "bytes": 27086,
+      "sha256": "51ba15e85239c791e8daa4489616672e9510a5c5e0850725acd9afe31d9362b6"
     },
     {
       "path": "mocap/worker_progress.py",
@@ -1576,8 +1606,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 33735,
-      "sha256": "a86c93cc13334e6a03c091d9088b6a88bee8b0fa778645f0dd7e9bef68155626"
+      "bytes": 33955,
+      "sha256": "6d6d1553f1799d904da27cc8d9ba3a67fa68dd165dd953c573db0b1e3431417e"
     },
     {
       "path": "native_compat/LICENSE",
@@ -5216,8 +5246,8 @@
     },
     {
       "path": "third_party/FlowHMR/flowhmr/utils/runtime_vggt_camera.py",
-      "bytes": 14558,
-      "sha256": "a0ef0f3bf6d4df8554dd8771334309d79f90ecf02f128e7ef521fe148408df71"
+      "bytes": 15181,
+      "sha256": "8902c5a3b8af0e9f6df262e717e796950cbaa2f908bd1ed1244ee2254db2c894"
     },
     {
       "path": "third_party/FlowHMR/flowhmr/utils/runtime_video_processing.py",

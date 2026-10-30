@@ -449,9 +449,65 @@ The project contains the 52-bone animation and a camera with the processed
 take's video as its background. Press Numpad 0 for camera view and Space to
 play. The video uses a relative path. Timing uses the processed clip's frame
 rate; optional T-pose adds frame 0 and shifts video and motion to frame 1.
-The camera uses the stored reference pose and intrinsics; this export does not
-reconstruct a moving camera. Background video is visible in the viewport,
+Export saved camera tracking is enabled by default for ExMR and FlowHMR.
+It keys the existing camera rotation at every motion frame, using the
+committed world coordinates and intrinsics. T-pose also shifts the camera
+keys by one frame. ExMR has no estimated camera translation; FlowHMR
+monocular translation is not metrically aligned with the skeleton and is
+not exported by default. Camera position remains fixed unless the experimental option is enabled. Disable the option
+to retain the reference camera. Other model pipelines retain the reference
+camera and record this in the bundle README. No new tracking is run. Background video is visible in the viewport,
 not in renders. Source character mesh and audio are not included.
 
 Export requires the installed Blender runtime and a current source preview.
 Open the resulting project in Blender 4.5 or newer.
+
+
+For standalone FlowHMR Blender bundles, the camera is now aligned to that
+take's saved SAM pelvis anchors (the first up to 30 frames), instead of using
+only the shared scene's median camera height. This adjusts a constant camera
+offset, not the skeleton animation. It improves initial placement but does not
+guarantee image alignment of every joint or later frame. Each take has its own
+camera alignment; these independent bundles are not a shared-camera scene.
+`camera_report.json` records the anchor error before/after alignment.
+
+**Experimental camera translation — FlowHMR only** is off by default. Enable
+it with saved camera tracking and adjust **Translation scale** (0–100, default
+1). Zero reproduces rotation-only export. The native VO camera-center
+displacement is transformed into the source world and anchored at the start
+of the take. Scale 1 is not a calibrated metre scale; it may require tuning.
+ExMR does not provide this translation and cannot use this option.
+
+
+## Camera preview
+
+In the 3D Viewport header, switch Free View to Camera Preview to display the
+selected source take skeleton over its video using the Blender export camera.
+Playback and seeking follow the timeline. This mode shows bones, not the mesh.
+FlowHMR offers Camera move (experimental) and Scale; these become export dialog
+defaults while camera preview is active. Refresh camera rebuilds the preview
+from saved results without inference. Select Free View to return to orbiting.
+The optional export T-pose is not an extra frame on the application timeline.
+
+
+### Background camera rotation refinement (experimental)
+
+In Camera Preview, enable **Refine background rotation**. The matching Blender
+export option is **Refine camera rotation from background (experimental)**.
+It is off by default and requires saved camera tracking for export. The preview
+choice becomes the export dialog default. Processing runs outside the GUI.
+
+The refinement masks known person boxes, tracks background features against the
+first frame, rejects inconsistent tracks and fits a small rotation correction.
+It accepts a correction only when held-out background matches improve, cover
+enough of the image and pass residual and angle limits. Sampled corrections use
+quaternion interpolation; rejected samples return to the saved camera. This is
+an approximate rotation refinement, not a general 6DoF camera solve. Parallax,
+occlusion, scene cuts and insufficient visible background can prevent useful
+corrections. It does not calibrate metric translation or change bone animation,
+source predictions or stored camera files. The initial camera pose and the
+existing camera-center trajectory remain unchanged.
+
+Blender bundles include per-sample diagnostics in `camera_report.json`. Pixel
+errors use a 960-pixel-wide analysis image and describe background alignment,
+not motion-capture accuracy. Disable the option to use the saved camera alone.

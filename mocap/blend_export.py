@@ -54,11 +54,33 @@ def run(request,emit=lambda *a,**k:None):
             video=project/'input.mp4'
             info=json.loads((project/(kind+'_mixamo.json')).read_text(encoding='utf-8'))
             camera,camera_paths=camera_record(project)
+            track=None;track_stamps=[];camera_mode='Stored reference camera (tracking disabled)'
+            alignment=None;background_report=None
+            if camera.get('source_model')=='flowhmr':
+                from .camera_alignment import align
+                aligned,alignment_stamps,alignment=align(project,camera['world_to_camera'],kind)
+                camera={**camera,'world_to_camera':aligned.tolist()}
+                track_stamps+=alignment_stamps
+                camera_paths += [p for p,_ in alignment_stamps]
+            if row.get('animate_camera',True):
+                from .blend_camera_track import load
+                scale=float(row.get('camera_translation_scale',1.0)) if row.get('camera_translation',False) else 0.0
+                track,tracking_stamps,camera_mode=load(project,camera['world_to_camera'],info['frames'],translation_scale=scale)
+                track_stamps+=tracking_stamps
+                camera_paths += [p for p,_ in tracking_stamps]
+            elif row.get('camera_translation',False):raise ValueError('Enable camera tracking before experimental translation')
+            if row.get('background_refine',False):
+                if track is None or not row.get('animate_camera',True):raise ValueError('Background refinement requires saved camera tracking')
+                from .camera_background import refine
+                track,extra,background_report=refine(project,track,camera['K'])
+                track_stamps+=extra;camera_paths += [p for p,_ in extra]
+                camera_mode+='; '+background_report['reason']
             paths=[video,project/'project.json',project/(kind+'_mixamo.json'),Path(row['source']),*camera_paths]
             for key in ('asset_file','frames_file'):
                 if Path(info[key]).name!=info[key]:raise ValueError('Invalid committed file path')
                 paths.append(project/info[key])
             stamps=[file_stat(p) for p in paths]
+            if any(file_stat(p)!=stamp for p,stamp in track_stamps):raise ValueError('Camera changed during export')
             media=probe(video)
             if media['frames']!=info['frames'] or abs(media['fps']-info['fps'])>.001:
                 raise ValueError('Video and motion timing differ. Prepare the matching take first.')
@@ -76,6 +98,11 @@ def run(request,emit=lambda *a,**k:None):
             export_fbx(nested,lambda *a,**k:None)
             job=dict(target=target.name,frames=info['frames'],fps=info['fps'],width=media['width'],height=media['height'],
                      world_to_camera=w2c.tolist(),K=camera['K'],prepend_tpose=bool(row.get('prepend_tpose')))
+            job['camera_mode']=camera_mode
+            job['camera_alignment']=alignment
+            if track is not None:
+                np.save(temporary/'camera.npy',track@np.linalg.inv(transform))
+                job['camera_track']='camera.npy'
             (temporary/'blend-job.json').write_text(json.dumps(job),encoding='utf-8')
             emit('progress',stage='save_blend',current=i,total=len(rows),message='Building Blender project')
             command=[str(blender()),'-b','--factory-startup','--disable-autoexec','--threads','3',
@@ -85,8 +112,9 @@ def run(request,emit=lambda *a,**k:None):
             if result.returncode or not (temporary/target.name).is_file():
                 detail=(temporary/'blender.log').read_text(encoding='utf-8',errors='replace')[-3000:]
                 raise RuntimeError('Blender export failed: '+detail)
-            for name in ('animation.fbx','blend-job.json','blender.log'):(temporary/name).unlink()
-            (temporary/'README.txt').write_text('Open '+target.name+' in Blender 4.5 or newer.\nKeep video.mp4 beside the .blend file when moving this folder.\nNumpad 0: camera view. Space: playback. Camera background is a viewport reference, not a rendered image.\nThe camera uses the stored reference pose; no new camera tracking is performed.\n',encoding='utf-8')
+            (temporary/'camera_report.json').write_text(json.dumps(dict(camera_mode=camera_mode,alignment=alignment,background_refinement=background_report),indent=2),encoding='utf-8')
+            for name in ('animation.fbx','blend-job.json','blender.log','camera.npy'):(temporary/name).unlink(missing_ok=True)
+            (temporary/'README.txt').write_text('Open '+target.name+' in Blender 4.5 or newer.\nKeep video.mp4 beside the .blend file when moving this folder.\nNumpad 0: camera view. Space: playback. Camera background is a viewport reference, not a rendered image.\nCamera: '+camera_mode+'. See camera_report.json for refinement details.\n',encoding='utf-8')
         for _,_,project,kind,paths,stamps,scene in staged:
             if [file_stat(p) for p in paths]!=stamps or selected_export(project,kind)!=paths[3]:raise ValueError('Export inputs changed. Retry.')
             if scene is not None and context(scene['root'],project)!=scene:raise ValueError('Scene placement changed. Retry.')

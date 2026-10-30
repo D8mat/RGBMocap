@@ -23,6 +23,23 @@ scene.collection.objects.link(obj);scene.camera=obj
 world=Matrix(((1,0,0,0),(0,0,-1,0),(0,1,0,0),(0,0,0,1)))
 cv=Matrix.Diagonal((1,-1,-1,1))
 obj.matrix_world=world@Matrix(job['world_to_camera']).inverted()@cv
+if job.get('camera_track'):
+    import numpy as np
+    track=np.load(folder/job['camera_track'],allow_pickle=False,mmap_mode='r')
+    if track.shape!=(job['frames'],4,4):raise ValueError('Invalid camera track length')
+    obj.rotation_mode='QUATERNION';previous=None
+    for frame in range(job['frames']):
+        matrix=world@Matrix(track[frame].tolist()).inverted()@cv
+        location,rotation,scale=matrix.decompose()
+        if previous is not None and rotation.dot(previous)<0:rotation.negate()
+        obj.location=location;obj.rotation_quaternion=rotation;previous=rotation.copy()
+        obj.keyframe_insert(data_path='location',frame=frame+start)
+        obj.keyframe_insert(data_path='rotation_quaternion',frame=frame+start)
+        if frame==0 and start:
+            obj.keyframe_insert(data_path='location',frame=0)
+            obj.keyframe_insert(data_path='rotation_quaternion',frame=0)
+    for curve in obj.animation_data.action.fcurves:
+        for key in curve.keyframe_points:key.interpolation='LINEAR'
 k=job['K'];width=job['width'];height=job['height']
 camera.type='PERSP';camera.sensor_fit='HORIZONTAL';camera.sensor_width=36
 camera.lens=k[0][0]*36/width
@@ -40,7 +57,7 @@ background.image_user.use_auto_refresh=True
 background.image_user.use_cyclic=False
 background.alpha=1;background.display_depth='BACK';background.frame_method='FIT'
 scene['RGBMoCap video start']=start
-scene['RGBMoCap camera']='Stored reference camera (no new camera tracking)'
+scene['RGBMoCap camera']=job.get('camera_mode','Stored reference camera')
 scene['RGBMoCap video']='Keep video.mp4 next to this Blender project'
 for screen in bpy.data.screens:
     for area in screen.areas:

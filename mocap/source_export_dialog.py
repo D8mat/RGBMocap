@@ -1,6 +1,6 @@
 """Options for exporting the displayed source skeleton."""
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QComboBox,
-                              QCheckBox, QLabel, QDialogButtonBox)
+                              QCheckBox, QLabel, QDialogButtonBox, QDoubleSpinBox)
 
 
 class SourceExportDialog(QDialog):
@@ -39,11 +39,34 @@ class SourceExportDialog(QDialog):
                                   'For multiple takes, choose an output folder.')
         destination_note.setWordWrap(True)
         layout.addWidget(destination_note)
-        self.blend_note=QLabel('Blender: creates a new subfolder with the project and video.mp4. Video is a camera-view background, not a render background. Uses the stored reference camera, without new camera tracking.')
+        self.blend_note=QLabel('Blender: creates a new subfolder with the project and video.mp4. Video is a camera-view background, not a render background. Uses saved ExMR/FlowHMR camera rotation when enabled; no new tracking or metric camera translation is calculated.')
         self.blend_note.setWordWrap(True)
         self.blend_note.setVisible(False)
         layout.addWidget(self.blend_note)
         self.format.currentIndexChanged.connect(lambda: self.blend_note.setVisible(self.format.currentData()=='blend'))
+        self.animate_camera=QCheckBox('Export saved camera tracking (ExMR / FlowHMR)')
+        self.animate_camera.setChecked(True)
+        self.animate_camera.setVisible(False)
+        layout.addWidget(self.animate_camera)
+        self.format.currentIndexChanged.connect(lambda: self.animate_camera.setVisible(self.format.currentData()=='blend'))
+        self.background_refine=QCheckBox('Refine camera rotation from background (experimental)')
+        self.background_refine.setToolTip('Tracks visible background and accepts only validated rotation improvements. Does not estimate metric camera translation or repair body motion.')
+        self.background_refine.setVisible(False);layout.addWidget(self.background_refine)
+        self.format.currentIndexChanged.connect(lambda: self.background_refine.setVisible(self.format.currentData()=='blend'))
+        self.background_refine.toggled.connect(lambda enabled:self.animate_camera.setChecked(True) if enabled else None)
+        self.animate_camera.toggled.connect(lambda enabled:self.background_refine.setChecked(False) if not enabled else None)
+        self.camera_translation=QCheckBox('Experimental camera translation — FlowHMR only')
+        self.camera_translation.setVisible(False)
+        layout.addWidget(self.camera_translation)
+        self.translation_scale=QDoubleSpinBox();self.translation_scale.setRange(0,100);self.translation_scale.setDecimals(3);self.translation_scale.setValue(1);self.translation_scale.setSingleStep(.1)
+        self.translation_scale.setPrefix('Translation scale: ');self.translation_scale.setEnabled(False);self.translation_scale.setVisible(False)
+        self.translation_scale.setToolTip('0 keeps the camera position fixed. 1 uses native VO units; adjust to match the video. Existing bone animation is unchanged.')
+        layout.addWidget(self.translation_scale)
+        self.camera_translation.toggled.connect(self.translation_scale.setEnabled)
+        self.camera_translation.toggled.connect(lambda enabled: self.animate_camera.setChecked(True) if enabled else None)
+        self.animate_camera.toggled.connect(lambda enabled: self.camera_translation.setChecked(False) if not enabled else None)
+        self.format.currentIndexChanged.connect(lambda: self.camera_translation.setVisible(self.format.currentData()=='blend'))
+        self.format.currentIndexChanged.connect(lambda: self.translation_scale.setVisible(self.format.currentData()=='blend'))
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -52,4 +75,4 @@ class SourceExportDialog(QDialog):
     def options(self):
         return dict(format='bvh' if self.format.currentData()=='bvh_biped' else self.format.currentData(),
                     bvh_profile='biped' if self.format.currentData()=='bvh_biped' else 'generic',
-                    prepend_tpose=self.tpose.isChecked())
+                    background_refine=self.background_refine.isChecked(),prepend_tpose=self.tpose.isChecked(),animate_camera=self.animate_camera.isChecked(),camera_translation=self.camera_translation.isChecked(),camera_translation_scale=self.translation_scale.value())
