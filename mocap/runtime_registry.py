@@ -29,7 +29,7 @@ def profile_for(stage, args=()):
         except (OSError,ValueError,IndexError) as exc:
             raise RuntimeError('Cannot select a processing runtime: project metadata is unavailable.') from exc
         if model=='flowhmr': return 'flow'
-        if model not in {None,'gvhmr','exmr','mamma'}: raise RuntimeError('Unsupported saved motion model: '+str(model))
+        if model not in {None,'gvhmr','exmr','mamma','prompthmr'}: raise RuntimeError('Unsupported saved motion model: '+str(model))
     return 'shared'
 
 def command(root,stage,args=(),*,frozen):

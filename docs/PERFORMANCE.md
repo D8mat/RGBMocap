@@ -1,0 +1,225 @@
+# Resource modes and measured optimizations
+
+These are measurements on one Windows PC: RTX 5090 32 GB, Ryzen 9 9950X,
+96 GB RAM. They are observations, not minimum hardware requirements or promised
+speedups. No clean-Windows or other-GPU certification is implied. Source videos,
+private projects and benchmark scripts are not included in this repository.
+
+## Automatic or Low Memory?
+
+| Mode | Behavior | Trade-off |
+| --- | --- | --- |
+| **Automatic** — default | Uses the fast supported path when the current GPU budget is sufficient. Selects the supported Low Memory path per operation when needed; supported fast operations can release their failed allocation and retry once after CUDA OOM. | Usually the best starting point. The saved selection stays Automatic even when one operation falls back. |
+| **Low Memory** | Requests CPU-first loading, block offloading or bounded image work, depending on the model. Disables the new CPU batch prefetch. FlowHMR SAM uses one frame per batch. | Reduces some VRAM peaks, but transfers/loading can take longer and system RAM can increase. It does not guarantee that a model or long sequence fits. |
+
+Neither mode deliberately lowers the existing model-native precision, input
+resolution, motion frame count or temporal context. MAMMA keeps the selected
+views and fitting iterations. Existing native mixed precision remains in use;
+this is not a claim that every model layer is FP32.
+
+**Low Memory is primarily a VRAM-saving mode, not a system-RAM-saving mode.**
+Actual RAM and Windows allocation headroom are monitored in both modes. Work
+stops with an error when memory becomes insufficient; close other applications
+or shorten the clip if necessary. Decisions and memory advice appear in both
+the app Console and CMD window.
+
+### What changes for each model
+
+| Model | Low Memory behavior |
+| --- | --- |
+| ExMR | Load body/hand checkpoints on CPU before GPU transfer; prepare Sapiens' existing FP16 layers on CPU. Body/hand batches remain 8. |
+| FlowHMR | Offload SAM/VGGT transformer blocks to CPU and transfer them for inference. SAM uses one frame per batch; the saved GPU Hand Crops selection is retained. |
+| GVHMR and add-ons | Use existing adaptive image batches and bounded processing. Preserve full-context FP32 attention; use the validated query split only when dense attention does not fit or after its supported OOM recovery. |
+| MAMMA | Offload the VGGT camera transformer blocks. Masks, FP32 landmarks and 3D fitting keep their current settings; this is not full-MAMMA model offloading. |
+| PromptHMR | Retains one-image batches and full temporal context; additional block offloading is not implemented. |
+
+PEAR is a separate live tool: the offline Resource Mode control is hidden. Its
+fixed-length bone path uses FP16 encoding/FP32 decoding, one requested frame per
+prediction and bounded latest-frame presentation. It retains RAM monitoring and
+a CUDA allocation budget but has no automatic offload/retry path. See the
+[PEAR timings and limitations](models/PEAR.md#placement-and-performance).
+
+## Measured memory savings
+
+### Paired application runs
+
+The following earlier mode-validation runs used 60 frames at 30 fps per
+single-video model, including correction and preview/export preparation.
+GVHMR included HTD, FootMR and HandFlow; FlowHMR included camera estimation.
+They **predate the latest batching/prefetch and connected-worker changes**,
+so their times are historical mode checks, not the current release's speed.
+Both modes used the same clip/settings for each model.
+
+| Model | Peak VRAM: Automatic → Low Memory | VRAM reduction | Peak RAM: Automatic → Low Memory | Time: Automatic → Low Memory |
+| --- | ---: | ---: | ---: | ---: |
+| ExMR | 5.68 → 3.87 GiB | 1.81 GiB / 32% | 11.88 → 11.94 GiB | 89.01 → 94.78 s |
+| FlowHMR | 6.10 → 2.77 GiB | 3.33 GiB / 55% | 8.42 → 8.75 GiB | 95.24 → 96.15 s |
+| GVHMR + add-ons | 4.204 → 4.203 GiB | No meaningful reduction on this short clip | 6.87 → 6.85 GiB | 127.53 → 113.28 s |
+| MAMMA, 2 views / 2 people / 30 frames | Not recorded in this paired run | Not established for the whole pipeline | 8.15 → 8.12 GiB | 241.61 → 222.00 s |
+
+VRAM means maximum recorded **PyTorch allocated** memory across workers, not
+reserved memory or whole-board usage. RAM is sampled process-tree working set;
+shared pages can be counted more than once. The table does not report total
+system memory. Startup, kernel initialization and filesystem caching affect
+these single-pass times; lower times in a Low Memory row do not establish that
+Low Memory is faster. Stage-specific savings can disappear from the whole-job
+peak when another stage uses more memory.
+
+### Loading/offload trade-offs measured separately
+
+These controlled component tests help explain where memory is saved. They are
+not additional whole-application savings to add to the preceding table.
+
+| Component / change | Peak allocated VRAM, whole component run | Peak process RAM working set | Measured time scope |
+| --- | ---: | ---: | --- |
+| ExMR Sapiens: prepare existing FP16 layers before GPU transfer | 5.68 → 3.10 GiB | 11.91 → 11.96 GiB | Loading: 12.24 → 12.63 s; warm inference: 1.47 → 1.45 s |
+| ExMR body: CPU-first checkpoint loading | 4.91 → 3.77 GiB | 5.32 → 6.84 GiB | Loading: 4.28 → 9.97 s |
+| ExMR hand: CPU-first checkpoint loading | 5.14 → 3.87 GiB | 1.54 → 5.79 GiB | Loading: 2.46 → 3.21 s |
+| Shared VGGT camera component: block offload | 6.47 → 3.14 GiB | 8.75 → 8.85 GiB | Warm inference: 0.225 → 0.751 s |
+
+ExMR used a 60-frame clip. VGGT used nine images from three cameras, at its
+512 input setting; its shared component is used by FlowHMR and MAMMA. Offload
+cut that component's peak by about **3.33 GiB / 52%**, but warm inference took
+about **3.3 times as long**. This does not establish a 52% reduction for MAMMA's
+full fitting pipeline. For that pipeline, see the separate
+[MAMMA processing records](MAMMA.md#recorded-processing-time-and-memory).
+
+## Applied speed improvements
+
+The following methods are enabled by the current app. Their measurements use
+different stages and baselines; **do not add or multiply the speedups** to
+estimate a complete job. No extra packages, quantization, TensorRT engine or
+user compilation is needed for these optimizations. MAMMA's optional runtime
+still has its separately documented installation/build requirements.
+
+### VGGT camera checkpoint loading
+
+The Automatic camera-only fast path uses `meta` initialization and
+`load_state_dict(assign=True)` to avoid disposable initial weights and copying
+over them. FlowHMR and MAMMA share this loader. Low Memory, including an Automatic
+fallback/retry, retains the previous copy-based loader and block offload. Generic
+depth loading is unchanged. There is no new setting or runtime dependency.
+
+Paired component tests used nine images from three cameras, balanced 512
+preprocessing (9x3x432x592 tensor), on the test PC above. Each Flow runtime
+configuration ran in two separate processes; times below are means and memory
+is the largest recorded value. Image decoding is outside the reported timers.
+
+| Automatic VGGT camera component | Previous loading | Meta + assign |
+| --- | ---: | ---: |
+| Instrumented model loading | 7.24 s | 2.34 s |
+| Peak process RAM working set | 8.88 GiB | 5.40 GiB |
+| Peak Windows process private allocation | 14.19 GiB | 14.19 GiB |
+| Peak PyTorch allocated VRAM, including inference | 6.47 GiB | 6.47 GiB |
+
+Loading timers include measurement-time cleanup/synchronization; filesystem
+caches were not cleared. The MAMMA Python runtime separately completed a
+one-pair check, 7.10 to 2.41 s loading. All 14 experimental runs retained exact
+camera pose encodings, extrinsics and intrinsics, with unchanged FP32 parameter
+storage and native inference autocast. These are camera-component observations,
+not whole-motion speedups or a guarantee of improved system allocation headroom.
+
+Meta/assign was deliberately not adopted for Low Memory: experimental Windows
+private allocation increased from 11.04 to 13.86 GiB, while peak working set
+changed only from 8.88 to 8.46 GiB. Some reading also moved to first inference.
+`assign=True` without meta initialization did not provide the combined benefit.
+
+### Model reuse and connected workers
+
+One resident model serves actors sequentially, then is released before the next
+phase. This avoids repeatedly loading the same weights without making a larger
+multi-person GPU batch. A first two-person test used 60+45 frames, static cameras,
+and feature/core stages only, with one timing trial:
+
+| Model | Independent actor workers → model reuse | Time reduction | Peak allocated VRAM before → after |
+| --- | ---: | ---: | ---: |
+| FlowHMR | 108.69 → 65.34 s | 40% | 3.84 → 3.84 GiB |
+| ExMR | 161.08 → 106.51 s | 34% | 5.68 → 5.68 GiB |
+| GVHMR, without add-ons in this timing | 56.02 → 22.97 s | 59% | About 2.82 GiB in both |
+
+A later two-trial comparison connected phases after phase-scoped reuse was
+already available. Values below are means; worker startup and result saving
+are included, while discovery, camera estimation, correction and export are not.
+
+| Model / people | Separate phase workers → connected phases | Time reduction | Peak allocated VRAM | Peak RAM working set before → after |
+| --- | ---: | ---: | ---: | ---: |
+| FlowHMR / 1 / 60 frames | 55.99 → 42.65 s | 24% | 3.84 GiB in both | 6.75 → 6.81 GiB |
+| ExMR / 1 / 60 frames | 83.86 → 46.66 s | 44% | 5.68 GiB in both | 11.92 → 11.74 GiB |
+| ExMR / 2 / 60+45 frames | 92.83 → 53.29 s | 43% | 5.68 GiB in both | 11.77 → 11.81 GiB |
+
+ExMR now connects keypoint, body-feature, hand-feature and motion phases.
+FlowHMR connects features and motion for one actor; its two-person connection
+gain was smaller than trial variability, so the existing multi-person phase
+grouping remains. GVHMR already connects its observation/core phases. Short-clip
+startup gains do not predict the same percentages on long footage.
+
+### Bounded CPU preparation and unused body readouts
+
+Automatic prepares at most two CPU batches ahead when CPU/RAM headroom permits;
+Low Memory disables it. There is one producer thread and an additional 256 MiB
+limit on estimated prepared storage, in addition to the batch being consumed.
+This is not a whole-process RAM cap. It overlaps reading/cropping with GPU work, without
+writing an extra disk cache. Actual RAM monitoring remains active.
+
+Warm tests processed 60-, 45- and 120-frame inputs twice: **450 frames per
+variant**. The first two inputs were 720x1280; the third was 1080x1920, at 30 fps.
+Times exclude model loading/warm-up, and RAM is sampled process working set.
+
+| Stage / applied optimization | Time before → after | Reduction | Peak VRAM before → after | Peak RAM before → after |
+| --- | ---: | ---: | ---: | ---: |
+| Flow Fast SAM / CPU prefetch | 42.96 → 40.79 s | 5% | 3.84 → 3.84 GiB | 2.45 → 2.49 GiB |
+| ExMR Sapiens / CPU prefetch | 11.53 → 8.63 s | 25% | 3.10 → 3.10 GiB | 4.07 → 4.10 GiB |
+| ExMR body / prefetch + unused final pose-readout omission | 18.57 → 13.15 s | 29% | 3.80 → 3.80 GiB | 5.43 → 5.42 GiB |
+| ExMR hand / CPU prefetch | 7.50 → 5.63 s | 25% | 3.87 → 3.87 GiB | 1.67 → 1.67 GiB |
+
+Body-readout omission alone reduced 18.57 to 16.63 s, about 10%. Intermediate
+pose feedback and keypoint-token updates remain. Hand-readout omission had no
+clear benefit and was not adopted. Small RAM decreases in this table are sample
+variation, not a RAM-saving feature.
+
+Fixed-feature motion comparisons were tensor-exact. With fresh optimized image
+preprocessing, maximum joint differences were 0.83 mm for FlowHMR and 0.88 mm
+for ExMR; baseline repeats also differed, up to 0.77 and 0.69 mm. These are
+output disagreements, not accuracy against ground-truth capture.
+
+### FlowHMR Fast SAM switches
+
+Both switches default on for new work; saved off settings remain off. They work
+only with Fast SAM and can be controlled independently:
+
+- **4-Frame Batching:** warm feature extraction was about **2.0–2.4 times faster**
+  than one-frame processing. Peak allocated VRAM rose **3.44 → 3.84 GiB** and
+  reserved VRAM **3.74 → 4.45 GiB**; RAM working set was about 6.47 GiB in both.
+  Low Memory uses one-frame batches.
+- **GPU Hand Crops:** on top of batching, separate short clips took
+  **6.10 → 5.44 s** and **10.87 → 9.81 s**, roughly 10% less feature time,
+  with unchanged 3.84 GiB allocated VRAM and about 6.47 GiB RAM. An alternating
+  repeated test found a smaller 8% median time reduction, showing variability.
+
+These are warm feature-stage results, not whole-job speedups. GPU interpolation
+differs from CPU OpenCV cropping; combined output differences reached about
+1.1–1.3 mm at the 95th percentile and 4.8 mm maximum joint displacement in the
+tested clips. This is a separate comparison from the sub-millimetre prefetch
+test above. Inspect your motion/contact timings rather than assuming bit identity.
+
+### MAMMA
+
+The current MAMMA adapter uses exact-coordinate ROI preprocessing, CPU checkpoint
+loading, a mask-based landmark path without an unnecessary detector, fewer
+unused video/debug outputs and reduced fitting diagnostics. Fixed-camera VGGT
+uses up to three sampled times per camera at its 512 input setting and omits
+unneeded depth output. Completed inference is reused when identities/receipts
+match; changing only contact correction does not run MAMMA again.
+
+Earlier four-camera, two-person, 30-frame FP32 tests measured landmark processing
+**104.43 → 57.18 s** (45% less time) with exact ROI/CPU loading, and mask
+processing **129.02 → 92.39 s** (28% less time) after omitting unused outputs.
+Reduced fitting logs did not show a reliable fitting-stage speedup. These are
+stage measurements, not a prediction for a complete capture.
+
+MAMMA uses SAM 2.1 and FP32 landmarks/fitting in the app. SAM 3.1, quantization,
+additional TF32, reduced fitting iterations and full fitting-model offload
+remain outside the supported app path. The latest ExMR/FlowHMR prefetch and
+connected-worker changes were not added to MAMMA.
+
+For remaining scope and actual checks, see [validation](VALIDATION.md).

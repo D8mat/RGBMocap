@@ -18,6 +18,7 @@ from safetensors.torch import load_file
 from sapiens.engine.datasets import Compose
 from sapiens.pose.datasets import UDPHeatmap
 from sapiens.registry import MODELS
+from mocap.batch_prefetch import batch_source
 from tqdm import tqdm
 
 from exmr.preprocessing.keypoints.mappings import SAPIENS2_TO_COCO63
@@ -66,22 +67,29 @@ class Sapiens2Keypoints:
         resolution: crop resolution "height x width", one of RESOLUTIONS
     """
 
-    def __init__(self, checkpoint, resolution="1024x768", num_workers=2, device="cuda:0"):
+    def __init__(self, checkpoint, resolution="1024x768", num_workers=2, device="cuda:0", low_memory=False):
         if resolution not in RESOLUTIONS:
             raise ValueError(f"Sapiens2 resolution must be one of {list(RESOLUTIONS)}")
         self.batch_size = RESOLUTIONS[resolution]
         self.num_workers = num_workers
         h, w = map(int, resolution.split("x"))
 
-        # built on the GPU: initializing the weights on the CPU takes ~8 s, and the checkpoint
-        # replaces them anyway
-        with torch.device(device):
+        # Build and load weights on the CPU to avoid holding the model and
+        # checkpoint tensors together in VRAM. Move the loaded model to the
+        # requested device below; inference precision remains unchanged.
+        with torch.device("cpu"):
             model = MODELS.build(copy.deepcopy(MODEL_CFG))
-        model.load_state_dict(load_file(str(checkpoint), device=device))
+        model.load_state_dict(load_file(str(checkpoint), device="cpu"))
         model.data_preprocessor = MODELS.build(copy.deepcopy(DATA_PREPROCESSOR_CFG))
-        model.to(device).eval()
-        model.backbone.half()
-        model.decode_head.half()
+        if low_memory:
+            # Same final FP16 layers, without a temporary full FP32 GPU copy.
+            model.backbone.half()
+            model.decode_head.half()
+            model.to(device).eval()
+        else:
+            model.to(device).eval()
+            model.backbone.half()
+            model.decode_head.half()
         self.model = model
         self.pipeline = Compose(
             [
@@ -106,8 +114,8 @@ class Sapiens2Keypoints:
         )
         output = np.empty((len(boxes), 63, 3), dtype=np.float32)
         cursor = 0
-        with tqdm(total=len(boxes), desc="Sapiens2 keypoints", unit="frame") as pbar:
-            for batch in loader:
+        with batch_source(loader, batch_bytes=self.batch_size*3*1024*768*4) as batches, tqdm(total=len(boxes), desc="Sapiens2 keypoints", unit="frame") as pbar:
+            for batch in batches:
                 prediction = _predict(
                     batch["inputs"].cuda().half(), self.model, self.codec, batch["data_samples"]
                 )

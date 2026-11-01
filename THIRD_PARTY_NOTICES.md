@@ -20,6 +20,7 @@ they are not bundled with the application.
 | [GVHMR](https://github.com/zju3dv/GVHMR) | Educational, research and nonprofit use only; derived changes must be open-source and noncommercial. [License](third_party/GVHMR/LICENSE). |
 | [ExMR](https://github.com/twehrbein/ExMR) / [FootMR](https://github.com/twehrbein/FootMR) | GVHMR-derived educational, research and nonprofit terms. [ExMR license](third_party/ExMR/LICENSE), [FootMR license](third_party/FootMR/LICENSE). |
 | [FlowHMR](https://github.com/flowhmr/flowhmr) | Apache-2.0 source. [License](third_party/FlowHMR/LICENSE). Supporting models have separate terms below. |
+| [PromptHMR](https://github.com/yufu-wang/PromptHMR) (optional single-video runtime) | [Non-commercial scientific research license](https://github.com/yufu-wang/PromptHMR/blob/main/LICENSE). Restricted source is downloaded into the user's separate runtime, not bundled in this repository. Weights, SMPL data and supporting checkpoints retain their own terms. SAM2/Detectron2/ViTPose and runtime dependencies retain their notices. See [setup and use](docs/models/PROMPTHMR.md). |
 | [HTD-Refine](https://github.com/ant-research/HTD-Refine) | AGPL-3.0-only. [License](third_party/HTD-Refine/LICENSE). PVA-Net/checkpoints retain their applicable model terms. |
 | [HandFlow](https://github.com/mxxu00/HandFlow) / [HaMeR](https://github.com/geopavlakos/hamer) | MIT source, with retained notices for upstream-derived parts. [HandFlow license](third_party/HandFlow/LICENSE), [HaMeR license](third_party/HaMeR/LICENSE.md). Weights and WiLoR detector files retain provider terms. |
 | [Sapiens2](https://github.com/facebookresearch/sapiens2) | Sapiens2 License covers its software and models. [License](third_party/ExMR/third_party/sapiens2/LICENSE.md). |
@@ -50,7 +51,9 @@ Other runtime packages retain their included licenses. Supporting notices includ
 - GVHMR: copyright 2022–2023, 3D Vision Group, Zhejiang University.
   ExMR / FootMR: copyright 2025–2026, Leibniz University Hannover, with retained
   GVHMR notices. Follow the upstream publication/citation instructions, including
-  Wehrbein and Rosenhahn (FootMR, 3DV 2026).
+  Wehrbein and Rosenhahn (ExMR, arXiv:2610.26213; FootMR, 3DV 2026),
+  and the original GVHMR work. [Papers and BibTeX](docs/CITATIONS.md) cover
+  the supported motion models, PEAR live preview and optional refinement models.
 - Kimodo MotionCorrection: copyright 2026, NVIDIA Corporation & Affiliates.
   Local changes add explicit contact targets, bounded solving and anatomical guards.
 - OSNet: Kaiyang Zhou; original MIT notices and model-zoo provenance are retained.
@@ -68,3 +71,15 @@ permissions are not waived by separate worker processes or separate labeling.
 Keep original notices and any required corresponding source/build materials when
 distributing. The private development folder may contain registered models,
 derived caches and user projects; it is not a cleared public release package.
+
+## Optional PEAR live support
+
+[PEAR](https://github.com/Pixel-Talk/PEAR) source uses Apache-2.0. Setup fetches a
+pinned upstream revision and preserves its license with the locally adapted
+source. The connector omits unused training/render imports, uses native Torch
+constructor helpers and reuses the shared runtime. PyTorch3D pure-Python utilities
+retain their upstream BSD license/notices; RoMa retains its package license.
+YOLOv8s/Ultralytics retain their existing AGPL/provider terms. PEAR weights,
+SMPL-X 2020 and FLAME geometry retain separate provider conditions; registered
+body data is neither committed nor redistributed by RGB MoCap. See the
+[PEAR guide](docs/models/PEAR.md) and [PEAR paper citation](docs/CITATIONS.md#pear).

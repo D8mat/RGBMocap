@@ -13,6 +13,9 @@ COMPAT = ROOT / "native_compat"
 
 
 def worker_command(stage: str, *args: str) -> list[str]:
+    if stage.startswith('prompthmr_') and stage not in ('prompthmr_prepare','prompthmr_publish'):
+        from .prompthmr_runtime import command as phmr_command
+        return phmr_command(stage,args)
     if stage.startswith('mamma_') and stage not in ('mamma_prepare','mamma_publish'):
         from .mamma_runtime import command as mamma_command
         return mamma_command(stage,args)

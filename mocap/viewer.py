@@ -24,6 +24,8 @@ class VideoView(QWidget):
         super().__init__()
         self.setMinimumSize(440, 280)
         cv2.setNumThreads(1)  # Preview uses one decoder, not a pool for each resize.
+        self.external_mode=False
+        self._external_saved=None
         self.frame = None
         self.boxes = self.observed = self.keypoints = self.confidence = None
         self.index = 0
@@ -175,7 +177,21 @@ class VideoView(QWidget):
             if image is not None:
                 self._present(index, image)
 
+    def set_external_frame(self,image):
+        if image is None:
+            if not self.external_mode:return
+            self.external_mode=False
+            self.frame,self.source_size=self._external_saved
+            self._external_saved=None
+            self.seek(self.timeline_requested_index);self.update();return
+        if not self.external_mode:self._external_saved=(self.frame,self.source_size)
+        self.external_mode=True
+        self.frame=None if image.isNull() else image
+        if self.frame is not None:self.source_size=(image.width(),image.height())
+        self.update()
+
     def _present(self, index, image):
+        if self.external_mode:return
         self.index, self.frame = (self.timeline_requested_index if self.timeline_fps else index), image
         self.update()
         self.frame_presented.emit(self.index)
@@ -195,6 +211,7 @@ class VideoView(QWidget):
             index = max(0,round((index + self.timeline_start) * self.native_fps / self.timeline_fps))
             if self.decoder.length:index=min(index,self.decoder.length-1)
         self.requested_index = index
+        if self.external_mode:return
         image = self.decoder.request(index)
         if image is not None:
             self._present(index, image)

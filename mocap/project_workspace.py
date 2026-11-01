@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import os
 from .storage import atomic_json
-from .motion_tools import require_supported_tool, require_supported_project
+from .motion_tools import require_offline_tool as require_supported_tool, require_supported_project
 
 VERSION = 2
 

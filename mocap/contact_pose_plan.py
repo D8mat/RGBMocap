@@ -2,7 +2,8 @@
 
 The native solver remains the sole publisher of hip/knee/ankle rotations.
 This module predicts its response while planning root Y and swing-target Y.
-Contact labels, full-contact targets, XZ targets and ankle frames are fixed.
+Contact labels, stance targets and ankle frames are fixed. Free trajectories
+follow the final planned root at their finite transition boundaries.
 """
 import time
 import numpy as np
@@ -12,7 +13,7 @@ from scipy.spatial.transform import Rotation
 
 CONFIG = dict(root_free=True, hip_weight=0.5,
               target_limit=.02, target_sigma=.02, root_sigma=.01,
-              pose_sigma=.175, velocity_sigma=.025, acceleration_sigma=.004,
+              pose_sigma=.175, velocity_sigma=.025, acceleration_sigma=.002,
               root_acceleration_sigma=.0004, iterations=60)
 
 def _optimise_window(rest, root, quat, probes, shift, target_shift, offsets, active,
@@ -31,27 +32,31 @@ def _optimise_window(rest, root, quat, probes, shift, target_shift, offsets, act
     if not active.any():
         return warm, previous
     j, g = fk(rest, root, quat)
+    from .contact_trajectory import free_follow_weights
+    follow = free_follow_weights(active, transition)
+    reference_shift = np.broadcast_to(target_shift[:, None], (n, 2, 3)).copy()
     planned = (active | transition).copy()
     targets = j[:, [7, 8]] + target_shift[:, None] + offsets
     height = probes[..., 1].reshape(n, 2, 2).min(2)
     expected = height + targets[..., 1] - j[:, [7, 8], 1]
     targets[..., 1] += np.where(active,
         np.minimum(np.maximum(floor - expected, 0), .12), 0) if mode=="flat" else 0
-    # Match the native invocation's existing free-foot floor guard before
-    # predicting the solve. This is clearance, never an added contact label.
-    free_height = height + np.where(planned,
-        targets[..., 1] - j[:, [7, 8], 1], warm[:, 1, None])
-    guard = ~active & ~flight[:, None] & (free_height < floor - .01) & (mode=="flat")
-    free = np.where(planned[..., None], targets,
-                    j[:, [7, 8]] + warm[:, None])
-    free[..., 1] += np.where(guard,
-        np.minimum(np.maximum(floor - free_height, 0), .12), 0)
-    targets = np.where(guard[..., None], free, targets)
+    # Admit every free frame that could need clearance inside the bounded
+    # root search. The smooth unilateral constraint is evaluated at each
+    # trial root, rather than switching a 1 cm correction on after planning.
+    original_planned = planned.copy()
+    free_base = j[:, [7, 8]] + warm[:, None]
+    targets = np.where(planned[..., None], targets, free_base)
+    follow[~planned] = 1.
+    reference_shift[~planned] = np.broadcast_to(warm[:, None], (n, 2, 3))[~planned]
+    possible_height = height + np.minimum(targets[..., 1]-j[:, [7, 8], 1], base[:, 1, None]-.02)
+    guard = ~active & ~flight[:, None] & (possible_height < floor+.01) & (mode=="flat")
     planned |= guard
-    expected = height + targets[..., 1] - j[:, [7, 8], 1]
-    movable = planned & ~active & ~flight[:, None]
+    movable = original_planned & ~active & ~flight[:, None]
     ti, fi = np.nonzero(movable)
     m = len(ti)
+    # A finite approach/release parameter must vanish at its free boundary.
+    target_gain = 1.-follow[ti, fi]
     distance_xz = ((j[:, [1, 2]][..., [0, 2]] + base[:, None, [0, 2]] -
                     targets[..., [0, 2]]) ** 2).sum(2)
     high_reach = reach_lengths(rest, g) * .9995
@@ -67,14 +72,10 @@ def _optimise_window(rest, root, quat, probes, shift, target_shift, offsets, act
     fixed = warm[:, 1].astype('float64')
     lo[freeze] = fixed[freeze] - 1e-10
     hi[freeze] = fixed[freeze] + 1e-10
-    # Do not lower a transition sole through the known floor. Lifted source
-    # motion is retained by a small source-relative target budget.
-    clearance = np.where(guard[ti,fi],floor,floor-.009)
-    tlo = np.maximum(-cfg['target_limit'], clearance-expected[ti, fi]) if mode=="flat" else np.full(m,-cfg['target_limit'])
+    # Keep the existing 2 cm source-relative budget. Flat-floor clearance is
+    # applied continuously in predict(), after the bounded target adjustment.
+    tlo = np.full(m, -cfg['target_limit'])
     thi = np.full(m, cfg['target_limit'])
-    bad = tlo > thi-1e-8
-    tlo[bad] = -1e-10
-    thi[bad] = 1e-10
     lower = np.r_[lo, tlo]
     upper = np.r_[hi, thi]
     x0 = np.r_[np.clip(warm[:, 1], lo+1e-11, hi-1e-11),
@@ -115,8 +116,16 @@ def _optimise_window(rest, root, quat, probes, shift, target_shift, offsets, act
     channel = np.array([1., cfg['hip_weight'],cfg['hip_weight'],cfg['hip_weight']])
 
     def predict(x, return_geometry=False):
-        goal = targets.copy()
-        goal[ti,fi,1] += x[n:]
+        # Keep finite-difference trial values in float64; storing them in the
+        # float32 input shift would quantize away root derivatives.
+        dynamic_shift = base.astype(np.float64, copy=True)
+        dynamic_shift[:, 1] = x[:n]
+        goal = targets + follow[..., None]*(dynamic_shift[:, None]-reference_shift)
+        goal[ti,fi,1] += x[n:]*target_gain
+        if mode == 'flat':
+            gap = floor-(height+goal[..., 1]-j[:, [7, 8], 1])
+            lift = np.where(gap>=.01, gap, np.where(gap<=-.01, 0., (gap+.01)**2/.04))
+            goal[..., 1] += np.where(planned & ~active & ~flight[:, None], np.minimum(lift,.12), 0.)
         origin = hips.copy()
         origin[...,1] += x[:n,None]
         delta = goal-origin
@@ -178,8 +187,10 @@ def _optimise_window(rest, root, quat, probes, shift, target_shift, offsets, act
     block(np.arange(n),2)
     sparsity=coo_matrix((np.ones(sum(map(len,rows))), (np.concatenate(rows),np.concatenate(cols))),shape=(cursor,n+m)).tocsr()
     before=residual(x0)
+    # Column scaling improves conditioning without increasing the iteration
+    # cap, changing the objective or introducing dense recording-sized work.
     result=least_squares(residual,x0,jac_sparsity=sparsity,bounds=(lower,upper),
-        max_nfev=cfg['iterations'],ftol=2e-5,xtol=2e-6,gtol=1e-5,tr_solver='lsmr',
+        x_scale='jac',max_nfev=cfg['iterations'],ftol=2e-5,xtol=2e-6,gtol=1e-5,tr_solver='lsmr',
         tr_options={'maxiter':100})
     state,goal,_,_=predict(result.x,True)
     out=warm.copy();out[:,1]=result.x[:n]
@@ -190,7 +201,9 @@ def _optimise_window(rest, root, quat, probes, shift, target_shift, offsets, act
         cost_before=float(before@before/2),cost_after=float(result.cost),
         root_freeze_frames=int(freeze.sum()),transition_variables=m,
         planned_free_foot_clearance_frames=int(guard.sum()),
-        target_y_extra_max_m=float(abs(result.x[n:]).max(initial=0)),
+        target_y_extra_max_m=float(abs(result.x[n:]*target_gain).max(initial=0)),
+        trial_scaling='sparse Jacobian column norms',
+        free_goal_basis='final planned root with finite C1 joins',
         root_extra_from_app_max_m=float(abs(result.x[:n]-base[:,1]).max()),
         source_speed_method='relative SO(3)',physics_simulation=False)
     return out,previous

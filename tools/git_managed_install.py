@@ -76,6 +76,8 @@ def setup():
             raise
         recover(ROOT,engine.remove_owned)
         if support_stage.exists():engine.remove_owned(folder,support_stage)
+        from setup_pear import prepare as prepare_pear
+        prepare_pear()
         pending.unlink()
         print('Installation complete. Existing models and projects were retained.',flush=True)
 

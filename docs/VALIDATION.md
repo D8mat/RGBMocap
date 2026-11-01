@@ -127,7 +127,7 @@ interactive playback, standalone MMD playback or testing on other GPUs.
   The old FlowHMR/ExMR fixed 3/2 GiB deductions and extra 95/90% caps are removed.
   ComfyUI's separate 0.8 GiB inference planning allowance is not another allocator
   deduction: weights, activations and temporary buffers share the allowed budget.
-  This does not implement ComfyUI's offloading or guarantee free memory against
+  This margin alone does not implement offloading or guarantee free memory against
   other applications or non-PyTorch allocations.
 - Boundary checks covered simulated 4/8/12/15/16/24/32 GiB capacities, the exact
   15 GiB transition, exhausted free memory and all four allocator call sites.
@@ -171,10 +171,1116 @@ interactive playback, standalone MMD playback or testing on other GPUs.
   passed. This is a single-PC regression check, not a low-memory hardware test or
   a guarantee against sudden allocations or competing GPU applications.
 
+MAMMA multi-view input setup (2026-10-29):
+
+- Five real camera videos opened through the multi-select picker and produced a
+  four-column thumbnail grid with a second row. Ten preview-camera switches kept
+  the frame, trim, 3D camera and one persistent decoder; sampled switch latency
+  was approximately 0.03–0.21 seconds on cached local files. The short sequence
+  showed no net thread/handle increase; this is not a long-run leak guarantee.
+- Real 25 fps / 60 fps videos shared a 30 fps timeline limited by the shorter
+  input. At timeline frame 45 (zero-based, 1.5 seconds), native requests were 38
+  and 90. Playback and resume after switching were exercised in the Qt event
+  loop; this was not a visible full-app GPU FPS measurement or a VFR test.
+- The actual Save Project As worker copied every input, restored common trim,
+  active camera, manual calibration and correction selection, and saved a second
+  portable project copy. Reopening in another tool and returning to MAMMA also
+  recovered the saved inputs. Eight rapid replacement requests coalesced to the
+  latest set, and saving was blocked during input preparation.
+- JSON and MAMMA YAML camera imports were checked, including camera-to-world
+  quaternion conversion against matching world-to-camera matrices. Invalid
+  rotations/intrinsics and missing files retained previous valid inputs/settings.
+  Existing three-model controls and single-video decoding were checked.
+- These initial checks covered input setup only. Later native-pipeline checks
+  below extend their scope; they do not validate fresh-user installation.
+  Original videos and motion data were not modified. Private test files remain
+  outside the public checkout.
+
+MAMMA native app pipeline (2026-10-29, same tested PC):
+
+- The GUI Reconstruct 3D queue completed SAM 2.1 segmentation, exact-ROI FP32
+  landmarks, VGGT cameras, full FP32 MAMMA fitting, native actor conversion,
+  shared-floor correction and source export preparation. Two synchronized views,
+  two people and 30 frames (one second) took 299.50 seconds including worker
+  startup and native preparation. A verified repeat reused inference in 14.48
+  seconds and retained the raw fitted file's timestamp and size.
+- Recorded PyTorch peak allocated/reserved VRAM (GiB) was 2.532/2.846 for masks,
+  0.585/0.645 for landmarks, 6.097/6.121 for cameras and 0.315/0.352 for fitting.
+  The largest process peak working set was 8.928 GiB in camera estimation.
+  These are process/allocator observations, not whole-PC or driver VRAM totals,
+  minimum requirements, or measurements for a long clip.
+- Exact sixteen-beta conversion matched original fitted meshes within 0.001 mm.
+  Original and corrected previews for two different body templates rendered
+  together on the real GPU. Readback against the CPU skin reference at three
+  frames differed by at most 0.002 mm. Twenty-four visibility changes retained
+  constant sampled handle/thread/GPU-buffer counts; sampled RSS changed about
+  0.04 MiB after warm-up. This is not a long-run leak guarantee.
+- Camera switching and six original/corrected transitions preserved the selected
+  frame and 3D camera. In a three-second playback check, the GUI event-loop gap
+  p95 was 9.57 ms and maximum 15.64 ms. These are event-loop gaps, not rendered
+  frame times or a universal FPS claim. Original GPU images were inspected.
+- Save Project As/reopen retained both actors and both working camera previews
+  with the original project temporarily offline. Manual lock edits blocked stale
+  export; Apply Correction refreshed both actors in 15.85 seconds without
+  changing either original source tensor. Incomplete publication, changed input
+  receipts and invalid saved settings were rejected. Removing a required cached
+  landmark rejected the cache and allocated a separate attempt. Missing
+  project-private body data was regenerated from the unchanged raw fit in
+  16.31 seconds without rerunning inference.
+- Four real source FBX exports (two people, original/corrected) imported through
+  ordinary Blender 4.5 settings with 52 Hips-root bones and no armature-object
+  keys. Maximum imported bone-head difference was 0.0034 mm. Retargeted-character
+  output and manual-camera end-to-end inference were not tested in this pass.
+- Model Manager imports were registered locally with expected SHA-256 receipts.
+  No registered weights, external MAMMA engine, body-derived assets, videos or
+  private tests were added to the publishable checkout. See [MAMMA](MAMMA.md)
+  for its separate-environment limitation; this is not a clean-install or
+  other-GPU validation, nor a validation of the 60-second adapter limit.
+
+Managed CMD startup after MAMMA routing changes (2026-10-29):
+
+- Reviewed unchanged dependency pins and refreshed the installer lock's registry
+  hash. The standard managed installation worker verified and reused all six
+  installed profiles without runtime downloads or replacement. It refreshed the
+  installed verification state; startup checks were not bypassed.
+- Actual RGBMoCap.cmd startup and its child-worker environment check passed.
+  A MAMMA project then opened through that same launcher and played two people
+  for three seconds without render errors or observed video/mesh frame mismatch.
+- Source composition validation now rejects a runtime registry hash that differs
+  from the installer lock. A private fixture confirmed both valid acceptance and
+  mismatched-lock rejection; private files remain outside the checkout.
+
 These checks describe the recorded examples, not a guarantee for every video,
 character or computer. Model weights and registered body data remain separate and
 subject to their providers' terms. Review the applicable third-party notices and
 corresponding source/build requirements before redistributing binaries.
+
+MAMMA supported optional runtime and UI (2026-10-29, same Windows/RTX 5090 PC):
+
+- A new isolated Python 3.11.17 / torch 2.7.1+cu128 runtime was installed from
+  SHA-256 pinned package/source archives, without copying the research venv.
+  SAM 2 and SDF were compiled locally. 176 package versions and 41,138 runtime
+  files were checked; deliberately pruned debug/developer files were excluded.
+  Actual runtime size: 6.19 GiB, excluding model weights and compiler tools.
+  Re-running setup reused the verified runtime without downloading/rebuilding.
+- CUDA SAM connected components and SDF distance, index width, winding and point
+  gradients passed. SDF squared-distance max error: 1.21e-8; gradient error: 0.
+  Restricted upstream code/native binaries remain outside this repository.
+- Fresh two-view, two-person, 30-frame processing completed in 297.55 s through
+  correction/preview. Peak PyTorch allocated/reserved memory was 6.10/6.12 GiB;
+  Windows process peak working set was 8.93 GiB. These are different measures
+  from whole-board VRAM or total system use. On the same working inputs, all
+  compared landmarks, visibility/contact predictions, fitted poses, betas and
+  translations matched the previous research engine exactly (maximum 0).
+- Original native vertices matched fitted MAMMA vertices within 0.001 mm.
+  Four source FBX files imported in Blender 4.5 with 52 Hips-root bones and no
+  armature-object animation; max sampled bone-head error was 0.0034 mm.
+- Height is numeric-only with a separate metre label; People has a separate
+  label, and MAMMA hides Find person. Nine model assets, runtime readiness/setup
+  instructions, other models' button restoration and the model guide were checked.
+- Fixed asynchronous thumbnail restoration capturing a temporary default 3D
+  camera. Fresh projects without a saved view framed both actors; saved camera
+  target/distance were preserved on reopen. One earlier direct-GUI reopen timed
+  out; subsequent fresh/saved-camera checks and CMD playback passed. This does
+  not establish long-duration reliability or performance on every project.
+- Actual RGBMoCap.cmd playback (4 s): 29.74 fps, frame interval p95 34.78 ms,
+  max 35.65 ms, video/3D and mesh/video frame differences 0; two actors and name
+  labels were visibly present, render errors absent, paused skin dispatches 0.
+- Setup failure injection retained the old pointer and model/project sentinels
+  and removed its failed staging directory. Unsafe archive aliases were rejected;
+  generated batch paths with Korean text, percent signs and shell punctuation
+  were checked. This is not a full non-ASCII compiler-install test.
+- User's separate manual three-view/413-frame log completed in 712.08 s without
+  fatal traceback or OOM. No clean-Windows, other-GPU, 60-second/eight-person
+  capacity, or newly retargeted-character test is claimed in this pass.
+
+MAMMA camera-count restriction removal (2026-10-30, same Windows PC):
+
+- Removed the GUI/worker four-view maximum and the input/calibration parser's
+  separate 64-camera ceiling. Reconstruction still requires at least two views;
+  duplicate names, calibration/size checks and bounded metadata files remain.
+  Existing clip/person limits were not changed.
+- Input, calibration, request and saved-media validation accepted 2, 4, 5, 8, 16,
+  32 and 65 camera entries. Empty/duplicate inputs, a single-view reconstruction
+  and mismatched camera calibration were rejected.
+- The actual preparation worker decoded/resampled all 5, 16 and 65 test videos,
+  retaining 12 frames per view. Latest observed preparation times were 1.35,
+  2.93 and 9.88 seconds. These were tiny synthetic 320x180 clips with repeated
+  content for input-count regression, not multi-camera reconstruction benchmarks.
+- Actual GUI widgets loaded 5, 16 and 65 thumbnails, selected the final camera
+  and retained the shared trim and timeline frame. The 65-view GUI request queued
+  all six reconstruction stages. Save Project As and actual GUI reopening
+  retained all 65 media references, calibration and the selected last camera.
+  No 3D render/playback performance claim is made from this hidden-window test.
+- Shared system-RAM/Windows allocation-headroom checks and CUDA allocator budgets
+  were unchanged. Low-memory observations triggered the existing guard. Injected
+  CUDA OutOfMemoryError and CPU MemoryError produced failed events and nonzero
+  worker results while preserving the existing project manifest. This was fault
+  injection, not deliberate exhaustion of system/GPU memory.
+- No new 5/16/32/65-view SAM, VGGT or complete MAMMA fitting run was performed.
+  Removing a fixed input-count ceiling is not a measured memory-capacity guarantee.
+  Private test scripts, synthetic media and logs remain outside the source checkout.
+
+Pre-publication regression audit (2026-10-30, same Windows 11 / RTX 5090 PC):
+
+- A separate source/runtime copy and local-only Git remote exercised the
+  pre-MAMMA-to-current update, `install.cmd` verification/reuse and actual
+  `RGBMoCap.cmd` startup before the optional MAMMA runtime was registered.
+  Model/project/cache sentinels survived. Tracked local edits blocked updating;
+  the application lock blocked a second launch. This reused installed pinned
+  runtime files; it was not a clean-Windows or fresh-download installation.
+- `Setup_MAMMA.cmd` accepted the license response, performed full package/native
+  CUDA verification and retained the verified runtime. Declining left it intact.
+  Injected setup failure retained the old pointer and user-data sentinels;
+  archive escapes were rejected. Fresh native compilation was not repeated in
+  this audit; its earlier build evidence remains recorded above.
+- Fresh ExMR, FlowHMR and GVHMR processing each used the same 60-frame real-video
+  segment. FlowHMR included VGGT and Fast SAM; GVHMR included HTD, FootMR and
+  HandFlow. Reconstruction, correction, preview preparation and source FBX
+  saves completed. MAMMA separately processed two synchronized views, 30 frames
+  and two people through new SAM 2.1 masks, landmarks, VGGT, fitting and publication.
+- Seven source FBX files were actually imported in Blender 4.5. All retained
+  52 Hips-root bones and bone-only animation. Maximum sampled bone-head error
+  was below 0.008 mm. Character imports covered Mixamo FBX, VRM and a 797-bone
+  PMX; all four source models retargeted successfully. Eight character FBX
+  reimports covered mesh/motion-only options, original rest transforms and
+  sampled poses, with no armature-object or hair/clothing animation channels.
+  PMX VMD exports passed finite-channel/frame/structure checks; native MMD
+  playback was not repeated in this audit.
+- Fixed MAMMA preparation/publication failures incorrectly returning process
+  exit code zero. Both now emit failure and exit nonzero. Fixed retargeting's
+  MAMMA body selection; a real PMX retarget also passed while the separate
+  standard SMPL-X file was unavailable in the private test copy.
+- Real GUI checks covered all four scoped model managers, original/corrected
+  switching without frame/camera changes, manual contact editing, stale export
+  blocking, Apply Correction without inference, Save Project As/reopen and
+  MAMMA camera switching/private-body relocation. Eight project replacements
+  were sampled; this short test does not prove leak freedom. Cached switching
+  among three models in one project, GVHMR result variants, GUI character
+  import/retarget, linked-character refresh after correction and selected-row
+  character removal also completed.
+- Four-second actual CMD playback samples for each model measured 29.74 fps,
+  frame-interval p95 34.64–35.21 ms and maximum 35.28–36.74 ms. Video/3D and
+  mesh/video frame differences were zero; paused skin dispatches were zero.
+  These short clips on one PC are not long-video or cross-GPU guarantees.
+- A separate 797-bone PMX viewport check with two MAMMA source actors measured
+  29.73 fps over four seconds (p95 36.44 ms, maximum 37.87 ms), with no character
+  renderer error. Two-second rest-pose and paused-animation observations each
+  recorded zero loader-change events and zero frame swaps. This specifically
+  checks the short/final-window repaint regression, not long-duration stability.
+- Test scripts, licensed inputs, runtime copies, logs and generated motion were
+  kept outside the publishable checkout. Main, user, per-model, build and agent
+  guides were checked against current controls, file requirements and limits.
+
+### Person-selection responsiveness (2026-10-30)
+
+A two-person MAMMA project's independent copy was switched six times before
+and after the GUI change. With profiling disabled, median synchronous selection
+time fell from 803 ms to 173 ms; selected-preview/video readiness fell from
+1,117 ms to 534 ms. The common scene, source frame and world camera were retained.
+An unchanged active camera was reopened zero times instead of twice per switch.
+The remaining selected-person preview loading still runs in the background.
+
+Nested control updates now validate readiness once at their synchronous outer
+boundary. Shared-floor checks reuse one read-only snapshot inside an individual
+GUI validation call, never across calls or threads. Export and later callbacks
+still check disk afresh. Tests confirmed that pending publication, changed floor
+receipts and unapplied manual contact edits block export after a preceding valid
+check. Manual contact editing, actor switching and Apply Correction completed
+without replacing inference. The live non-default camera choice was retained.
+Existing ExMR, FlowHMR and GVHMR cached original/corrected views also rendered.
+Video reuse checks file identity, FPS and timeline offset; changed inputs and
+decode failures reopen normally. These are short same-PC measurements, not
+long-recording or other-hardware guarantees. Test data remains outside source.
+
+Four-second CMD playback samples across the four models measured 29.74–29.82 fps,
+with frame-interval p95 34.71–35.04 ms and maxima 35.86–36.73 ms. Video/3D and
+mesh/video frame differences were zero. GVHMR finished one queued frame just
+after Stop; a separate settled two-second pause recorded zero skin dispatches.
+
+### Automatic / Low Memory routing (2026-10-30)
+
+Fresh independent runs on the tested Windows/RTX 5090 PC covered both modes:
+ExMR and FlowHMR each processed 60 frames through correction and export; GVHMR
+also ran HTD, FootMR and HandFlow. MAMMA processed two synchronized views,
+two people and 30 frames through fresh masks, landmarks, VGGT, fitting and
+correction. Existing separate pinned runtimes were reused, not reinstalled.
+FlowHMR's Original SAM (Fast SAM off) also completed both modes on an independent
+eight-frame feature-extraction fixture.
+
+Automatic selected fast paths with spare GPU memory. Allocator-budget tests
+selected Low Memory and completed ExMR preprocessing at 3.9 GiB, body/hand
+features at 4.5 GiB, FlowHMR camera at 3.5 GiB, and SAM features/motion at 3 GiB.
+A real fast-loading CUDA OOM was released and retried once successfully in
+Low Memory. ExMR features at 4.1 GiB still failed safely with memory advice;
+the batch remained 8. These are caps on a 5090, not validation of real 3–4 GiB
+GPUs. Models and full-sequence context can still exceed available memory.
+
+Automatic versus Low Memory body-joint differences in the three single-video
+samples were at most 0.84 mm before correction and 0.53 mm after correction;
+separate inference runs are not bit-identical. MAMMA camera matrices and both
+actors' sampled exported joints/rotations were identical in this comparison.
+Ten corrected-source FBX files imported in Blender 4.5 with 52 Hips-root bones,
+bone-only animation and sampled positions within 0.2 mm of committed frames.
+Seven policy/retry/hook-lifecycle checks and actual Console/CMD mirroring passed;
+the saved Automatic selection was retained. A short hook test does not prove
+long-run leak freedom. Playback/rendering code was unchanged in this revision.
+
+ExMR Sapiens peak PyTorch allocation decreased from 5.68 to 3.10 GiB; combined
+body/hand feature-stage peak decreased from 5.15 to 3.87 GiB. These exclude
+driver/display allocations. Low Memory can increase elapsed time and host RAM;
+single-pass cold-start timings are not speed benchmarks. Precision, frame count,
+resolution, temporal context and fitting iterations were retained. RAM/Windows
+allocation-headroom monitoring remains a stop condition. Test scripts, weights,
+logs, motion and temporary fixtures remain outside the publishable checkout.
+
+### FlowHMR Fast SAM acceleration controls (2026-10-30)
+
+The app now saves two independent, default-on switches for bounded four-frame
+batching and GPU hand crops. Four combinations completed a real 60-frame input
+with 30 valid pelvis anchors each. Against both switches off, final joint-position
+differences were 0.21 mm at the 95th percentile / 1.52 mm maximum for batching,
+and 1.23 mm / 2.45 mm with both switches on. These measure output disagreement,
+not ground-truth accuracy. The separate earlier short-clip speed tests remain
+the basis of the tooltip estimates; this integration check is not a new paired
+speed benchmark.
+
+Peak PyTorch allocation was 3.44 GiB without batching and 3.84 GiB with batching.
+A seven-frame Low Memory run used one-frame batches with GPU crops and peaked
+at 1.92 GiB. Original SAM completed three frames with acceleration flags ignored.
+One-, two- and three-frame partial batches completed with finite outputs. CUDA
+calls are not claimed bit-identical. Precision, crop resolution and the 20-step
+FlowHMR generator were retained. No new packages or runtime installation were
+needed; no forced physical OOM test was performed in this integration check.
+
+Qt checks covered defaults, all four saved option combinations, busy-state
+disablement, Fast SAM off, and all four model pages at short/tall window heights.
+The settings use consistent top-down spacing and scroll when needed; hidden
+model pages no longer reserve the tallest page's height. Test files and logs
+remain outside the app checkout.
+
+
+## Sequential multi-person model reuse (2026-10-30)
+
+The app now groups ExMR, FlowHMR and GVHMR actor/take jobs by supported stage.
+One model serves actors sequentially, with explicit actor paths and separate
+receipts. GVHMR runs its observation and core phases in one worker, closing each
+model scope before the next phase. Optional HTD, FootMR and HandFlow keep their
+existing separate workers. Single-actor jobs keep their previous queue.
+
+App-path measurements on the documented Windows RTX 5090 PC used two tracked
+people with 60 and 45 frames at 30 fps and static cameras. Timings include feature
+and core worker startup, excluding discovery, camera estimation, correction,
+export and optional add-ons. These are one-trial observations, not universal
+speedups; import and filesystem warm-up vary.
+
+| Model | Separate actor workers | Stage reuse | Peak PyTorch allocated VRAM, before → after |
+| --- | ---: | ---: | ---: |
+| FlowHMR | 108.69 s | 65.34 s | 3.84 → 3.84 GiB |
+| ExMR | 161.08 s | 106.51 s | 5.68 → 5.68 GiB |
+| GVHMR | 56.02 s | 22.97 s | 2.82 → 2.82 GiB |
+
+All six fixed-input actor/model comparisons were tensor-exact. With fresh image
+preprocessing, maximum joint differences against the preceding experiment were
+0.344 mm for FlowHMR, 0.242 mm for ExMR and zero for GVHMR; upstream preprocessing
+roundoff is not a claim of improved or degraded accuracy.
+
+Sixteen unit checks covered model lifetime, replacement, error cleanup, allocator
+budgeting, OOM retry, queue ordering, bounded requests and path/runtime validation.
+Real workers checked cache hits without model construction, two-frame Low Memory
+feature extraction for FlowHMR/ExMR, Original SAM, corrupt ExMR hand-feature
+recovery, and correction/derived export for all three models. The app writer also
+saved three binary FBX files; Blender reimport was not repeated for this change.
+A controlled real CUDA allocator OOM in a separate 1%-capped test process recovered
+once in Low Memory and ended with zero allocated tensor bytes. This is not a
+full-model OOM stress test on another GPU.
+
+Actual GUI QProcess runs checked repeated cached queues and cancellation during
+actor B, followed by reuse of completed actor A and reconstruction of B. A 20 ms
+GUI timer had a recorded worst delay of 45 ms during that cancellation/retry test;
+this measures offscreen event-loop responsiveness, not viewport FPS. Repeat checks
+were short and do not establish universal leak freedom. GVHMR retained a stable
+32 MiB PyTorch allocation between phases and its worker then exited. No new
+runtime packages or changes to the pinned runtime registry were needed. Private
+fixtures, model links and test scripts remain outside the application checkout.
+
+## Pipeline and CPU preparation follow-up (2026-10-30)
+
+A separate Windows RTX 5090 experiment retained the pinned runtimes, native
+precision, batch sizes, resolution and temporal context. Two trials reversed
+execution order; stages released their model before the next stage loaded.
+AI worker times include startup and saved results but exclude discovery,
+camera estimation, correction and export.
+
+| Model / people | Separate phase workers, two trials | Connected phases, two trials | Peak allocated VRAM |
+| --- | ---: | ---: | ---: |
+| FlowHMR / 1 | 58.65, 53.33 s | 41.12, 44.18 s | 3.84 GiB in both |
+| ExMR / 1 | 84.83, 82.88 s | 46.32, 46.99 s | 5.68 GiB in both |
+| ExMR / 2 | 94.90, 90.76 s | 52.78, 53.81 s | 5.68 GiB in both |
+
+Inputs were 60 frames for one actor and 60+45 frames for two actors, at 30 fps
+and 720x1280. FlowHMR's two-person connected-phase benefit was smaller than
+trial variability, so its existing multi-person phase grouping was retained.
+Short-clip startup gains do not predict the same percentage on long footage.
+
+Warm per-stage tests used those clips plus a separate 120-frame 1080x1920 clip,
+each processed twice: 450 frames per variant. CPU preparation ahead by at most
+two batches reduced total measured Sapiens time from 11.53 to 8.63 s, ExMR body
+features from 18.57 to 13.75 s, and hand features from 7.50 to 5.63 s. Flow Fast
+SAM changed from 42.96 to 40.79 s. Peak CUDA allocation was unchanged and sampled
+RAM growth was small. ExMR final body-readout omission alone took 16.63 s; with
+preparation overlap it took 13.15 s. The analogous hand-readout omission had no
+clear benefit and was not adopted. These stage gains cannot be added together
+to claim a whole-job speedup.
+
+Sapiens and hand features were tensor-exact; ExMR body features differed by up
+to 4.8e-6, versus 3.9e-6 on baseline repeats. Optimized final motion differed by
+at most 0.83 mm / 0.306 degrees for FlowHMR and 0.88 mm / 0.068 degrees for ExMR.
+Baseline repeats also differed, by up to 0.77 mm / 0.217 degrees and 0.69 mm /
+0.047 degrees respectively. This is an output-preservation check without ground
+truth, not a claim of improved or degraded tracking accuracy. Fixed feature
+inputs produced tensor-exact motion when phases were connected.
+
+Automatic CPU preparation is limited to one producer and two prepared batches,
+with an additional 256 MiB prepared-storage estimate. It is disabled in Low
+Memory or with insufficient CPU/RAM headroom. Existing OOM recovery and actual
+system-memory monitoring remain active. No new runtime packages were added.
+
+The integrated app code passed 25 focused policy/lifetime checks and five
+tensor-exact grouped-versus-independent motion comparisons on fixed features.
+Real one-/two-person worker runs verified model release and cached reruns without
+loading a model. Offscreen GUI QProcess checks covered automatic single-person
+phase joining, cancellation in the second actor's body extraction and retry
+using completed preprocessing. A 20 ms GUI timer had a maximum observed delay
+of 44.92 ms during that cancellation/retry run; this is not a viewport FPS test.
+Eight-frame real clips checked Low Memory for FlowHMR/ExMR and FlowHMR Original
+SAM. A damaged private ExMR hand-feature cache recovered without recomputing
+valid body features. Correction and binary FBX saving were checked for both
+models; Blender reimport was not repeated for this optimization.
+
+## Contact correction v9: coherent root and swing transitions (2026-10-30)
+
+Cached-source regression covered ten sequences / 10,121 actor frames: two
+MAMMA actors, ExMR slow motion and stairs, FlowHMR long motion and backflip,
+GVHMR dance, and pushups from all three single-video models. No AI inference
+was rerun. Contact timings and stance ankle targets were retained. This is a
+correction comparison without motion-capture ground truth.
+
+The planner now joins swing targets to the final root-shifted free trajectory,
+fades its extra target adjustment at the free boundary, and evaluates a smooth
+floor-clearance constraint inside the root search. Native anatomical IK still
+publishes leg rotations once. Existing 1,024-frame cores, four-second halos,
+2 cm planning budgets, 60-evaluation cap, source ankle frames and hand solver
+remain. Jacobian column scaling improves numerical conditioning. An exhausted
+planning window is reported explicitly; it is not a convergence claim.
+
+For the first MAMMA actor, pooled knee short-period RMS fell from 0.935 to
+0.332 degrees (64.5%); the second fell from 0.390 to 0.329 degrees (15.6%).
+The identified free-leg join's added bend step fell from +14.22 to -0.41
+degrees. Short-period RMS subtracts a nine-frame degree-two Savitzky-Golay
+trace; it is a diagnostic, not ground-truth error. Source-relative knee
+second-difference RMS decreased on all ten sequences. Individual metrics do
+not all improve: backflip total short-period RMS increased by about 2%, and
+the stairs' worst added step increased by about 0.23 degrees. Residual source
+noise, incompatible/unreachable pins and rapid intended movement remain.
+
+MAMMA full-contact skinned sole height error stayed within 1.36 mm; across the
+other tested foot contacts it stayed within 1.14 mm. Stance ankle positions
+changed by less than 0.001 mm, fixed lengths and source ankle orientation were
+retained, and torso world rotations were preserved. Hand timings and arm-only
+behavior were checked; existing unreachable-palm residuals remain explicitly
+reported. The backflip retained 103 contact-free flight poses exactly. Manual
+intervals, disabled feet, empty timings, one-frame bypass and native window
+sizes 64 versus 1,024 were checked. Two-, three- and seven-frame contact clips
+remained finite. An intentionally exhausted planning cap produced its warning.
+
+CPU correction-only measurements, excluding body sampling, hands, inference,
+rendering and export: the MAMMA pair changed from 1.42 to 1.07 s (sum of three-run
+medians); the long FlowHMR case increased from 1.34 to 1.53 s. Other long cases
+were faster in these runs. Sampled process peak working set stayed below
+300 MiB for these numeric-input tests; this is not whole-app RAM usage. No GPU
+allocation or additional dependency is introduced by this change.
+
+A separate copied MAMMA project completed the installed correction, preview
+and binary FBX workers. Ordinary Blender 4.5 import checked all 422 frames,
+52 bones, rest transforms, terminal tips and sampled half frames: maximum
+joint error 0.0044 mm and fractional rotation error 0.0028 degrees against the
+committed export. This was not a new playback-cadence or clean-install test.
+User projects were not recalculated or replaced; Apply Correction is required
+to obtain the new result. Private fixtures and media are outside the checkout.
+
+## Final pre-publication review (2026-10-30)
+
+Rechecked the 25 queue/prefetch/model-lifetime tests, four-model settings layouts,
+Fast SAM option persistence and a real GUI connected-worker cache rerun. Current
+correction code also passed the short-clip, contact/flight and installed-versus-
+isolated checks above. Two-actor application-worker smoke tests completed for
+FlowHMR, ExMR and GVHMR using private projects; these included fresh ExMR/GVHMR
+processing and a FlowHMR cache hit. GVHMR retained 32 MiB of cuBLAS workspace
+after releasing its model: a separate diagnostic cleared that library workspace
+and measured zero remaining allocation. This is not a model leak or a guarantee
+of zero CUDA context memory. No new runtime packages or clean-PC tests were added.
+Source syntax, manifest hashes, local documentation links and publishable file
+composition were checked; private tests, assets and logs remain outside the repo.
+
+## Automatic VGGT meta/assign loading (2026-10-30)
+
+Only the camera-only fast loader now uses meta initialization and direct
+checkpoint assignment. Low Memory and its Automatic retry retain copy loading
+and the existing block offloader; generic depth loading keeps its previous path.
+No packages, model precision, sampled frames or camera equations changed.
+
+The preceding independent component study ran 14 configurations across the Flow
+and MAMMA Python runtimes. Camera pose encodings, intrinsics and extrinsics were
+exact; six real load/infer/close cycles and one controlled failure cleared model
+references and hooks. See [the measured scope](PERFORMANCE.md#vggt-camera-checkpoint-loading).
+
+App integration used copied private data, not user projects. FlowHMR's actual
+camera worker processed a 60-frame moving-camera clip with old/new fast loading,
+Low Memory and one deliberately injected CUDA transfer OOM. All numerical camera
+arrays were exact. The OOM test observed meta/assign on the first attempt, disposal
+of that model, then non-meta copy loading on the Low Memory retry. MAMMA's separate
+runtime processed its camera/capture worker from cached masks/landmarks for a
+30-frame, two-view clip. Old fast, new fast and Low Memory produced exact world
+cameras, estimated scale and calibration YAML. No new mask/landmark/body fitting,
+full-motion quality, Blender or clean-PC test is claimed for this loader change.
+
+Those seven camera-worker runs passed. Two additional checks confirmed a FlowHMR
+camera cache hit loads no VGGT model and Static Camera still skips VGGT with zero
+recorded GPU allocation. Five focused loader checks covered fast/Low Memory
+selection, unchanged generic depth routing, missing checkpoint rejection and
+unmaterialized-meta rejection. Test files, raw logs and assets stay outside the repo.
+
+
+## PromptHMR integration (2026-10-30)
+
+- The optional pinned Windows runtime was built and verified on the documented
+  RTX 5090 PC: SAM2 connected components, torchvision CUDA NMS and native SDPA
+  passed. Installed package hashes and a complete Pipeline import were checked.
+  Base installation verification retained all six existing profiles. No clean-PC
+  installation or other-GPU test was performed.
+- A fresh 422-frame, two-person fixed-camera video completed tracking, camera,
+  keypoint/image/video inference, native world post-optimization, app correction
+  and preview/bone preparation in 236.2 s. Peak worker working set was 8.74 GiB;
+  peak allocated/reserved CUDA memory was 4.61/7.83 GiB. See the
+  [PromptHMR guide](models/PROMPTHMR.md#recorded-validation) for timing scope.
+- Flat-hand-mean representation conversion matched native mesh/joint samples
+  exactly for both actors at three sampled frames. This is a coordinate/data
+  convention check, not ground-truth reconstruction accuracy.
+- Both actors' original and corrected FBXs imported into Blender with 52 bones,
+  Hips root, finite bone-only animation and distinct rest transforms. Save As,
+  reopening and full-clip Mixamo character retargeting/baking passed.
+- A short native OpenGL playback check recorded 31 ms median and 47 ms p95/max
+  frame-swap intervals, without a sampled video/timeline frame mismatch. Three
+  repeated project opens retained 784 handles and 51 threads, with about 534 MiB
+  working set. This is not universal FPS or proof of leak freedom.
+- Fresh 60-frame inference/export smoke tests passed for ExMR, FlowHMR and GVHMR.
+  Model switching and scoped Model Manager rows were checked for all five tools.
+  These checks do not cover every add-on, long sequence or difficult occlusion.
+- Test programs, source videos, model weights and outputs were kept outside the
+  public source file list. Restricted upstream PromptHMR source is downloaded
+  locally by setup, rather than bundled into the source distribution.
+
+
+## PromptHMR untracked hand placeholders (2026-10-31)
+
+The pinned native video path writes zero 3×3 matrices for all 30 untracked finger
+joints. They are not rotation matrices; subsequent axis-angle conversion produced
+a fixed 120-degree rotation at every joint. Earlier native-mesh equivalence checks
+preserved that invalid posture and did not establish a valid hand default.
+
+Publication now uses the registered relaxed hand mean for this all-zero missing
+hand case, while keeping raw native inference files intact. Valid native hand
+rotations keep their prior conversion; inconsistent invalid matrices are rejected.
+Receipts record the hand policy. Older published results show a refresh notice.
+
+Private copies of two two-person clips (32 and 85 frames) were republished from
+cached inference. Original and corrected body/root/shape tensors were exact;
+the first 22 body/wrist joint positions were unchanged. Four original/corrected
+FBXs imported into Blender with 52 bones and 30 finger bones. Local finger
+rotation variation across the 32 frames was zero. Source projects/raw caches were
+not changed. The runtime and AI inference calculations were not modified.
+
+
+## ExMR public API and bounded toe IK (2026-10-31)
+
+The integrated upstream source is v0.1.5, commit
+`57e4824b9c532b52ed1c8b12c44000ad41ef4c4c`, retaining the documented Windows,
+Low Memory, bounded prefetch and stage-scoped reuse adaptations. Public
+`hand_boxes`, `model_inputs`, `ExMR.from_pretrained` and direct model forward
+replace private pipeline calls. Upstream toe IK now limits its target offset to
+0.03 m per axis. Existing weights, runtime package pins and other model backends
+are unchanged.
+
+Only those numerical changes were adopted. The app keeps its existing world
+frame through an explicit local `normalize_world=False` option (generic upstream
+default remains enabled). The upstream Boolean foot-contact detector is not
+used by app correction. Shared contact code and manual timing precedence remain
+unchanged. Source/API/solver hashes invalidate outdated ExMR stage receipts;
+opening saved projects does not initiate reconstruction.
+
+- Seven cached-feature actor segments from five real scenes (997 actor frames)
+  produced tensor-exact camera/world parameters and static-confidence logits
+  against the independently verified toe-only reference. Scenes included two
+  dancers, burpees, stairs, moving-camera motion and two-person interaction.
+- Fresh 60- and 45-frame actors passed keypoint, body-feature, hand-feature and
+  motion stages in Automatic and Low Memory. Model instances were reused
+  sequentially within each phase and released on session exit. Observed stage
+  sums were 46.69 and 53.00 seconds; these single runs are not a controlled
+  speedup benchmark or universal performance promise.
+- Original/corrected meshes, paired shared cameras and shared-floor correction
+  completed. Eight actual app FBX exports imported in Blender 4.5 with 52 bones,
+  Hips root, finite bone-only keys and rest geometry distinct from animation.
+- The new SimpleVO JPEG-input path differed substantially on a moving-camera
+  sample. A small explicit frame-reader/count adapter retains the old canonical
+  video pixels without extracting another JPEG sequence. A 267-frame Unicode-path
+  test reproduced old rotations within 0.0000014 degrees; repeated calls reused
+  the cache without rewriting it. Neither estimate was scored against camera
+  ground truth.
+- Updated stale inference receipts recomputed successfully; an immediate repeat
+  hit the cache without rewriting motion. Changing the solver hash invalidated
+  the stage identity. Manual intervals remained authoritative when automatic
+  confidence was zero.
+
+The separate contact-policy comparison did not justify replacing shared contact
+detection. On the stairs segment, maximum frame-to-frame change of *added knee
+flexion* decreased from 3.553 to 1.983 degrees with the new toe IK and current
+contact policy, but rose to 4.114 degrees with the official Boolean timings used
+directly. This is not total knee jitter or error against motion ground truth.
+The body-height-only gate excluded just two frames across the tested segments;
+the existing large burpee transition remained. No blanket contact-quality claim
+is made. No clean Windows installation or second GPU was tested, and the other
+four models were not fully reinferred for this ExMR-only integration. Private
+test programs, footage, registered bodies and outputs remain outside the public
+source distribution.
+
+
+## Official ExMR checkpoint metadata (2026-10-31)
+
+Model Manager includes `ExMR configuration` (`models/exmr/config.json`, 180
+bytes), pinned to the same Hugging Face revision as the existing ExMR weights.
+Download All and the row's Auto Download use the official HTTPS endpoint and
+SHA-256 validation. Manual Download and Import use that same revision. It is
+checkpoint metadata; it does not alter model architecture or app settings.
+
+The actual download passed size/hash checks in an isolated data folder. A second
+call performed no network request or file rewrite. Invalid manual imports were
+rejected while preserving the valid file; a valid import succeeded. Offscreen
+Qt checks confirmed the row only appears for ExMR, changes to Ready after
+validation and leaves other model scopes unchanged. The development app also
+downloaded and verified its own copy. Test artifacts and model files remain
+outside the public source manifest. This metadata-only registration does not
+require a runtime reinstall or a new checkpoint.
+
+## PEAR live integration (2026-10-31)
+
+The app live mode was checked on the documented Windows/RTX 5090 test PC using
+the pinned shared runtime plus the small PEAR support overlay. Six fixed-crop
+frames matched the earlier validated fast PEAR experiment exactly: maximum joint
+and vertex difference was zero. This is equivalence to that FP16-encoder fast
+path, not a claim of identity to every upstream precision/configuration.
+
+Video timeline requests and native GPU mesh rendering were exercised. Readback
+matched submitted vertex positions exactly and normals were finite. After
+warmup, sampled automatic-detector frames typically took about 23–28 ms, with a
+35 ms outlier; peak PyTorch
+allocated VRAM was approximately 1.93 GiB. Startup varied around 18–34 seconds.
+A 10 ms GUI heartbeat timer usually ran at 16 ms, with startup outliers around
+0.55–0.8 seconds. These short tests do not establish universal frame rates.
+
+DroidCam appeared by name. Camera images, a 90-degree rotation, switching back
+to video and releasing the worker/device were checked. No person was visible
+in that camera scene: a missing-person notice and cleared pose were verified,
+not live human pose accuracy. No video or motion recording was created.
+
+Three full worker open/close cycles settled bursts of 1,000 latest-frame requests
+and exited in approximately 0.77–0.80 seconds. The supervising test process kept
+218 handles and about 32 MiB RSS after each cycle; this is not a long-duration
+GUI/driver leak guarantee. Twenty UI switch pairs across the five offline models
+and PEAR preserved their selected offline result and camera target. Scoped model
+managers and guides opened for all six tools. Existing offline inference/correction
+math and pinned runtime packages were not changed or rerun for this UI integration.
+
+Source/setup receipts, malformed live packets, bounded mailbox behavior, syntax
+and public-source composition were checked. Models, user video frames and private
+benchmark scripts remain outside the public source manifest.
+
+### PEAR video playback follow-up
+
+A continuous-playback regression was reproduced: each new request cleared the
+mesh, and the exact-request test rejected almost every completed playing result.
+The original seven-second test showed a pose in only 0.9% of visibility samples.
+Playback now presents the completed video image and pose together, retains the
+last pair while processing, and rejects results from earlier seek/source epochs.
+Paused inspection still requires the exact requested frame. The ordinary video
+decoder is suspended during paired display; bounded forward skips avoid repeated
+codec seeks. Twenty-four decoded test frames had zero pixel differences against
+individual seeks. Inference inputs, precision and model calculations are unchanged.
+
+On the same test PC, a seven-second 30 fps source produced 195 completed pose
+presentations (about 27.9 fps), with 100% pose visibility and zero image/pose frame
+mismatches. Presentation intervals were 31 ms median, 52 ms p95 and 78 ms maximum;
+request-to-display delay was 62 ms median, 78 ms p95 and 94 ms maximum. Peak PyTorch
+allocated VRAM remained 1.93 GiB. These are short local observations, not guaranteed
+rates. The preview image transfer is bounded to 1280 by 720; source pixels used
+for inference and original video files are unchanged.
+
+Additional tests covered 2x playback, manual seeking during playback, repeated
+half-second loops, pause/exact seek, and deliberately slowed presentation polling.
+Every presented image/pose pair matched. Loop and slow-poll outliers reached about
+157 ms and 250 ms respectively; an exact seek can briefly wait for its first pose.
+GUI heartbeat p95 was 16 ms, with a 188 ms maximum including startup. Observed GUI
+RSS ranged roughly 522–545 MiB and settled around 534 MiB after leaving; handles
+stayed around 1,495 after initial warmup. Worker shutdown took about 0.8–1.1 seconds.
+These short runs do not prove long-duration leak freedom. Twenty model-switch
+pairs also preserved offline state. Packet checks covered late/duplicate results,
+old epochs, missing people and recovery, and paused exact-frame acceptance.
+
+### PEAR bone appearance follow-up
+
+PEAR now shares the offline octahedron generator and BoneRenderer, including flat
+faces, joint caps and outlines. Its 52 body/finger display bones use native PEAR
+landmarks; jaw/eye control bones are excluded. This does not fit an export rig or
+change inference. Terminal head/toe/finger points use the pinned EHM surface-landmark
+layout, checked against its registered metadata. Six cached poses retained their
+input joints exactly; maximum display endpoint error was below 0.00000002 metres.
+GPU readback matched the unmodified skin exactly and bone normals were finite.
+Bone Overlay toggling preserved the pose. CPU frame preparation was about 0.81 ms
+median / 0.88 ms p95; the bounded bone buffers occupied about 1.07 MiB. Short live
+playback tests showed 24–25 completed presentations per second with uninterrupted
+pose visibility and exact image/pose pairing on this PC. These observations are
+not a guaranteed frame rate or a controlled renderer-only speed comparison.
+
+### PEAR resident model lifetime
+
+PEAR now preloads/warmups when selected, including with no input, and keeps one
+model worker until the tool is left or closed. Switching inputs and Restart Live
+Tracking release/reopen captures and reset tracking without rebuilding models.
+Recoverable input errors retain the worker; fatal model/resource failures still
+release it. Idle acknowledgements keep intentional waiting distinct from stalls,
+and RAM/commit-pressure supervision remains active.
+
+Two local lifecycle runs kept one worker PID through preload, two video sources,
+six repeated video replacements, camera-open failure and recovery, playback and
+tool exit. Initial preload took about 34 seconds; warm video replacement to first
+pose took roughly 0.19–0.30 seconds, and input restart about 0.16 seconds. Worker
+RSS was about 2,344 MiB while ready/idle and 2,513–2,519 MiB across the last repeated
+video switches. Handles settled at 1,171 during those switches. Exit released the
+worker in about one second. Short playback checks retained 100% pose visibility;
+GUI heartbeat p95 was 16 ms, with startup maxima up to 578 ms. These short tests
+do not establish long-term leak freedom. An active physical webcam stream was
+not available during this follow-up; camera-open failure recovery was checked.
+Packet checks also confirmed that an obsolete recoverable camera error cannot
+unload models for the newly selected source. Tests/captures stay outside source.
+
+### PEAR live limb roll
+
+The endpoint-only preview basis was underdetermined around each shaft and could
+spin near its reference-axis singularity. PEAR now uses its own-joint EHM/FK
+rotations with fixed registered-neutral surface calibration, reusing the shared
+front/side surface evidence. A source-relative soft correction is bounded to five
+degrees, fades opposed/weak hints, and uses only a bounded past 0.10-second circular
+history while streaming. This is a lightweight causal adaptation, not the offline
+centred/paired iterative solver. Original inferred rotations, joints and skin are
+not smoothed or refitted by this display calculation. Surface sampling and roll
+run in the worker even with Bone Overlay hidden; painting uploads finished frames.
+Neutral calibration is prepared once on CPU.
+
+In a 180-frame / six-second real clip, the largest inter-frame change of **added
+display roll relative to the inferred source** fell from 179.04 to 0.60 degrees;
+the p95 fell from 59.49 to 0.22 degrees. These are display-error measurements, not
+the total physical rotation of a limb or a claim that the underlying inference has
+no jitter. Maximum display endpoint error was below 0.00000003 metres. Seek-order,
+input-reset, full-body rotation covariance and independence from lower-joint roll
+were checked. Twenty-six earlier sampled poses also passed the fidelity checks.
+Six fixed-crop inference regressions retained exactly identical joints and vertices
+to the earlier fast-path outputs. GPU mesh readback was unchanged and bone normals
+were finite; a 180-frame before/after display video was rendered privately.
+
+Worker roll calculation took about 0.56 ms median / 0.60 ms p95 on the test PC.
+A short actual app playback showed about 25.6 completed presentations per second,
+100% pose visibility and zero image/pose frame mismatches. Presentation intervals
+were 32 ms median, 47 ms p95 and 63 ms maximum. Peak allocated VRAM remained about
+1.93 GiB. GUI heartbeat p95 was 16 ms, with a 360 ms maximum including startup.
+These short observations are not universal speed or long-duration leak guarantees.
+
+### PEAR thigh neutral-roll calibration follow-up
+
+The previous added-roll continuity checks did not establish alignment to the mesh.
+Separate proximal and knee patches gave the thigh and shin different constant
+neutral references. Both segments now use the same knee material patch; the arm
+pair likewise shares the elbow patch. Each bone retains its own inferred rotation.
+This changes display bases only, without modifying model outputs, joints or skin.
+
+Removing shaft-direction differences by parallel transport, neutral left/right
+thigh-to-shin roll disagreement fell from -39.05/+13.27 degrees to +1.77/-0.28.
+In 180 continuous frames, absolute leg surface-facing residual p95 fell from 42.01
+to 4.51 degrees (maximum 44.43 to 6.63). Across 26 separate sampled poses, p95 fell
+from 44.13 to 5.73 degrees. These are material-proxy alignment measurements, not
+ground-truth anatomical accuracy. Arm surface residual p95 also improved: 9.35 to
+7.50 degrees in the continuous clip and 26.37 to 14.50 in the separate poses.
+
+The largest inter-frame change of added display roll in the continuous clip was
+0.79 degrees, versus 0.60 before; fixing static alignment is distinct from reducing
+every temporal metric. Unmodified inputs, proper rotations, stateless seeks, input
+reset and independence from lower-joint rotations passed. Maximum endpoint error
+was below 0.00000003 metres. GPU mesh readback was identical; bone normals remained
+finite in the 180-frame comparison render. A separate CPU check measured display
+orientation work at 0.70 ms median / 0.94 ms p95. No model inference or additional
+GPU allocation is needed for this patch mapping change. Tests and captures remain
+outside the source tree.
+
+A fresh seven-second app playback retained 100% pose visibility, zero image/pose
+frame mismatches and about 25.7 completed presentations per second. Peak allocated
+VRAM was 1.93 GiB; GUI heartbeat p95 was 16 ms (359 ms maximum including startup).
+Presentation intervals were 32 ms median, 62 ms p95 and 93 ms maximum.
+Closing released the worker in about 0.94 seconds. This short check does not test
+long-term resource growth or an active physical webcam.
+
+### PEAR foot/toe display basis follow-up
+
+The generic shortest-arc zero-roll frame left a constant foot-width tilt when
+combined with the registered ankle-to-toe pitch/yaw. Foot and toe display bases
+now use the registered-neutral foot direction and body up, with consistent lateral
+sign. This calibration is constant; each bone still follows its own inferred FK.
+It does not move endpoints, change inference/skin, use toe rotation for incoming
+ankle roll, or add frame-by-frame filtering or GPU work.
+
+Validation used separate ankle/toe material regions (51/96 left, 53/96 right
+vertices with more than 85% weight to the respective joint). A best-fit material
+rotation transports the same neutral foot-width reference for comparison. In 180
+continuous frames, aggregate width-direction error p95 fell from 26.29 to 3.66
+degrees (maximum 28.76 to 4.52); in 26 separate poses, p95 fell from 26.70 to 3.71.
+These measure the chosen neutral reference's agreement with deforming material,
+not anatomical ground truth. A forefoot span alone is unsuitable for ankle-roll
+validation because it also contains the toe joint's animation.
+
+Non-foot display frames remained bit-identical to the preceding thigh-roll fix.
+Endpoint error stayed below 0.00000003 metres, original arrays were unchanged,
+and proper frames, seek/reset behavior, rigid rotation covariance and independent
+ankle/toe rotations passed. Continuous physical foot-frame step p95 remained about
+8.89 degrees (8.88 before), maximum 18.09 degrees; this is inferred motion, not
+newly added roll. GPU mesh readback was exact and normals finite in a separate
+180-frame comparison render. Private scripts, model data and video captures remain
+outside the public source tree.
+
+A fresh seven-second app playback showed 25.1 completed presentations per second,
+100% pose visibility and zero image/pose frame mismatches. Presentation intervals
+were 32 ms median, 62.3 ms p95 and 125 ms maximum; GUI heartbeat p95 was 16 ms,
+maximum 359 ms including startup. Peak allocated VRAM was 1.93 GiB. Worker exit
+took about 0.97 seconds. This short run is not a universal speed or leak guarantee;
+no active physical webcam was tested in this follow-up.
+
+### PEAR common input rotation and smoothing (2026-11-01)
+
+**Smooth Motion** and **Rotation** now apply to video and webcam. Rotated input
+pixels are used for detection/inference and the matching image is returned even
+for a paused video seek. Source files are unchanged. Video playback uses source
+timestamps across small forward skips instead of resetting its filter at each
+skip. Paused seeks/loops/new epochs prime up to eight past parameter frames
+(six at 30 fps), skipping geometry for hidden context frames. Obsolete context
+requests are cancelled between inferences; no future frames or growing cache.
+
+The causal adaptive rotation filter uses shortest geodesic interpolation, velocity
+vectors in one coordinate frame, a 1.2 Hz base cutoff and 8 Hz upper cutoff.
+Motion adaptation uses slope 0.65; shape uses 0.35 Hz / 0.02. Root translation
+uses vector speed, 1.2 Hz / slope 4 and the same upper cutoff. This is an original
+live adaptation of the [One Euro filter principle](https://gery.casiez.net/publications/CHI2012-casiez.pdf),
+not an offline motion/contact solve. Smoothing intentionally changes the live pose.
+
+In one 150-frame real clip, rotation-acceleration RMS changed from 109.48 to 86.65
+rad/s² versus the preceding smoother (about 21% lower); root-relative joint
+acceleration RMS changed from 31.15 to 25.66 m/s² (about 18% lower). Actual motion
+also contributes to these measures; they are not ground-truth reconstruction
+errors. The shared process compared raw, preceding and revised parameter geometry;
+peak allocated VRAM was 1.93 GiB and process RSS about 2.47 GiB.
+
+Controlled synthetic 1.5-degree rotation noise reduced stationary RMS error from
+1.11 to 0.91 degrees and residual acceleration about 32%. The tradeoff is lag:
+the slow-motion signal's best frame delay increased from about 67 to 100 ms;
+fast-motion unshifted RMS error increased from 9.27 to 12.34 degrees. This is
+stronger stabilization, not a claim of equal responsiveness or universally more
+accurate motion. The checkbox disables parameter/root smoothing for raw inspection.
+
+A real worker roundtrip verified repeated smoothed seeks were bit-identical,
+unfiltered results returned identically after toggling, 90-degree image pixels
+matched the rotated/resized decoded source exactly, and forward skipped playback
+used zero extra context frames. Warm six-frame-context seeks took roughly 0.20–0.22
+seconds; subsequent sampled playback requests roughly 0.05 seconds including pipe
+polling. One resident model PID was retained; worker close took about 1.06 seconds.
+Turning an upright test image sideways lost person detection; pixel rotation
+support does not guarantee recognition of every input orientation. Pure checks
+covered valid rotation matrices, time resets, bounded context, root coordinate
+invariance and expanded arbitrary-angle rotation. Private tests and captures are
+kept outside the public checkout; physical webcam capture was not retested here.
+
+Actual app playback for seven seconds retained 100% pose visibility with zero
+image/pose frame mismatches at about 25.7 completed presentations/s. Intervals were
+32 ms median, 62 ms p95 and 63 ms maximum. GUI heartbeat p95 was 16 ms, maximum
+359 ms including startup. Peak allocated VRAM remained 1.93 GiB, and worker exit
+took about 0.89 seconds. These short observations do not prove universal FPS or
+long-term leak freedom.
+
+Eight repeated input reopens in the updated worker retained one model PID.
+RSS settled near 2,577 MiB (first reopen about 2,575 MiB), with 1,160 handles
+throughout. Reopens including six-frame seek context took about 0.22–0.28 seconds.
+The repeated run closed its worker in about 0.95 seconds. This bounded sample
+showed no sustained resource growth; it is not a long-duration leak guarantee.
+
+### PEAR support included in base installation (2026-11-01)
+
+`install.cmd` now prepares PEAR's small source/utility overlay after the base
+runtime transaction commits. `update.cmd` reaches the same managed installation
+flow. PEAR reuses the pinned shared Python/Torch packages; model weights and
+registered geometry remain separate. The separate PEAR setup CMD was removed.
+
+The support receipt binds its source/adapters and installed shared-runtime group.
+A matching, intact receipt is retained without download/extraction or another CUDA
+verification process. A changed base, changed support source or damaged inventory
+stages and verifies a new support generation before replacing the pointer. The
+installer keeps its retry marker until this succeeds; failed support preparation
+does not roll back or corrupt the committed base packages or erase user data.
+
+Eight isolated preparation checks covered initial receipt creation, idempotent
+reuse without downloads, base-change invalidation, verification/download failure
+preserving the old pointer, damaged-source recovery, application-lock refusal and
+the integration call's ordering. A separate simulated full installer flow confirmed
+the helper runs under the already-held lock after base commit, failure retains the
+retry marker, retry succeeds, and model/project sentinels survive both attempts.
+These use small mocked archives/processes for fault injection, not a clean-PC test.
+
+The actual Windows `install.cmd` flow then completed on the test PC: all six base
+runtime groups passed package/import verification and were retained; cached pinned
+PEAR archives prepared 88 support files (about 0.87 MiB) and passed actual CUDA
+transform/NMS checks. The shared-group receipt matched and the retry marker cleared.
+A subsequent support preparation retained the same generation without download or
+another verification process. This used an existing installation and cached
+archives; it is not a clean-Windows or fresh-network installation test.
+Six fixed-crop real PEAR inference cases through the newly prepared support path
+matched the earlier fast-path references exactly (zero joint/vertex difference).
+This checks the support path and package reuse, not webcam hardware or every pose.
+
+### PEAR lightweight One Euro path (2026-11-01)
+
+This revision supersedes the earlier same-day video pre-roll design. The existing
+One Euro equations were not the main latency source: a smoothed seek or large
+frame gap reconstructed six hidden past frames, and setting changes cleared the
+last visible pair. Each request now infers exactly one frame. A seek seeds the
+filter from that pose; continuous playback/webcam samples use their real time
+delta. No future samples, hidden inference or history cache are used. The last
+matched image/pose stays visible during replacement. A smoothing-only toggle
+retains capture, person association, placement origin and camera framing.
+
+The same filter coefficients/geodesic equations are retained. CPU parameters are
+processed in two bounded batches (rotations/scalars), and the normal FP32 pose/face
+path packs its tiny tensors into one transfer in each direction. A generic mixed
+dtype/device fallback is retained. In 360 parameter samples, batched results
+matched the preceding filter exactly, including face axis-angle conversions.
+Median CPU filter time fell from 0.243 to 0.104 ms (p95 0.114 ms). On real CUDA
+pose/face tensors, filtering plus transfers fell from 0.648 to 0.256 ms median
+(p95 0.851 to 0.399 ms); rebuilt joints and vertices were bit-identical. This is
+filter/transfer overhead, not the whole model's inference time.
+
+Paired worker runs on one real video measured smoothed random-seek processing at
+195.49 ms median before versus 58.67 ms after (response including polling about
+217 versus 77 ms). Large skipped-frame requests fell from 171.12 to 57.92 ms.
+Ordinary short skipped playback stayed around 30 ms; the gain is chiefly removing
+hidden reconstruction, not multiplying steady-state model FPS. Isolated seeks now
+show their own prediction rather than the old pre-rolled filtered pose. Sequential
+filtering has identical parameters, but seek/gap histories intentionally differ.
+Worker allocated VRAM remained about 1.93 GiB; end-of-run RSS was about 2,537 MiB
+before and 2,532 MiB after. Single short runs are not universal performance or
+long-duration leak guarantees. Tests remain private and source videos unchanged.
+
+An actual seven-second app run toggled smoothing off and back on during playback.
+Both toggles retained the displayed pose and camera state. Pose visibility stayed
+100%, with zero image/pose mismatches, zero context frames and one inference per
+reported frame. Observed presentation rate was about 26.9/s; intervals were 32 ms
+median, 57.5 ms p95 and 156 ms maximum. The maximum includes setting changes;
+continuous visibility is not a claim of perfectly uniform cadence. GUI heartbeat
+p95 was 16 ms, maximum 359 ms including startup. Allocated VRAM remained 1.93 GiB,
+and closing released the worker in about 0.97 seconds. Physical webcam capture
+was not retested in this follow-up.
+
+Eight input replacements retained one resident worker; RSS stayed around
+2,532–2,533 MiB and handles remained 1,160. Replacement-to-pose times were about
+0.125–0.141 seconds including capture reopening, with no temporal pre-roll. Repeat
+seeks remained deterministic, smoothing-off results returned identically, rotated
+pixels still matched the decoded source and the worker exited in about 0.97 s.
+
+
+## PEAR adjustable One Euro strength (2026-11-01)
+
+The live checkbox is now One Euro Filter with a short tooltip. Filter Strength
+ranges from 1 to 100, default 50. Higher settings lower adaptive cutoffs/slopes
+for pose, face, shape and root placement; this reduces jitter and increases lag.
+Strength-only edits preserve filter history and do not reload the resident model.
+
+At default 50, 360 parameter samples still matched the previous filter exactly
+(maximum difference zero). Synthetic alternating-noise and step tests confirmed
+monotonic smoothing/response changes at 1/25/50/75/100, valid rotations, unchanged
+input parameters and exact seek reseeding. A seven-second real-video GUI run
+changed strength five times and retained pose/camera state each time: 100% pose
+visibility, zero image/pose mismatches and one inference per displayed result.
+Observed presentation rate was 26.4/s; pose intervals were 32 ms median, 60 ms p95
+and 78 ms maximum. Allocated VRAM remained 1.93 GiB.
+These short local tests are not universal FPS or long-duration stability claims.
+Physical webcam capture was not retested; the same filter path serves both inputs.
+Tests and source videos remain outside the public repository.
+
+
+## PEAR explicit Start / Stop (2026-11-01)
+
+Selecting PEAR no longer loads or warms models. The right-side Start Live Tracking
+button explicitly starts the worker and becomes Stop during loading and tracking.
+Stop invalidates pending output, stops playback, clears the live mesh and releases
+only this worker/camera. Start is disabled while shutdown finishes. Video/webcam
+changes while running still reuse the model; input or filter edits while stopped
+cannot start it. Guides supersede the earlier automatic-preload workflow.
+
+A real-video GUI lifecycle test cancelled one loading worker, then completed two
+Start/play/Stop cycles with fresh workers. Model selection, video open, stopped
+webcam selection/settings and leave/reselect created no worker. Loading cancellation
+completed in about 2.06 seconds; both ready workers exited in about 0.92 seconds.
+Fresh load/warmup was about 35.8 and 36.5 seconds on the test PC. All sampled video
+images matched their pose frame. The repeat lifecycle run used a minimized GUI;
+the preceding visible run also verified video playback and the Stop button.
+Ten packet-order/seek/missing-result regression checks passed. GUI heartbeat p95
+was 16 ms, maximum 1,609 ms across setup, lifecycle and model switches; this does
+not establish uniform rendering cadence or long-duration leak freedom. Physical
+webcam capture was not retested. Private tests and user videos were not published.
+
+
+## PEAR YOLOv8s detector (2026-11-01)
+
+PEAR alone now defaults to official YOLOv8s v8.3.0 (22,588,772 bytes), scoped as
+`pear_yolo` in Model Manager with direct official download and SHA-256 checked
+imports/loading. Offline models retain their existing YOLOv8x asset and behavior.
+No runtime package, detector resolution (640), threshold (0.5), crop ratio (1.25),
+PEAR precision, full mesh, filter or bone-roll calculation changed.
+
+Separate warmed worker tests processed 26 sampled frames from two real videos
+and 90 sequential smoothed frames. Both variants detected the person in all
+116 requests. Frame processing median was 27.29 ms with x versus 24.80 ms with s
+(about 9.1% less time); p95 was 32.24 versus 32.07 ms. Detector medians were
+11.26 versus 9.03 ms. These exclude decoding, GUI transfer and drawing; they are
+not guaranteed viewport FPS. Peak allocated GPU memory was 1,932 versus 1,664 MiB;
+end RSS was 2,174 versus 2,144 MiB. Short runs are not leak or hardware guarantees.
+
+Detected boxes averaged 0.972 IoU against the previous detector. Pose rotations
+differed by 1.08 degrees mean, 3.89 degrees p95 and 26.50 degrees maximum over
+body/hand joints. Root-relative joint differences averaged 11.2 mm; wrist/ankle
+p95 was 36.6 mm, maximum 121.1 mm. These are differences, not ground-truth errors
+or evidence of equal accuracy. With the same x boxes supplied to the production
+s path, all 1,392 stored pose/box/camera/joint arrays were bit-identical, isolating
+the changes to detection/cropping. Five model-asset checks covered scoped readiness,
+verified import, rejection of a tampered replacement, preservation of the previous
+model/receipt and invalidation after an installed-file change. Tests and local
+source videos remain outside the public checkout.
+
+An actual seven-second visible app run with the integrated s detector presented
+189 image/pose pairs (about 27/s), retained the mesh throughout and had no sampled
+frame mismatches. Pose intervals were 32 ms median, 47 ms p95 and
+110 ms maximum. Allocated worker VRAM peaked around 1.64 GiB.
+The worker closed in about 0.84 seconds. This is not a synchronized before/after
+viewport-FPS benchmark. Webcam capture and longer-term identity stability were
+not retested in this follow-up.
+
+## PEAR fixed-length bones and forward toe tips (2026-11-01)
+
+The live worker uses fixed-length physical FK pivots and predicted rotations.
+A resident CPU EHM model calibrates anatomy on first valid input and Reset Bones;
+ordinary frames do not evaluate body skinning or mesh-regressed joints. A bounded
+32-entry parameter-only history supports reset from the displayed pose ID. Expired
+references warn and retain the rig. Seeks/filter edits retain calibrated lengths.
+There is no new video or motion archive.
+
+Three private clip replays covered 539 frames. CPU calibration matched the
+earlier GPU-based calibration within 0.00024 mm. Per-segment length variation
+was below 0.00018 mm (FP32 roundoff). Invalid NaN calibration retained the old rig.
+A real worker verified first-frame calibration, fixed lengths, expired-reference
+rejection, exact-reference reset and new-input calibration without reloading.
+
+In a visible five-second app test, 150 image/pose pairs matched, approximately
+30/s. Presentation intervals were 31 ms median, 56 ms p95 and 78 ms maximum.
+Worker processing was 21.43 ms median, 23.80 ms p95 and 160.31 ms maximum.
+Six consecutive resets paused on the displayed frame, preserved the model process
+and viewport camera, and updated bound geometry in 0.109–0.141 seconds. Hiding
+bones or changing filter strength did not recalibrate. Stop released the worker
+in about 0.94 seconds. Startup took about 34 seconds; peak allocated worker VRAM
+was 1,541 MiB. GUI handles remained at 1,691 across six resets; worker working set
+changed from about 2.4057 to 2.4061 GB and GUI RSS from 587.8 to 588.6 MB.
+Timer intervals including startup were 16 ms median, 31 ms p95 and 344 ms maximum.
+Short runs do not establish universal FPS, leak freedom or webcam/other-GPU behavior.
+
+The subsequent toe-tip change centres each neutral terminal vector on its foot's
+forward sagittal plane instead of the big-toe surface landmark. Length and vertical
+pitch are retained; native pivots and predicted rotations are unchanged. Cached
+three-clip replay and OpenGL rendering verify the new constant display reference.
+Other models, source correction and exports are unaffected.
+
+## PEAR World Position (2026-11-01)
+
+The default-on World Position option retains estimated placement. Off translates
+the finished preview uniformly to the currently displayed pelvis XYZ, including
+height; when stopped, the first valid pose supplies the anchor. Rotations and
+relative pose continue. Only the latest raw packet and one anchor are retained.
+Input changes and Stop clear them; Reset Bones retains the anchor. Toggling does
+not submit inference, restart models, reset filtering or recalibrate bones.
+
+Three cached clips (539 frames) verified exactly fixed pelvis coordinates,
+unchanged source arrays and bit-identical rotation/facing arrays. Relative pose
+differences stayed below 0.00012 mm from FP32 translation roundoff. The translation
+step took approximately 0.011 ms median, with 0.0125–0.0230 ms p95 across clips.
+
+A visible app test covered 182 paired video/pose presentations across two-second
+off/on/off phases. Both off phases had zero root range on all three axes; on
+restored the unmodified worker packet. Presentation intervals were 31 ms median,
+47 ms p95 and 63 ms maximum. Worker processing was 22.54 ms median, 27.00 ms p95
+and 178.72 ms maximum. GUI timer intervals including loading were 16 ms median,
+16 ms p95 and 343 ms maximum. Ten paused toggles retained the request/pose ID,
+camera settings and bounded render keys. Reset Bones preserved the fixed anchor;
+Stop released the cached packet and anchor. These are short video checks, not a
+webcam benchmark or a guarantee of sustained FPS or leak freedom.
+
+## PEAR publication review and offline regression (2026-11-01)
+
+Verified the PEAR paper citation against the pinned official README, updated
+installation/model/agent guides, current live timings, storage and cleanup
+instructions, and kept offline resource modes distinct from live preview.
+Setup now marks adapted upstream files and records their pinned provenance.
+Saved-workspace validation rejects PEAR as an active or member offline model,
+including malformed files, without rewriting them. Retired identities remain
+rejected. The live selector still accepts PEAR.
+
+All 80 existing offline tool/processing-option combinations match the preceding
+published revision. Existing model paths, URLs, hashes and stage requirements
+are unchanged. Twenty GUI switch pairs and all six scoped model managers passed.
+Four copied workspaces covered ExMR, FlowHMR, GVHMR, MAMMA and PromptHMR cached
+results: loading, seek/playback, PEAR entry/exit, camera/settings restoration and
+selected export availability passed. Original project file inventories and
+timestamps were unchanged. Five source FBX exports were imported into Blender
+4.5 with the normal importer settings: each retained a 52-bone Hips hierarchy,
+finite poses and bone-only animation curves. This check does not rerun full AI
+reconstruction or retargeting for every model.
+
+PEAR support was freshly staged from the verified cached upstream archives with
+real shared-runtime CUDA checks, then reused without reconstruction or package
+upgrades. Isolated installer fault injection covered download/verification
+failure, damaged source, base changes, lock enforcement, preserved prior pointers,
+retained retry markers and successful retry. Model import checks rejected a
+tampered detector while preserving the previous registered model and receipt.
+The current live app passed default/position/filter controls, paired presentation,
+Reset Bones, no extra inference on paused position toggles and worker shutdown.
+Five repeated fixed-frame renderer transitions and framebuffer inspection did
+not reproduce persistent display corruption. A transient composite window grab
+during playback is not a framebuffer-quality measurement.
+
+Publication checks cover source syntax, local documentation links, personal-path
+and credential candidates, and excluded runtime/model/project/test payloads.
+Private tests and derived files remain outside the source checkout. These are
+tests on the existing Windows PC, not a fresh OS, alternate GPU or new physical
+webcam certification. Short playback checks do not establish long-term leak freedom.
 
 
 ## Local background camera refinement (2026-10-30)
@@ -211,3 +1317,13 @@ hash pairs preserve earlier previews for unchanged non-MAMMA body dispatch.
 No MAMMA inference, native CUDA compilation, model loading or MAMMA result export
 was run: the optional runtime/models were absent. Existing upstream validation
 records elsewhere do not certify this local integration.
+
+
+## Full upstream integration (2026-11-01)
+
+Integrated ab80ced732 with the custom export and camera features. Source audit,
+six-model GUI switching, PEAR/camera-preview isolation, calibration/path guards,
+three-camera decode/thumbnail/close cycles, VGGT loading policy tests and
+52-bone BVH rotation/translation/T-pose checks passed locally. A legacy export
+worker fixture was unavailable; its inference/export check was not completed.
+No new model inference or native optional-runtime compilation was tested.

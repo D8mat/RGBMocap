@@ -6,6 +6,12 @@ A native Windows app for turning video into human motion, reviewing the body mes
 and animation bones, correcting hand/foot contacts, retargeting motion to humanoid
 characters, and exporting animation for Blender or MMD. Processing runs locally.
 
+For optional single-video capture of people together, see the
+[PromptHMR setup and usage guide](models/PROMPTHMR.md). It supports fixed-camera
+video through a separate `Setup_PromptHMR.cmd` runtime, with a People count and
+Interaction Prompt option. It performs its own tracking and does not generate
+animated fingers. Standard correction, retargeting and FBX controls apply.
+
 ## Character retargeting
 
 Transfer a reconstructed person's motion to a character without running AI
@@ -101,8 +107,11 @@ have not yet been verified; compatibility reports are welcome.
 2. Run `install.cmd` with an internet connection. It downloads and verifies
    pinned Python environments, Blender 4.5.0, FFmpeg 7.1.1 and small upstream
    support files, and installs the included prebuilt motion-correction module.
-   The AI runtimes remain separate. Downloads and free disk space are needed;
-   the install can take time.
+   It prepares ExMR, FlowHMR and GVHMR runtimes, their supported add-ons, and
+   PEAR's small shared-runtime support together, not only the selected model.
+   The AI runtimes remain
+   separate; model weights/body data are not included. Downloads and free disk
+   space are needed, and the install can take time.
 3. Run `RGBMoCap.cmd`. Keep its console open while the GUI runs; launch errors
    and exit codes are displayed there. Processing messages and app **Console** output
    are also sent there, but very long or high-volume output can be truncated or
@@ -110,6 +119,35 @@ have not yet been verified; compatibility reports are welcome.
 4. In **Model Manager**, download or import the selected AI model files. Some
    models require registration and agreement to their provider's terms and must
    be downloaded manually.
+
+**For MAMMA multi-video capture**, complete those steps, install Visual Studio
+2022 C++ Build Tools with a Windows SDK and NVIDIA CUDA Toolkit 12.8, then close
+the app and run:
+
+```cmd
+Setup_MAMMA.cmd
+```
+
+Review the restricted-use license prompt before accepting. Reopen the app,
+select **MAMMA**, and prepare its files in **Model Manager**. Its **Runtime
+Setup...** button shows readiness and setup instructions. The optional runtime
+is not installed by `install.cmd` or `update.cmd`; ExMR, FlowHMR and GVHMR do not
+need it. Follow the [MAMMA installation and model checklist](MAMMA.md) for exact
+prerequisites, the locked-head body models and multi-video requirements.
+
+**For PromptHMR single-video interaction capture**, complete the base installation
+and the same C++/Windows SDK/CUDA Toolkit 12.8 prerequisites, close the app, then run:
+
+```cmd
+Setup_PromptHMR.cmd
+```
+
+Review its license prompt, reopen the app, select **PromptHMR** and prepare all
+files in **Model Manager**. This setup is independent of MAMMA and is also excluded
+from `install.cmd`/`update.cmd`. The [PromptHMR guide](models/PROMPTHMR.md) lists
+the exact files, fixed-camera limits, native-build verification and repair steps.
+The Model Manager's **Runtime Setup...** button shows instructions; it does not
+run installation inside the app.
 
 To update, close RGB MoCap and run `update.cmd` in the repository folder. It
 refuses to overwrite tracked local edits, requires the `main` branch, pulls only
@@ -130,12 +168,48 @@ A subsequent code update and runtime verification took about 1 min 55 sec. These
 are single local tests, not estimates for a download with an empty cache or for
 other PCs; connection speed and storage performance affect the time.
 
-Allow at least **32.4 GiB free** for first-time runtime installation before
-models; this includes temporary installation space. The installed app, runtimes
-and all supported models total roughly **42 GiB (45 GB)**, including about
-29 GiB of model files. Download
-caches, videos, projects, characters and exports require additional space, and
-actual sizes can vary. No clean-Windows or other-GPU test is claimed.
+### Installed size
+
+The current registered model files and active runtimes measured approximately
+**67.8 GB (63.1 GiB)** with the five offline models and supported add-ons installed.
+Blender and FFmpeg are included. The inventory excludes projects, imported
+characters, exports, caches (including Python bytecode), retained download
+archives, obsolete runtime generations and separately installed compiler tools.
+Shared model files and hardlinks are counted once.
+
+| Configuration | Runtime | Models | Total |
+| --- | ---: | ---: | ---: |
+| ExMR + FlowHMR + GVHMR, including supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
+| MAMMA additional files | 6.11 GiB | 3.42 GiB | 9.54 GiB |
+| PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
+| **Five offline models** | **24.68 GiB** | **38.44 GiB** | **63.11 GiB** |
+| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.84 GiB |
+
+Adding PEAR to all five offline sets gives an estimated combined total of about
+**65.95 GiB (70.8 GB)**. Its original geometry ZIP needs additional download space.
+
+Totals use unrounded bytes; rounded cells may not sum exactly. These are local
+observations, not universal requirements. App source files add space beyond this
+model/runtime inventory. MAMMA's added model size assumes the base installation's
+VGGT-Omega is present; without it, its model set totals about 7.69 GiB. PromptHMR's
+added model size includes SMPL Neutral, while its standard SMPL-X Neutral is
+already counted in the base set. Its specific weights/support files alone total
+about 6.09 GiB. Installed Python packages remain separate; verified identical
+download archives can be reused without merging runtimes.
+
+**MAMMA and PromptHMR are separate optional runtime installations.** After
+`install.cmd`, use `Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` for the model you
+need, then prepare its weights in Model Manager. Neither requires the other.
+`install.cmd` and `update.cmd` do not install these optional runtimes.
+
+Final installed size is different from free space needed during setup. The base
+installer estimates **32.4 GiB free before models**, including temporary work;
+each optional setup asks for about **18 GiB free**, excluding models and compiler
+tools. Download archives, C++ Build Tools, CUDA Toolkit and generated projects
+need additional space. Earlier optional setup reports of 6.19 GiB (MAMMA) and
+6.32 GiB (PromptHMR) included generated files excluded from this cache-free
+inventory. See [MAMMA](MAMMA.md) and [PromptHMR](models/PROMPTHMR.md) for setup
+scope. No clean-Windows or other-GPU installation test is claimed.
 
 ## Storage and cleanup
 
@@ -151,10 +225,16 @@ may be outside the installation folder.
 | Your **Save Project As** destination | The same rule applies to each saved project folder at your chosen location. It contains a copy of the video and project data. Deleting it removes that copy; cleaning the default `projects` folder does not clean external copies. |
 | `<install folder>\character_scenes\<session folder>\` | Contains characters imported before a project was opened. Old session folders can be deleted once those imports are no longer needed or have been copied into a saved project. Unsaved session imports are lost. |
 | `<install folder>\.setup\downloads\`, `.setup\uv-cache\` and `.setup\tmp\` | Downloaded wheels and temporary cache can be removed only after installation or update completes. They are reused for repair and updates; deleting them may require downloading files again. Keep the rest of `.setup`, including the private Python and installation state. |
+| `<install folder>\.setup\mamma-downloads\` | Optional MAMMA package/source download cache. Its contents can be removed after MAMMA setup finishes; repair may need to download them again. Keep `runtime_mamma` and `.setup/mamma-runtime.json`. |
+| `<install folder>\.setup\prompthmr-downloads\` | Optional PromptHMR package/source download cache. Remove contents only after setup finishes; repair may need to download them again. Keep `runtime_prompthmr` and `.setup/prompthmr-runtime.json`. |
+| `<install folder>\.setup\pear-downloads\` | PEAR source/support archives. Contents can be removed after installation/update finishes; repair may download them again. Keep `runtime_pear` and `.setup/pear-runtime.json`. |
+| `<install folder>\temp\` | Local PEAR Torch/kernel temporary cache. Contents can be removed after closing the app and its workers; the next run can recreate them. |
 
-Repeated work mainly grows project data: each model has its own `exmr`, `flowhmr`
-or `gvhmr` folder, different processing ranges can add `clips` subfolders, and
-character imports/retargeting add character data. These are saved work, not just
+Repeated work mainly grows project data: each model has its own result folder.
+Inside `exmr`, `flowhmr` or `gvhmr`, different processing ranges can add `clips`
+subfolders. MAMMA and PromptHMR keep immutable `inference/<generation>` and
+`results/<generation>` folders instead. Character imports/retargeting add
+character data. These are saved work, not just
 disposable caches. Do not delete individual model folders, `characters`, motion
 tensors, preview files or receipt files from a project you want to keep; its
 metadata can still reference them. Export or back up needed work, then remove an
@@ -168,13 +248,23 @@ need an offline copy; keep a backup of manually acquired restricted models.
 
 ## Start here
 
-1. **File → Open Video**, or drop a video into the workspace.
+For ExMR, FlowHMR and GVHMR:
+
+1. Choose an **AI Motion Model**, then **File → Open Video**, or drop a video
+   into the workspace.
 2. Optionally trim the timeline's **Video** track by dragging its ends.
-3. Choose an **AI Motion Model**, then use **Model Manager** to prepare its files.
-4. For several people, use **Find person** and check who to reconstruct.
+3. Use **Model Manager** to prepare the selected model's files.
+4. For ExMR/FlowHMR/GVHMR with several people, use **Find person** and check
+   who to reconstruct. MAMMA/PromptHMR track people during reconstruction.
 5. Click **Reconstruct 3D**. Review the video, mesh and **Bone Overlay** together.
 6. Adjust correction settings or contact timings, then click **Apply Correction**.
-7. **File → Export Motion** saves the displayed, applied animation.
+7. **File → Export FBX** saves the displayed, applied animation.
+
+For synchronized multi-camera capture, select MAMMA before opening videos and
+follow the [MAMMA workflow](MAMMA.md#reconstruct-and-export). It detects people
+during reconstruction, so the **Find person** step is not used. PromptHMR also
+tracks people during reconstruction; open one fixed-camera video and start with
+**People = 2** and **Interaction Prompt** on. See [its workflow](models/PROMPTHMR.md#controls-and-supported-workflow).
 
 To animate a character, follow [Character retargeting](#character-retargeting),
 then use **Export Character...** for FBX or, for PMX, VMD.
@@ -182,17 +272,38 @@ then use **Export Character...** for FBX or, for PMX, VMD.
 **Open Project** restores saved results and settings. **Open Project Folder** opens
 their location. **Save Project As** (`Ctrl+Shift+S`) creates a new named project
 folder at your chosen location and switches to that copy. It includes the video,
-motion, people and contact edits for every model. Open its `project.json` to return
-to it. Each project manages `exmr`, `gvhmr` and `flowhmr` folders. Selecting a model
+motion, people and contact edits for every model, including all MAMMA input videos
+when present. Open its `project.json` to return to it. Each project manages
+`exmr`, `gvhmr`, `flowhmr`, `mamma` and `prompthmr` result folders as needed. Selecting a model
 loads its saved motion; if it has no result, **Reconstruct 3D** creates its data in
 that folder. Result selections, contact edits and settings stay separate by model.
-New processing ranges stay under that model's `clips` folder. The previous project
+New ExMR/FlowHMR/GVHMR processing ranges stay under that model's `clips` folder;
+MAMMA and PromptHMR use their own inference/result generation folders. The previous project
 folder format is not migrated; open the original video to create a new project.
 Model weights remain in the app's model
 library. Trimming does not modify the original video. Processing uses a
 30 fps working clip; camera sampling does not reduce its motion frame count.
 
+When reconstructing several people or visible takes with ExMR, FlowHMR or
+GVHMR, RGB MoCap processes the same stage for each actor in turn using one loaded
+model, then releases it before the next stage. ExMR connects keypoint, body/hand
+features and motion phases in one worker. FlowHMR connects features and motion
+for one person; its multi-person jobs retain separate phase grouping. GVHMR keeps
+its observation and motion stages in one worker. Each actor keeps separate
+motion, contacts and exports. This reduces repeated model loading; it does not
+combine people into a larger GPU batch. Automatic and Low Memory still apply.
+Optional GVHMR refinement/add-ons use their existing separate workers.
+
+Automatic can overlap bounded CPU image preparation with GPU work when CPU/RAM
+headroom permits; Low Memory disables that prefetch. For measured worker-startup
+and feature-stage gains, see [resource modes and optimizations](PERFORMANCE.md).
+
 ## Choose a model
+
+Each model has a [detailed guide](models/README.md): [ExMR](models/EXMR.md),
+[FlowHMR](models/FLOWHMR.md), [GVHMR](models/GVHMR.md), [MAMMA](MAMMA.md)
+and [PromptHMR](models/PROMPTHMR.md). For live bone preview, use [PEAR](models/PEAR.md).
+These cover required files, settings, defaults and workflow limitations.
 
 These quality comparisons are **subjective observations from our test videos**,
 not accuracy scores or a universal ranking. See the in-app **Model Guide** for
@@ -205,35 +316,88 @@ opening a project restores its saved model. **Prepare Preview**, below
 | **ExMR** | Generally fast, with good overall motion quality. | Included. |
 | **FlowHMR** | Slow, but the best overall motion quality in our tests. | Included. |
 | **GVHMR** | Lowest overall quality in our tests, but sometimes better for unusual poses such as backflips. | Optional **HandFlow**; not inferred by GVHMR itself. |
+| **MAMMA** | Multi-view capture of human motion and interactions. Needs separate setup and overlapping synchronized views; outside the quality ranking above. | Included. |
+| **PromptHMR** | Can improve relative placement and interactions between multiple people in one fixed-camera video. Overall motion quality was lower than ExMR in our subjective tests; contacts and depth can still be wrong. Separate setup. | No finger tracking; fixed neutral pose. |
+| **PEAR** | Live single-person bone preview from a webcam or video. No motion recording, correction, retargeting or export in this mode. | Included. |
 
-All three support people selection, contact correction, a 52-bone overlay and
-FBX export. The viewport shows the selected source mesh: SMPL-X for ExMR/GVHMR,
+The five offline models support contact correction, a 52-bone overlay and FBX export.
+ExMR/FlowHMR/GVHMR use **Find person** for explicit people selection; MAMMA
+and PromptHMR track people during reconstruction. The viewport shows the selected
+source mesh: SMPL-X for ExMR/GVHMR/MAMMA/PromptHMR,
 SMPL-H for FlowHMR. The export skeleton follows that motion; source estimation
 errors can remain.
 
+### MAMMA multi-view reconstruction
+
+Select **MAMMA** before opening two or more synchronized fixed-camera videos.
+There is no fixed camera-count maximum; available RAM and VRAM determine
+practical capacity. Existing memory monitoring and OOM handling stay active.
+See [input requirements and remaining app limits](MAMMA.md).
+Camera thumbnails show four per row and switch the main preview without changing
+the common 30 fps timeline or trim. VGGT estimates cameras by default;
+**Import Camera Data...** accepts compatible JSON/MAMMA YAML calibration.
+Motion Correction defaults on, preserves original motion and supports the same
+contact editing and FBX workflow. **Save Project As** includes all camera videos.
+
+Run **Setup_MAMMA.cmd** separately after the base installation; Model Manager >
+**Runtime Setup...** explains its compiler prerequisites, disk use and restricted
+licenses. Prepare the nine model assets through Model Manager. MAMMA detects and
+matches people during reconstruction, so **Find person** is hidden. **People** can
+be **0** for automatic detection or a fixed count. Enter only the number in **Reference Height (m)**; this
+sets approximate VGGT scale and is unused with metric camera calibration.
+For example, enter `1.70` for 170 cm; it does not force all actors to the same
+height. Input videos must already start in sync and show the same performance.
+Read [MAMMA setup, input assumptions and limits](MAMMA.md) before reconstruction.
+The app uses SAM 2.1 and FP32 fitting; SAM 3.1 research tests remain separate.
+
 ## Recorded processing time and VRAM
 
-Historical measurements on the tested PC above (30 fps inputs, October 2026),
-recorded before the current Git-based installation was tested.
-Each duration uses the same input across all three models.
+Historical measurements on the tested PC above (30 fps inputs, October 2026).
+Each single-video duration uses the same input across ExMR, FlowHMR and GVHMR.
+MAMMA and PromptHMR use different clips and include more processing stages;
+their rows are not direct speed comparisons. The older four-model records predate
+the latest Low Memory changes.
 
-| Video length | Model | Processing time | Peak VRAM (GiB) |
-| --- | --- | ---: | ---: |
-| 7 seconds | ExMR | 1m 08s | 11.32 |
-| 7 seconds | FlowHMR | 2m 49s | 14.89 |
-| 7 seconds | GVHMR | 2m 01s | 5.08 |
-| 15 seconds | ExMR | 1m 47s | 11.32 |
-| 15 seconds | FlowHMR | 5m 16s | 10.79 |
-| 15 seconds | GVHMR | 2m 45s | 5.08 |
-| 25.7 seconds | ExMR | 1m 44s | 11.32 |
-| 25.7 seconds | FlowHMR | 7m 32s | 10.67 |
-| 25.7 seconds | GVHMR | 3m 00s | 5.08 |
+For mode comparisons and the latest applied acceleration, see
+[measured memory savings and speedups](PERFORMANCE.md). Those tests use different
+clips and timing scopes from this historical table.
 
-Times cover the recorded model-processing stages, excluding shared person
+| Video length | Model | Input videos | Processing time | Peak VRAM (GiB) | Peak RAM (GiB) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 7 seconds | ExMR | 1 | 1m 08s | 11.32 | 19.31 |
+| 7 seconds | FlowHMR | 1 | 2m 49s | 14.89 | 22.19 |
+| 7 seconds | GVHMR | 1 | 2m 01s | 5.08 | 12.47 |
+| 15 seconds | ExMR | 1 | 1m 47s | 11.32 | 19.31 |
+| 15 seconds | FlowHMR | 1 | 5m 16s | 10.79 | 16.97 |
+| 15 seconds | GVHMR | 1 | 2m 45s | 5.08 | 11.06 |
+| 25.7 seconds | ExMR | 1 | 1m 44s | 11.32 | 19.31 |
+| 25.7 seconds | FlowHMR | 1 | 7m 32s | 10.67 | 16.94 |
+| 25.7 seconds | GVHMR | 1 | 3m 00s | 5.08 | 12.42 |
+| 13.8 seconds | MAMMA | 3 | 11m 52s | 6.47 | 9.11 |
+| 14.1 seconds | PromptHMR | 1 | 3m 56s | 4.61 | 8.74 |
+
+For PEAR's separate live-frame timings, current fixed-bone behavior and measured
+VRAM, see the [PEAR performance notes](models/PEAR.md#placement-and-performance).
+These are not full-clip reconstruction measurements.
+
+For ExMR, FlowHMR and GVHMR, times cover model-processing stages, excluding shared person
 tracking, app contact correction and preview/export. GVHMR includes HTD, FootMR
 and HandFlow. FlowHMR includes camera estimation and the original SAM path;
-these timings predate Fast SAM. VRAM is peak PyTorch **allocated** memory across
-workers, not total GPU usage or reserved memory. These are individual test runs,
+these timings predate Fast SAM. MAMMA used three synchronized videos resized
+within 1920×1080, two people, SAM 2.1 and VGGT, with 413 frames at 30 fps
+(13.77 seconds). Its 712.08-second total includes preparation, correction and
+preview; memory peaks cover the four inference stages. See the
+[MAMMA stage breakdown](MAMMA.md#recorded-processing-time-and-memory).
+
+PromptHMR used 422 frames at 30 fps, two people and Interaction Prompt on. Its
+time includes tracking, native inference/post-optimization and app correction/preview,
+excluding public FBX writing. Peak CUDA reserved memory was 7.83 GiB. See its
+[stage breakdown and validation](models/PROMPTHMR.md#recorded-validation).
+
+VRAM is peak PyTorch **allocated** memory across workers, not total GPU usage
+or reserved memory. RAM for ExMR/FlowHMR/GVHMR is peak private memory;
+MAMMA/PromptHMR RAM is peak worker working set. Neither is total system RAM usage.
+These are individual test runs,
 not minimum hardware requirements or predictions for every video. Resolution,
 camera motion, settings and available memory also affect results; a longer
 video does not always use more VRAM or take proportionally longer.
@@ -275,7 +439,13 @@ The app does not need your provider password or access token.
 | FlowHMR | [AMASS SMPL-H neutral](https://mano.is.tue.mpg.de/download.php): Extended SMPL+H model, `smplh/neutral/model.npz` (16 shape components). |
 | ExMR / GVHMR HandFlow | [MANO](https://mano.is.tue.mpg.de/download.php): `MANO_RIGHT.pkl` from `mano_v1_2.zip`. |
 | ExMR / FlowHMR | [SAM 3D Body](https://huggingface.co/facebook/sam-3d-body-dinov3): supported `model.ckpt`, `model_config.yaml` and `assets/mhr_model.pt`, each in its matching row. |
-| FlowHMR moving camera | [VGGT-Omega](https://huggingface.co/facebook/VGGT-Omega): supported `vggt_omega_1b_512.pt`. Not needed in Static Camera mode. |
+| FlowHMR moving camera / MAMMA automatic cameras | [VGGT-Omega](https://huggingface.co/facebook/VGGT-Omega): supported `vggt_omega_1b_512.pt`, shared under `models/flowhmr/`. Not needed for FlowHMR Static Camera or MAMMA Manual Camera Data. |
+| MAMMA | [Registered MAMMA downloads](https://mamma.is.tue.mpg.de/): `mamma_mask_full_cvpr.ckpt` and `verts_512.pkl`. Follow the matching Model Manager rows. |
+| MAMMA | [SMPL-X with removed head bun (NPZ, 392 MB)](https://smpl-x.is.tue.mpg.de/download.php): import the neutral, male and female locked-head bodies into `models/mamma/smplx/`. Standard SMPL-X v1.1 is not interchangeable. |
+
+MAMMA's [complete nine-asset checklist](MAMMA.md#prepare-model-files) also covers
+SAM 2.1, YOLO12x and OpenCLIP. Its runtime setup and model imports are separate
+steps; a ready runtime does not mean the models are ready.
 
 ### Reuse models in a new installation
 
@@ -287,8 +457,8 @@ installation folder, beside the new **RGBMoCap.cmd**:
 Old installation/models/  →  New installation/models/
 ```
 
-For example, copy `D:\RGBMoCap-Old\models` into `E:\RGBMoCap` so the result is
-`E:\RGBMoCap\models`, not `E:\RGBMoCap\models\models`. Keep all subfolders,
+The destination must be `<new installation>/models/`, not
+`<new installation>/models/models/`. Keep all subfolders,
 configuration files, `.receipt.json` files and license files together. Copy
 first and keep the old files until the new installation works.
 
@@ -314,12 +484,18 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 | **ExMR → Camera** | Static Camera for a camera that stays still without zooming; Moving Camera / SimpleVO when it moves. |
 | **ExMR → Smooth Motion** | Reduce small changes between frames. Off keeps the unsmoothed result. |
 | **FlowHMR → Fast SAM** | Speed up body/hand image processing with the same model files. Small numerical differences can affect motion and automatic contacts. |
+| **FlowHMR → Fast SAM Acceleration** | Two independent, default-on switches: **4-Frame Batching** and **GPU Hand Crops**. Use them only with Fast SAM. Tooltips explain measured speed, VRAM and output differences; see the [FlowHMR guide](models/FLOWHMR.md#controls). Low Memory reduces the batch to one frame. Applies on Reconstruct 3D. |
 | **FlowHMR → Camera / Sampling** | Start with Moving / Unknown - Auto for moving or uncertain cameras. Static Camera skips camera estimation for locked footage. Explicit frame intervals control camera analysis only; denser sampling uses more memory. |
 | **GVHMR → HTD Refine** | Improve body-motion consistency over time. Runs before FootMR when both are enabled. |
 | **GVHMR → FootMR** | Refine ankle angles from foot observations. Separate from foot contact locking. |
 | **GVHMR → HandFlow** | Add finger tracking while preserving the selected body and wrist motion. Requires additional weights and MANO. |
 | **Analyze 2D** | Prepare GVHMR refinement observations separately. Reconstruct 3D includes this step when needed. |
-| **Resource Mode** | Automatic balances speed and available memory. Low Memory uses smaller image batches while retaining inference quality. |
+| **MAMMA → Camera Calibration** | VGGT (Automatic) estimates fixed cameras. Manual Camera Data uses an imported compatible JSON/MAMMA YAML file for the selected videos. |
+| **MAMMA → Import Camera Data...** | Import calibration with camera names matching video filenames without extensions, original pixel intrinsics and metric translations. See the exact [camera format](MAMMA.md#manual-cameras). |
+| **MAMMA → People** | Default 0 automatically detects people during reconstruction; set 1–8 if someone is missed or background people are included. Count each person once across all cameras. Find person is hidden. |
+| **MAMMA → Reference Height (m)** | Numeric approximate standing height, default 1.70 m. Sets VGGT scene scale, not every actor's height; unused with metric manual calibration. |
+| **PromptHMR → People / Interaction Prompt** | People defaults to 2; 0 detects automatically up to eight. Interaction Prompt defaults on; off follows the official default video path. Fixed cameras only; no animated fingers. Both settings apply on Reconstruct 3D. See the [PromptHMR guide](models/PROMPTHMR.md). |
+| **Resource Mode** | Automatic uses the fast path when GPU memory is sufficient and selects supported Low Memory paths when needed. Low Memory uses CPU loading/offloading and existing bounded image processing; it can be slower and use more RAM. The selection and reason appear in Console and the CMD window. |
 | **Prepare Preview** | Rebuild mesh/skeleton previews from existing motion without running the AI model again. Useful for older projects. |
 | **Cancel Job** | Stop queued processing; completed results are kept. |
 
@@ -327,19 +503,44 @@ Processing shows the current step, progress and elapsed time. **Step left** esti
 the current step; **Total left** estimates the queue when timing data is available.
 Use **Console** for details and errors. Loading or unmeasured work shows activity
 instead of an invented percentage. FlowHMR is limited to 5,000 frames per take
-(about 166.7 seconds); available memory may require a shorter clip.
+(about 166.7 seconds); available memory may require a shorter clip. MAMMA's
+adapter accepts 4–1,800 common frames and at most eight people. It requires
+two or more synchronized fixed-camera videos, with no fixed camera-count
+maximum. PromptHMR accepts one fixed-camera video, 4–1,800 working frames at
+30 fps and up to eight people. Four thumbnails per row is only a layout choice. These limits do not
+guarantee that a workload fits RAM or VRAM.
 
 Processing is allowed to start without a predicted RAM/VRAM minimum. While it
 runs, the app monitors actual available RAM and Windows allocation headroom.
 If either becomes low, it stops the processing job and shows the available memory
 in the error message. The app also reports actual CPU/GPU allocation failures.
-Completed stages are retained for retry. Low Memory can reduce supported batch
-sizes, but cannot guarantee that every model or video fits. A sudden large
+Completed stages are retained for retry. ExMR Low Memory prepares Sapiens' existing
+FP16 layers on CPU and loads body/hand weights on CPU before GPU transfer; its
+body/hand feature batches remain 8. FlowHMR Low Memory offloads SAM and VGGT
+transformer blocks. MAMMA Low Memory offloads VGGT camera blocks; its masks,
+landmarks and fitting retain their existing bounded settings. GVHMR and add-ons
+retain their adaptive image batches and full-context attention handling.
+Automatic chooses these paths per operation from the current GPU budget and
+can retry a supported operation once after CUDA OOM. It does not change the
+saved Automatic selection, precision, video resolution, frame count or fitting
+iterations. CPU offloading needs RAM: actual RAM shortage can still stop the job.
+PromptHMR keeps the validated one-image batch and full temporal context in both
+modes; extra block offloading is not implemented. Trim or close other GPU apps
+if it cannot fit. No mode guarantees that every model or video fits. A sudden large
 allocation can still fail before the next monitor check.
+
+Low Memory primarily reduces **VRAM**, not system RAM. In earlier short paired
+checks, ExMR fell **5.68 → 3.87 GiB** allocated VRAM while RAM working set changed
+**11.88 → 11.94 GiB**; FlowHMR fell **6.10 → 2.77 GiB** while RAM rose
+**8.42 → 8.75 GiB**. GVHMR's short test had no meaningful whole-job saving.
+MAMMA's paired full-pipeline saving was not recorded; only the shared VGGT
+component has a controlled offload comparison. See [conditions, times and component measurements](PERFORMANCE.md).
+These are observations, not minimum requirements. The newest CPU prefetch is
+disabled in Low Memory; FlowHMR SAM also uses one-frame batches in that mode.
 
 GPU allocator budgets use ComfyUI's external-use margin: 600 MiB on Windows,
 or 700 MiB on GPUs larger than 15 GiB, subtracted from currently free VRAM.
-All three model paths use this rule; FlowHMR/ExMR no longer subtract fixed
+The five offline model paths use this rule; FlowHMR/ExMR no longer subtract fixed
 3/2 GiB or impose an additional 95/90% ceiling. Inference working memory is
 part of the allowed budget. This is not a guarantee of free VRAM: other apps
 and allocations outside PyTorch can still consume it.
@@ -378,8 +579,8 @@ an estimate and can leave residual sliding or penetration.
 
 | Control | Function |
 | --- | --- |
-| **Find person** | Discover people for explicit selection. Without it, reconstruction tracks one person automatically and may switch identity when people overlap. |
-| **People checkboxes / selected row** | Checked people are processing/display targets. The selected row controls timeline and contact editing. |
+| **Find person** | For ExMR/FlowHMR/GVHMR, discover people for explicit selection. Without it, tracking selects one person and may switch identity during overlap. MAMMA/PromptHMR track people during reconstruction; this button is hidden. |
+| **People checkboxes / selected row** | Checked rows control visibility and ExMR/FlowHMR/GVHMR reconstruction targets. MAMMA/PromptHMR reconstruct their detected/requested people together. The selected row controls timeline and contact editing. |
 | **Character checkboxes / selected row** | Show or hide imported characters independently of source people. Select a character to export it; right-click it for Retarget, Export Character or Remove Character. |
 | **People → ?** | Open instructions for people selection, names, colors and takes. The list footer shows only current status or warnings. |
 | **Rename... / color square** | Right-click a row to rename it; click its square to change display color. The name is also used for FBX filenames and rig names. |
@@ -394,14 +595,15 @@ an estimate and can leave residual sliding or penetration.
 | **Playback / frame number / speed** | Space plays/pauses; arrows step one frame, Shift+arrows one second. Enter a frame number to jump. Playback speed affects preview only. |
 | **Timeline Frame All / Reset Trim** | Fit the full timeline / restore the full clip range. |
 
-Checked people are processed independently and shown in a shared scene. They
-share correction mode/floor; timings and pelvis offsets remain per person/take.
+ExMR/FlowHMR/GVHMR process checked people independently; MAMMA and PromptHMR
+reconstruct people together from their respective inputs. Results are shown in a shared scene.
+People share correction mode/floor; timings and pelvis offsets remain per person/take.
 Apply Correction updates all available takes, including hidden ones. Relative
 depth and contacts between people are estimates; collision avoidance is not provided.
 
 ## FBX and Blender
 
-**File → Export Motion** follows the displayed, applied result. Each checked
+**File → Export FBX** follows the displayed, applied result. Each checked
 person/take gets a separate named file and rig; duplicate filenames get suffixes.
 People exports use the viewport's shared placement. Takes retain their own frame
 counts; align their start times when combining different source intervals.
@@ -409,15 +611,8 @@ counts; align their start times when combining different source intervals.
 Source-person exports use a 52-bone hierarchy with **Hips** as root and plain
 anatomical names. It retains
 actor lengths, SMPL-neutral curved limbs/feet, calibrated rest axes and straight
-open fingers. FBX stores rest transforms separately; inserting a T-pose frame is optional.
-Export Motion offers FBX, BVH for 3ds Max Biped, and generic BVH for Blender.
-The Biped profile uses Character Studio bone names and uniform ZXY rotation
-channels; direct 3ds Max import has not yet been verified. BVH uses metres and Y-up.
-Enable Insert T-pose at frame 0 to prepend one reference frame without removing
-any original animation. Importers may number the first frame as 1. Save opens
-the output file picker (or a folder picker for multiple takes), and completion
-shows the saved paths. If motion is unavailable, the export dialog explains
-whether to select a take, Apply Correction, or Prepare Preview.
+open fingers. FBX stores rest transforms separately; no T-pose frame is inserted.
+BVH is internal compatibility data only.
 
 **Export Character...** preserves the imported target character's own hierarchy
 and original rest pose; it does not replace them with the 52-bone source rig.
@@ -437,90 +632,32 @@ Original RGB MoCap code/documentation uses the [MIT License](../LICENSE).
 Third-party code, derived modifications, weights and body data keep their own
 terms; see [Third-party notices](../THIRD_PARTY_NOTICES.md).
 
-### Blender project with camera video
+## PEAR live preview
 
-Choose **File > Export Motion > Blender project + video (.blend)**, then Save
-and choose a destination filename. Export creates a new subfolder containing
-the `.blend` project, `video.mp4`, and a short README. Existing folders are kept;
-a numbered folder is created when needed. Each selected person/take gets its
-own bundle. Copy the entire subfolder to another computer.
+**Experimental support. Tracking and pose estimates may be unstable.**
 
-The project contains the 52-bone animation and a camera with the processed
-take's video as its background. Press Numpad 0 for camera view and Space to
-play. The video uses a relative path. Timing uses the processed clip's frame
-rate; optional T-pose adds frame 0 and shifts video and motion to frame 1.
-Export saved camera tracking is enabled by default for ExMR and FlowHMR.
-It keys the existing camera rotation at every motion frame, using the
-committed world coordinates and intrinsics. T-pose also shifts the camera
-keys by one frame. ExMR has no estimated camera translation; FlowHMR
-monocular translation is not metrically aligned with the skeleton and is
-not exported by default. Camera position remains fixed unless the experimental option is enabled. Disable the option
-to retain the reference camera. Other model pipelines retain the reference
-camera and record this in the bundle README. No new tracking is run. Background video is visible in the viewport,
-not in renders. Source character mesh and audio are not included.
-
-Export requires the installed Blender runtime and a current source preview.
-Open the resulting project in Blender 4.5 or newer.
+Run `install.cmd` with the app closed; PEAR support is included. PEAR reuses
+the shared runtime and adds only pinned source/utilities; no compiler is required.
+Prepare its checkpoint and registered SMPL-X 2020/FLAME bundle in Model Manager.
+Select **PEAR · Live (Experimental)** and click **Start Live Tracking** to load the models.
+**Stop** ends tracking and releases the models and webcam. With **Webcam: None**,
+open a video and seek/play its timeline to infer the current frame. Alternatively,
+select a connected webcam before starting. While tracking is running, input
+changes reuse the loaded models. Rotation and smoothing apply to both sources.
+The live view shows fixed-length body and finger bones without per-frame body
+mesh calculation. **Reset Bones** recalibrates their lengths from the displayed
+pose, pauses video playback and retains the loaded models and viewport camera.
+**World Position** is on by default. Turn it off to hold the pelvis at its current
+position, including height, while retaining pelvis rotation and joint motion.
+There is no Find person, recording, correction, retargeting or animation export
+in this live mode. Switching models releases the live worker and device.
+See the [PEAR guide](models/PEAR.md) for setup, resources and limitations.
 
 
-For standalone FlowHMR Blender bundles, the camera is now aligned to that
-take's saved SAM pelvis anchors (the first up to 30 frames), instead of using
-only the shared scene's median camera height. This adjusts a constant camera
-offset, not the skeleton animation. It improves initial placement but does not
-guarantee image alignment of every joint or later frame. Each take has its own
-camera alignment; these independent bundles are not a shared-camera scene.
-`camera_report.json` records the anchor error before/after alignment.
+## Custom export and camera tools
 
-**Experimental camera translation — FlowHMR only** is off by default. Enable
-it with saved camera tracking and adjust **Translation scale** (0–100, default
-1). Zero reproduces rotation-only export. The native VO camera-center
-displacement is transformed into the source world and anchored at the start
-of the take. Scale 1 is not a calibrated metre scale; it may require tuning.
-ExMR does not provide this translation and cannot use this option.
-
-
-## Camera preview
-
-In the 3D Viewport header, switch Free View to Camera Preview to display the
-selected source take skeleton over its video using the Blender export camera.
-Playback and seeking follow the timeline. This mode shows bones, not the mesh.
-FlowHMR offers Camera move (experimental) and Scale; these become export dialog
-defaults while camera preview is active. Refresh camera rebuilds the preview
-from saved results without inference. Select Free View to return to orbiting.
-The optional export T-pose is not an extra frame on the application timeline.
-
-
-### Background camera rotation refinement (experimental)
-
-In Camera Preview, enable **Refine background rotation**. The matching Blender
-export option is **Refine camera rotation from background (experimental)**.
-It is off by default and requires saved camera tracking for export. The preview
-choice becomes the export dialog default. Processing runs outside the GUI.
-
-The refinement masks known person boxes, tracks background features against the
-first frame, rejects inconsistent tracks and fits a small rotation correction.
-It accepts a correction only when held-out background matches improve, cover
-enough of the image and pass residual and angle limits. Sampled corrections use
-quaternion interpolation; rejected samples return to the saved camera. This is
-an approximate rotation refinement, not a general 6DoF camera solve. Parallax,
-occlusion, scene cuts and insufficient visible background can prevent useful
-corrections. It does not calibrate metric translation or change bone animation,
-source predictions or stored camera files. The initial camera pose and the
-existing camera-center trajectory remain unchanged.
-
-Blender bundles include per-sample diagnostics in `camera_report.json`. Pixel
-errors use a 960-pixel-wide analysis image and describe background alignment,
-not motion-capture accuracy. Disable the option to use the saved camera alone.
-
-
-## MAMMA multi-camera capture
-
-Select MAMMA in AI Motion Model, then open synchronized fixed-camera videos of
-the same performance. Camera thumbnails switch the preview; one common trim
-applies to every view. Follow [the dedicated guide](MAMMA.md) for model files,
-manual or automatic calibration, correction, export and the optional runtime.
-This integration does not automatically synchronize separately started videos.
-Our source export options (T-pose, BVH and Blender) remain available for prepared
-source takes. Camera Preview and Blender bundles use the primary calibrated
-camera/video for MAMMA; selecting a different input thumbnail does not change
-that export camera. Saved MAMMA cameras are fixed, not moving-camera tracks.
+This fork retains FBX, generic/Biped BVH and portable Blender project export,
+optional T-pose at frame 0, explicit output selection, relative video bundles,
+Camera Preview, tracked Blender cameras and optional background rotation refinement.
+Experimental FlowHMR camera translation remains optional and is not metric calibrated.
+MAMMA preview/export uses the primary calibrated camera and its video.

@@ -243,7 +243,7 @@ def _prepare_hand_batches_gpu(img, left_xyxy, right_xyxy, cam_int, output_size=(
     Supports multi-person batch processing.
 
     Args:
-        img: (H, W, 3) numpy array or tensor
+        img: (H, W, 3), or (N, H, W, 3) for one tracked body per video frame
         left_xyxy: (N, 4) left hand bbox (original image coordinates, will be flipped)
         right_xyxy: (N, 4) right hand bbox
         cam_int: (1, 3, 3) camera intrinsics
@@ -257,7 +257,7 @@ def _prepare_hand_batches_gpu(img, left_xyxy, right_xyxy, cam_int, output_size=(
         left_xyxy_flipped: flipped left hand bbox (numpy array)
     """
     out_h, out_w = output_size
-    H, W = img.shape[:2]
+    H, W = img.shape[1:3] if img.ndim == 4 else img.shape[:2]
 
     # 1. Upload image to GPU (once)
     if isinstance(img, np.ndarray):
@@ -266,11 +266,13 @@ def _prepare_hand_batches_gpu(img, left_xyxy, right_xyxy, cam_int, output_size=(
         img_tensor = img.to(device)
 
     # Convert to (3, H, W) format
-    if img_tensor.dim() == 3 and img_tensor.shape[-1] == 3:
+    if img_tensor.dim() == 4 and img_tensor.shape[-1] == 3:
+        img_tensor = img_tensor.permute(0, 3, 1, 2)
+    elif img_tensor.dim() == 3 and img_tensor.shape[-1] == 3:
         img_tensor = img_tensor.permute(2, 0, 1)  # (H, W, 3) -> (3, H, W)
 
     # 2. Flip image for left hand (GPU operation)
-    img_flipped = torch.flip(img_tensor, dims=[2])  # Horizontal flip
+    img_flipped = torch.flip(img_tensor, dims=[-1])  # Horizontal flip
 
     # 3. Compute flipped left hand bbox
     left_xyxy_t = torch.as_tensor(left_xyxy, dtype=torch.float32, device=device)
@@ -280,6 +282,8 @@ def _prepare_hand_batches_gpu(img, left_xyxy, right_xyxy, cam_int, output_size=(
 
     # Get number of persons
     N = left_xyxy_t.shape[0]
+    if img_tensor.dim() == 4 and img_tensor.shape[0] != N:
+        raise ValueError("Each frame must have its own hand boxes")
 
     # 4. Apply padding and compute final crop_size (matching CPU version's transform chain)
     # CPU version processing flow:
@@ -355,8 +359,8 @@ def _prepare_hand_batches_gpu(img, left_xyxy, right_xyxy, cam_int, output_size=(
 
     # 6. GPU crop - need to expand image to batch form
     # grid_sample requires input: (N, C, H, W), grid: (N, out_h, out_w, 2)
-    img_flipped_batch = img_flipped.unsqueeze(0).expand(N, -1, -1, -1).float()  # (N, 3, H, W)
-    img_tensor_batch = img_tensor.unsqueeze(0).expand(N, -1, -1, -1).float()  # (N, 3, H, W)
+    img_flipped_batch = (img_flipped if img_flipped.dim() == 4 else img_flipped.unsqueeze(0).expand(N, -1, -1, -1)).float()  # (N, 3, H, W)
+    img_tensor_batch = (img_tensor if img_tensor.dim() == 4 else img_tensor.unsqueeze(0).expand(N, -1, -1, -1)).float()  # (N, 3, H, W)
 
     cropped_left = F.grid_sample(
         img_flipped_batch, grid_left,
@@ -2562,6 +2566,8 @@ class SAM3DBody(BaseModel):
         yolo_pose_keypoints: Optional[np.ndarray] = None,  # YOLO-Pose keypoints [N, 17, 3]
         yolo_pose_body_boxes: Optional[np.ndarray] = None,  # YOLO-Pose body boxes [N, 4]
         parallel_decoders: bool = True,  # Enable merged batch execution for shared backbone
+        hand_batch_preparer=None,  # RGB MoCap: optional bounded video-frame crops
+        features_only=False,  # Decoder tokens only; no downstream pose assembly needed
     ):
         """
         Run 3DB inference (optionally with hand detector).
@@ -2799,21 +2805,25 @@ class SAM3DBody(BaseModel):
             t0 = time.time()
 
             ## Prepare left hand batch (flip image & box)
-            flipped_img = img[:, ::-1]
-            tmp = left_xyxy.copy()
-            left_xyxy[:, 0] = width - tmp[:, 2] - 1
-            left_xyxy[:, 2] = width - tmp[:, 0] - 1
+            if hand_batch_preparer is not None:
+                batch_lhand, batch_rhand, left_xyxy = hand_batch_preparer(
+                    img, left_xyxy, right_xyxy, cam_int)
+            else:
+                flipped_img = img[:, ::-1]
+                tmp = left_xyxy.copy()
+                left_xyxy[:, 0] = width - tmp[:, 2] - 1
+                left_xyxy[:, 2] = width - tmp[:, 0] - 1
 
-            batch_lhand = prepare_batch(
-                flipped_img, transform_hand, left_xyxy, cam_int=cam_int.clone()
-            )
-            batch_lhand = recursive_to(batch_lhand, "cuda")
+                batch_lhand = prepare_batch(
+                    flipped_img, transform_hand, left_xyxy, cam_int=cam_int.clone()
+                )
+                batch_lhand = recursive_to(batch_lhand, "cuda")
 
-            ## Prepare right hand batch
-            batch_rhand = prepare_batch(
-                img, transform_hand, right_xyxy, cam_int=cam_int.clone()
-            )
-            batch_rhand = recursive_to(batch_rhand, "cuda")
+                ## Prepare right hand batch
+                batch_rhand = prepare_batch(
+                    img, transform_hand, right_xyxy, cam_int=cam_int.clone()
+                )
+                batch_rhand = recursive_to(batch_rhand, "cuda")
 
             ## Merge both hand batches and run single forward pass
             batch_hands = self._merge_hand_batches(batch_lhand, batch_rhand)
@@ -2822,6 +2832,9 @@ class SAM3DBody(BaseModel):
             merged_output = self.forward_step(batch_hands, decoder_type="hand")
             torch.cuda.synchronize()
             print(f"          [run_inference] step2_hands_merged_decoder: {time.time() - t0:.4f}s")
+
+        if features_only:
+            return pose_output, batch_lhand, batch_rhand, None, None
 
         ## Split output back to left and right
         # Get number of persons for correct splitting

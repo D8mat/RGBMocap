@@ -13,7 +13,7 @@ import sys
 FAST_COMMIT = 'd72aa36913a1673ace029d345f437561a85ec9e2'
 
 
-def saved_fast_sam(project, state):
+def saved_options(project, state):
     """New processing defaults on; saved off is retained, including scene takes."""
     import json
     project = Path(project)
@@ -22,10 +22,22 @@ def saved_fast_sam(project, state):
         root = (project / state['people_root']).resolve()
         if project.resolve().is_relative_to(root) and (root / 'people.json').is_file():
             options = json.loads((root / 'project.json').read_text(encoding='utf-8')).get('flow_options', options)
-    value = options.get('fast_sam', True)
-    if not isinstance(value, bool):
-        raise ValueError('Invalid Fast SAM setting; expected on or off')
-    return value
+    result = {}
+    for key in ('fast_sam', 'sam_batch4', 'sam_gpu_crop'):
+        value = options.get(key, True)
+        if not isinstance(value, bool):
+            raise ValueError('Invalid FlowHMR setting: '+key+'; expected on or off')
+        result[key] = value
+    return result
+
+
+def saved_fast_sam(project, state):
+    return saved_options(project, state)['fast_sam']
+
+
+def acceleration_options(project, state):
+    options = saved_options(project, state)
+    return {key: options['fast_sam'] and options[key] for key in ('sam_batch4', 'sam_gpu_crop')}
 
 
 def source_root(fast):
@@ -58,7 +70,7 @@ def configure_fast_environment():
         KEYPOINT_PROMPT_INTERM_INTERVAL='999')
 
 
-def build_extractor(device, fast=True):
+def build_extractor(device, fast=True, low_memory=False):
     root = source_root(fast).resolve()
     if not (root / 'sam_3d_body/__init__.py').is_file():
         raise RuntimeError('The selected SAM runtime is missing. Repair or reinstall RGB MoCap.')
@@ -74,7 +86,21 @@ def build_extractor(device, fast=True):
     # Preimport chooses the package before FlowHMR inserts its original path.
     from flowhmr.utils.runtime_sam_features import build_sam3d_extractor
     with open(os.devnull, 'w') as quiet, contextlib.redirect_stdout(quiet):
-        extractor = build_sam3d_extractor(device)
+        if not low_memory:
+            extractor = build_sam3d_extractor(device)
+        else:
+            from flowhmr.utils import runtime_sam_features as runtime
+            from .gpu_offload import BlockOffload, release
+            model, config = package.load_sam_3d_body(checkpoint_path=runtime.SAM3D_CKPT_PATH,
+                mhr_path=runtime.SAM3D_MHR_PATH, device='cpu')
+            try:
+                runtime._maybe_convert_backbone_to_fp16(model, device)
+                model._mocap_offload = BlockOffload(model, device)
+                extractor = runtime.Sam3DTokenExtractor(package.SAM3DBodyEstimator(
+                    sam_3d_body_model=model, model_cfg=config))
+            except BaseException:
+                release(model)
+                raise
     if fast:
         for hook in extractor._hooks:
             hook.remove()

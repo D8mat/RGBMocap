@@ -30,6 +30,8 @@ def validate_transform(value):
 
 
 def camera_sources(project):
+    if (project/'prompthmr_source.json').exists():
+        return {name:stamp(project/name) for name in ('hmr4d_results.pt','input.mp4','prompthmr_source.json') if (project/name).exists()}
     if (project/'mamma_source.json').exists():
         return {name:stamp(project/name) for name in ('hmr4d_results.pt','input.mp4','mamma_source.json') if (project/name).exists()}
     if (project/'exmr_camera_sources.json').exists():
@@ -84,6 +86,9 @@ def prepare_cameras(root):
     if not state:raise ValueError('No people group')
     rows=take_projects(root,state)
     manifest=json.loads((root/'project.json').read_text(encoding='utf-8'))
+    if manifest.get('pipeline',{}).get('model')=='prompthmr':
+        from .prompthmr_scene import prepare_cameras as prepare_phmr
+        return prepare_phmr(root)
     if manifest.get('pipeline',{}).get('model')=='mamma':
         from .mamma_scene import prepare_cameras as prepare_mamma
         return prepare_mamma(root)

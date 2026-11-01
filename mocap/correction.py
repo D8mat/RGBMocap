@@ -18,7 +18,7 @@ from scipy.linalg import solve_banded
 from .correction_settings import PRESETS
 
 PARENTS = [-1,0,0,0,1,2,3,4,5,6,7,8,9,9,9,12,13,14,16,17,18,19]
-VERSION = 8
+VERSION = 9
 CORE = 1024
 HALO_SECONDS = 4.0
 
@@ -487,6 +487,14 @@ def correct_arrays(rest, root, quat, probes, probabilities, fps=30., floor=None,
         report['warning']=' '.join(filter(None,(report['warning'],
             'Multi Level estimates contacts from motion. Terrain and object collisions are not solved.')))
     report.update(temporal_report)
+    plans = ([temporal_report['contact_chain_plan']] if 'contact_chain_plan' in temporal_report else
+             [tile['report']['contact_chain_plan'] for tile in
+              temporal_report.get('bounded_contact_plan', {}).get('windows', [])
+              if 'contact_chain_plan' in tile['report']])
+    report['contact_plan_limit_windows'] = sum(not plan['success'] for plan in plans)
+    if report['contact_plan_limit_windows']:
+        report['warning'] = ' '.join(filter(None, (report['warning'],
+            'Some contact-transition windows reached the planning limit; inspect motion and contact timing.')))
     return out_root,out_quat,report
 
 

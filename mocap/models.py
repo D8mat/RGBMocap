@@ -45,7 +45,7 @@ MODELS_LIST = [
           download_url="https://huggingface.co/JunkyByte/easy_ViTPose/resolve/main/torch/wholebody/vitpose-h-wholebody.pth",
           expected_sha256="dbed01fd5bb221610bf26434ec63426025f76eaca46f6177db71c9771a43316c"),
     Model("smplx", "Body Model / SMPL-X Neutral", "body_models/smplx/SMPLX_NEUTRAL.npz", "https://smpl-x.is.tue.mpg.de/", minimum_bytes=1_000_000),
-    Model("smpl", "Optional Body Model / SMPL Neutral", "body_models/smpl/SMPL_NEUTRAL.pkl", "https://smpl.is.tue.mpg.de/", minimum_bytes=1_000_000),
+    Model("smpl", "Body Model / SMPL Neutral", "body_models/smpl/SMPL_NEUTRAL.pkl", "https://smpl.is.tue.mpg.de/", minimum_bytes=1_000_000),
 ]
 # Frozen upstream revisions match the separately validated Windows inference.
 FLOW_REV = '1eb105e554e0cfc1846ea5feac8c2d516a36d319'
@@ -83,18 +83,28 @@ MODELS_LIST.extend([
           expected_sha256='45d60aa3b27ef9107a7afd4e00808f307fd91111e1cfa35afd5c4a62de264767'),
 ])
 SAM_MANUAL_FILES = {'flow_sam': 'model.ckpt', 'flow_sam_config': 'model_config.yaml', 'flow_mhr': 'assets/mhr_model.pt'}
+EXMR_REV = '8debd2e34262fcc63384f7e04d39ca784b0aec21'
 MODELS_LIST.extend([
     Model('exmr','Motion / ExMR','exmr/exmr.safetensors','https://huggingface.co/twehrbein/ExMR',minimum_bytes=235766520,
-          download_url='https://huggingface.co/twehrbein/ExMR/resolve/8debd2e34262fcc63384f7e04d39ca784b0aec21/exmr.safetensors',
+          download_url=f'https://huggingface.co/twehrbein/ExMR/resolve/{EXMR_REV}/exmr.safetensors',
           expected_sha256='8d3947310c30444ec59dae4662574d7a32bf83af30320eeac87146529ff2fda5'),
+    Model('exmr_config','ExMR configuration','exmr/config.json','https://huggingface.co/twehrbein/ExMR',minimum_bytes=180,
+          download_url=f'https://huggingface.co/twehrbein/ExMR/resolve/{EXMR_REV}/config.json',
+          expected_sha256='b29ad86d7916a7f54154c1a20fb07d3bc9d794da4d671c88ba0cf75a5cec8c43'),
     Model('exmr_sapiens','Body / Hand / Foot Keypoints / Sapiens2 1B','exmr/sapiens2_1b_pose.safetensors','https://huggingface.co/facebook/sapiens2-pose-1b',minimum_bytes=6079194752,
           download_url='https://huggingface.co/facebook/sapiens2-pose-1b/resolve/f5fed8b97b99698d5eea1d14ff0855d0b4c3f000/sapiens2_1b_pose.safetensors',
           expected_sha256='2dab7014a17e99e460c18817325a71dd7a81ce48d87027f01c2ee7d7b3af969f'),
 ])
 from .mamma_models import ASSETS as MAMMA_ASSETS, KEYS as MAMMA_KEYS, INSTRUCTIONS as MAMMA_INSTRUCTIONS
 MODELS_LIST.extend(Model(**entry) for entry in MAMMA_ASSETS)
+from .prompthmr_models import ASSETS as PHMR_ASSETS,KEYS as PHMR_KEYS,INSTRUCTIONS as PHMR_INSTRUCTIONS
+from .pear_models import ASSETS as PEAR_ASSETS,KEYS as PEAR_KEYS,INSTRUCTIONS as PEAR_INSTRUCTIONS
+MODELS_LIST.extend(Model(**entry) for entry in PEAR_ASSETS)
+MODELS_LIST.extend(Model(**entry) for entry in PHMR_ASSETS)
 BY_KEY = {model.key: model for model in MODELS_LIST}
+if len(BY_KEY)!=len(MODELS_LIST):raise ValueError('Duplicate model identifiers in the model registry.')
 MANUAL_INSTRUCTIONS = {
+    'exmr_config': 'Download config.json using the Supported file link below. It is the official ExMR checkpoint metadata, pinned to the same revision as exmr.safetensors. Return to the ExMR configuration row and click Import. Import the original JSON file without editing or renaming it. Auto Download can obtain this small public file directly.',
     'mano_right': '1. Open the Recommended download link below, or click Open Download Page. This opens the official download server for the exact archive. Sign in and accept the provider terms; register on the official MANO website if needed.\n2. Download mano_v1_2.zip. If browsing the MANO website instead, this is Models & Code > Models & Code.\n3. Extract the ZIP and open mano_v1_2/models.\n4. Return to Hand Model / MANO Right, click Import and select MANO_RIGHT.pkl. Keep this PKL file intact.\nHandFlow uses a right-hand canonical model for both hands, reflecting the left result back. The separate SMPL-H downloads cannot replace this hand model.',
     'smplx': '1. Open the SMPL-X download page below. Register or sign in and accept the provider terms.\n2. In the "SMPL-X Model" section, choose "Download SMPL-X v1.1 (NPZ+PKL, 830 MB)". Choose the standard v1.1 download listed above.\n3. Download models_smplx_v1_1.zip and extract the outer ZIP archive.\n4. Inside the extracted folder, open models, then smplx. Choose SMPLX_NEUTRAL.npz. Leave this NPZ file intact.\n5. Return to the Body Model / SMPL-X Neutral row and click Import. Select that single NPZ file; Missing changes to Ready after validation.',
 
@@ -107,6 +117,8 @@ MANUAL_INSTRUCTIONS = {
 }
 
 MANUAL_INSTRUCTIONS.update(MAMMA_INSTRUCTIONS)
+MANUAL_INSTRUCTIONS.update(PHMR_INSTRUCTIONS)
+MANUAL_INSTRUCTIONS.update(PEAR_INSTRUCTIONS)
 
 for _key in ('mano_right','smplh'):
     MANUAL_INSTRUCTIONS[_key] += ('\nIf the MANO website shows 502 Bad Gateway, use the Recommended download link below '
@@ -123,7 +135,8 @@ for _key, _file in SAM_MANUAL_FILES.items():
         'The app does not need your account password or access token.')
 
 MANUAL_DETAILS = {
-    'exmr':dict(selection='twehrbein/ExMR > Files and versions > exmr.safetensors',location='exmr.safetensors',avoid='FootMR standalone weights, config.json, or repository ZIPs.'),
+    'exmr':dict(selection='twehrbein/ExMR > Files and versions > exmr.safetensors',location='exmr.safetensors',avoid='FootMR standalone weights, config.json (use the separate ExMR configuration row), or repository ZIPs.'),
+    'exmr_config':dict(selection='twehrbein/ExMR > Files and versions > config.json',location='config.json',avoid='Edited JSON, a different revision, an HTML page, or exmr.safetensors. Use the Supported file link for the matching revision.'),
     'exmr_sapiens':dict(selection='facebook/sapiens2-pose-1b > Files and versions > sapiens2_1b_pose.safetensors',location='sapiens2_1b_pose.safetensors',avoid='Sapiens v1, 0.3B models, segmentation, depth or normal checkpoints.'),
     'mano_right': dict(selection='Models & Code > Models & Code (mano_v1_2.zip)',location='mano_v1_2/models/MANO_RIGHT.pkl',avoid='SMPL+H archives, MANO_LEFT.pkl, or the outer ZIP file.'),
     'smplx': dict(selection='SMPL-X Model > Download SMPL-X v1.1 (NPZ+PKL, 830 MB)',
@@ -210,6 +223,7 @@ def manual_instructions_html(key: str) -> str:
 
 
 STAGE_REQUIREMENTS = {
+    'pear_assets': PEAR_KEYS,
     "people": ("yolo", "person_reid"),
     "track": ("yolo",), "pva": ("pva",),
     "features": ("hmr2", "vitpose"),
@@ -223,8 +237,9 @@ STAGE_REQUIREMENTS = {
     'flow_export': ('smplh',),
     'exmr_preprocess': ('exmr_sapiens',),
     'exmr_features': ('flow_sam','flow_sam_config','flow_mhr','hand_hamer','hand_mean','mano_right'),
-    'exmr': ('exmr','smplx'),
+    'exmr': ('exmr','exmr_config','smplx'),
     'mamma_assets': MAMMA_KEYS,
+    **{stage:PHMR_KEYS for stage in ('prompthmr_assets','prompthmr_prepare','prompthmr_track','prompthmr_pose','prompthmr_world','prompthmr_publish')},
     'mamma_prepare': MAMMA_KEYS,
     'mamma_masks': ('mamma_sam2','mamma_yolo','mamma_clip'),
     'mamma_landmarks': ('mamma','mamma_vertices'),
@@ -235,8 +250,11 @@ STAGE_REQUIREMENTS = {
 
 
 def ready(model: Model) -> bool:
+    if model.key=='pear_geometry':
+        from .pear_models import geometry_ready
+        return geometry_ready()
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr','mamma')) or model.key in ('smplh','mano_right')):
+    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear')) or model.key in ('smplh','mano_right')):
         import json
         try:
             receipt=json.loads(model.path.with_suffix(model.path.suffix+'.receipt.json').read_text(encoding='utf-8'))
@@ -322,6 +340,9 @@ def download(key: str, progress=None) -> Path:
 def import_model_file(key: str, source: Path) -> Path:
     """Worker-only validated, atomic registration; never unpickles imports."""
     import os, uuid
+    if key=='pear_geometry':
+        from .pear_models import import_bundle
+        return import_bundle(source)
     model=BY_KEY[key]; source=Path(source).resolve()
     if source.stat().st_size < model.minimum_bytes:
         raise ValueError('The file is too small for '+model.name)

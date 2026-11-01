@@ -54,6 +54,8 @@ def fingerprint(stage, project, result="auto", _worker_hash=None, _legacy_routin
         elif result_options(selected)[0]:
             inputs[stage].append("opt_results.pt")
     sources = [Path(__file__), Path(__file__).with_name("engines.py"), Path(__file__).with_name("export.py"), Path(__file__).with_name("mesh_data.py"), ROOT / "requirements-windows.txt",Path(__file__).with_name('compute_policy.py')]
+    if stage in ('track','pva','features','gvhmr','refine','footmr','handflow'):
+        sources.append(Path(__file__).with_name('memory_mode.py'))
     if stage == "footmr":
         sources.append(Path(__file__).with_name("footmr.py"))
         sources.append(ROOT / "third_party/FootMR/hmr4d/utils/preproc/vitpose_pytorch/src/vitpose_infer/model_builder.py")
@@ -80,6 +82,7 @@ def fingerprint(stage, project, result="auto", _worker_hash=None, _legacy_routin
         sources.extend(ROOT/'third_party/HTD-Refine'/name for name in (
             'optimization/camera_alignment.py','optimization/pipeline.py','scripts/demo_optimization.py'))
     if stage in ('gvhmr','features'):
+        sources.append(Path(__file__).with_name('model_session.py'))
         sources.extend((Path(__file__).with_name('inference_data.py'),
             Path(__file__).with_name('gvhmr_preprocess.py'),Path(__file__).with_name('gvhmr_attention.py'),
             ROOT/'third_party/GVHMR/hmr4d/network/gvhmr/relative_transformer.py',
@@ -152,6 +155,7 @@ def main() -> int:
     parser.add_argument('--correction-mode',choices=['flat','multi_level'],default='flat')
     parser.add_argument('--pelvis-offset',type=float,default=0.)
     args = parser.parse_args()
+    from .model_session import set_memory_budget
     from .compute_policy import configure_worker_cpu,gpu_memory_fraction,GIB
     threads=configure_worker_cpu(args.stage)
     os.environ['RGB_MOCAP_STAGE']=args.stage
@@ -171,7 +175,7 @@ def main() -> int:
             project = prepare(args.video.resolve(), args.start, args.end,motion_tool=args.motion_tool or 'gvhmr',project=args.project)
             manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
             if args.motion_tool=='flowhmr':
-                manifest['flow_options']={**manifest.get('flow_options',{}),'camera_interval':int(os.environ.get('RGB_MOCAP_FLOW_INTERVAL','0')),'fast_sam':os.environ.get('RGB_MOCAP_FLOW_FAST_SAM','1')=='1'}
+                manifest['flow_options']={**manifest.get('flow_options',{}),'camera_interval':int(os.environ.get('RGB_MOCAP_FLOW_INTERVAL','0')),'fast_sam':os.environ.get('RGB_MOCAP_FLOW_FAST_SAM','1')=='1','sam_batch4':os.environ.get('RGB_MOCAP_FLOW_BATCH4','1')=='1','sam_gpu_crop':os.environ.get('RGB_MOCAP_FLOW_GPU_CROP','1')=='1'}
             if args.motion_tool=='exmr':
                 from .exmr_options import options
                 manifest['exmr_options']=options(json.loads(os.environ.get('RGB_MOCAP_EXMR_OPTIONS','{}')))
@@ -227,7 +231,7 @@ def main() -> int:
             from .flow_backend import run_stage
             run_stage(project,args.stage,args.result,emit,force=args.force)
             return 0
-        if require_supported_project(project).key=='mamma':
+        if require_supported_project(project).key in ('mamma','prompthmr'):
             if args.stage=='export':
                 from .export import export_project
                 output=export_project(project,args.result)
@@ -237,7 +241,7 @@ def main() -> int:
             elif args.stage in ('mesh','rig'):
                 from .export import export_project
                 output=export_project(project,args.result)
-            else:raise ValueError('Use the multi-view MAMMA pipeline for reconstruction; single-view stages cannot process this project.')
+            else:raise ValueError('Use this model\'s dedicated reconstruction pipeline; generic inference stages cannot process this project.')
             emit('complete',stage=args.stage,output=str(output),cached=False,elapsed=time.monotonic()-started)
             return 0
         if args.stage == 'rig':
@@ -286,7 +290,9 @@ def main() -> int:
                 if not torch.cuda.is_available():raise RuntimeError('A supported NVIDIA CUDA GPU is required for person detection.')
                 free,total=torch.cuda.mem_get_info()
             if free is not None:
-                torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
+                set_memory_budget(free,total)
+                from .memory_mode import select_stage
+                select_stage(args.stage,free,total,manifest.get('frames',0),emit)
             from .person_tracking import discover,prepare_person
             if args.stage=='people':
                 output=discover(project,emit)
@@ -356,8 +362,11 @@ def main() -> int:
             free,total=torch.cuda.mem_get_info()
         memory=psutil.virtual_memory()
         if free is not None:
-            torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
-        plan=dict(stage=args.stage,threads=threads,mode=os.environ.get('RGB_MOCAP_COMPUTE_MODE','auto'),
+            set_memory_budget(free,total)
+            from .memory_mode import select_stage
+            select_stage(args.stage,free,total,manifest.get('frames',0),emit)
+        from .memory_mode import effective_mode,requested_mode
+        plan=dict(stage=args.stage,threads=threads,mode=effective_mode(),requested_mode=requested_mode(),
              frames=manifest.get('frames',0),available_ram_gib=round(memory.available/GIB,2),
              free_vram_gib=round(free/GIB,2) if free is not None else None)
         atomic_json(project/f'{args.stage}_resources.json',plan)
@@ -406,7 +415,8 @@ def main() -> int:
                 atomic_json(state_path, state)
         message=str(error)
         if isinstance(error,MemoryError) or 'out of memory' in message.lower():
-            message='Processing ran out of memory and stopped safely. Select Low Memory, close other apps, or trim the clip. Completed stages can be reused.'
+            from .memory_mode import GUIDANCE
+            message='Processing ran out of memory and stopped safely. '+GUIDANCE+' Completed stages can be reused.'
         emit("failed", stage=args.stage, message=message)
         return 1
 

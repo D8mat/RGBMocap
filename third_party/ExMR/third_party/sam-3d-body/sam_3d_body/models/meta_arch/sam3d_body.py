@@ -1129,6 +1129,7 @@ class SAM3DBody(BaseModel):
                 condition_info=condition_info[self.body_batch_idx],
                 batch=batch,
             )
+            if getattr(self, "_mocap_features_only", False):return {}
             pose_output = pose_output[-1]
         if len(self.hand_batch_idx):
             tokens_output_hand, pose_output_hand = self.forward_decoder_hand(

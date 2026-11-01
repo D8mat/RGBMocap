@@ -161,6 +161,8 @@ class PromptableDecoder(nn.Module):
                     )
 
         out = self.norm_final(token_embedding)
+        if getattr(self, "_mocap_features_only", False):
+            return out, []
 
         if self.do_interm_preds:
             curr_pose_output = token_to_pose_output_fn(

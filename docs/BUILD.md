@@ -22,6 +22,11 @@ reviewed wheel stack without a system CUDA Toolkit. Optional MAMMA native builds
 require CUDA Toolkit 12.8 and the C++ tools described below. GPU compatibility
 still depends on the NVIDIA driver and installed wheels.
 
+Optional PromptHMR has a separate pinned Python 3.11 environment installed with
+`Setup_PromptHMR.cmd`. It also needs C++ tools and CUDA Toolkit 12.8 to build
+SAM2; MAMMA/SDF is not required. Read [its setup/developer notes](models/PROMPTHMR.md)
+before changing its lock, adapters, native modules or model paths.
+
 ## Environments
 
 Run `python tools/setup_dev.py --plan` to review groups. Then run the same command
@@ -178,3 +183,25 @@ preserves the old pointer. Setup stages first and checks again after relocation.
 Changing the optional lock/adapters invalidates this runtime only: the UI requests
 `Setup_MAMMA.cmd`, while other models and saved results stay available. Keep
 private benchmark scripts, logs and derived models outside the source checkout.
+
+## PEAR support
+
+`install.cmd` and `update.cmd` prepare PEAR support with `tools/setup_pear.py`
+after committing the base shared Python/Torch runtime. The helper runs under the
+installer's existing application lock; it must not acquire that lock a second time.
+It prepares pinned
+upstream PEAR source and pure-Python support in `runtime_pear/`, rather than
+changing base dependencies. No native PyTorch3D build is used. Source URLs and
+hashes are in `installer/pear-sources.json`; explicit import adaptations are in
+`installer/pear_adapters.py`. Geometry imports use `installer/pear-assets.json`
+for exact archive/member hashes. See [PEAR](models/PEAR.md). Models, generated
+support folders, diagnostics and private regression artifacts are excluded from Git.
+The active receipt binds the support/adapters to the installed shared-runtime group.
+Matching verified support is retained without downloading or extracting it again;
+a source/base change or damaged support stages and CUDA-verifies a new generation
+before replacing the pointer. Failure leaves prior support and the install retry
+marker intact. No weights or registered geometry are acquired by this step.
+
+Changed upstream files receive an adaptation notice. Each support generation
+also records pinned source URLs/hashes and the adapter hash in
+`RGB_MOCAP_PROVENANCE.json`, alongside the retained provider license files.

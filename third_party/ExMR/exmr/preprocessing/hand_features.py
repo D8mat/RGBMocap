@@ -7,6 +7,8 @@ Pavlakos), see THIRD_PARTY_NOTICES.md.
 
 from pathlib import Path
 
+from mocap.batch_prefetch import batch_source
+
 import cv2
 import numpy as np
 import torch
@@ -59,7 +61,7 @@ class HamerHandFeatures:
 
     TOKEN_DIM = 1024
 
-    def __init__(self, data_dir, fp16=True, batch_size=16, num_workers=8, device="cuda"):
+    def __init__(self, data_dir, fp16=True, batch_size=16, num_workers=8, device="cuda", low_memory=False):
         data_dir = Path(data_dir)
         cfg = get_config(str(data_dir / "hamer_ckpts" / "model_config.yaml"))
         cfg.defrost()
@@ -70,12 +72,13 @@ class HamerHandFeatures:
         cfg.MODEL.BACKBONE.pop("PRETRAINED_WEIGHTS", None)
         cfg.freeze()
         self.cfg = cfg
-        # like hamer.models.load_hamer, without the renderer; built on the GPU: initializing the
-        # weights on the CPU takes ~2 s, and the checkpoint replaces them anyway
-        with torch.device(device):
+        # Fast loading initializes on GPU, without the unused renderer. Low
+        # Memory loads on CPU first to avoid a duplicate GPU checkpoint copy.
+        with torch.device("cpu" if low_memory else device):
             self.model = HAMER.load_from_checkpoint(
                 str(data_dir / "hamer_ckpts" / "checkpoints" / "hamer.ckpt"),
                 strict=False,
+                **({"map_location": "cpu"} if low_memory else {}),
                 cfg=cfg,
                 init_renderer=False,
             )
@@ -84,7 +87,11 @@ class HamerHandFeatures:
             fp16, batch_size, num_workers, device
         )  # fmt: skip
         self._tokens = None
-        self.model.mano_head.transformer.register_forward_hook(self._store_tokens)
+        self._token_hook = self.model.mano_head.transformer.register_forward_hook(self._store_tokens)
+
+    def close(self):
+        self._token_hook.remove()
+        self._tokens = None
 
     def _store_tokens(self, _module, _inputs, output):
         self._tokens = output.squeeze(1)
@@ -103,8 +110,8 @@ class HamerHandFeatures:
         )
         tokens = torch.zeros((len(dataset), 2, self.TOKEN_DIM), dtype=torch.float32)
         i = 0
-        with tqdm(total=len(dataset), desc="HaMeR hand features", unit="frame") as pbar:
-            for crops in loader:
+        with batch_source(loader, batch_bytes=self.batch_size*2*3*256*256*4) as batches, tqdm(total=len(dataset), desc="HaMeR hand features", unit="frame") as pbar:
+            for crops in batches:
                 bs = crops.shape[0]
                 tokens[i : i + bs] = (
                     self._forward(crops.reshape(-1, 3, 256, 256))
@@ -113,6 +120,11 @@ class HamerHandFeatures:
                 )
                 i += bs
                 pbar.update(bs)
+        if not torch.isfinite(tokens).all():
+            raise RuntimeError(
+                "Non-finite HaMeR hand features, probably a float16 overflow: disable FP16 "
+                "accumulation in run_video (exmr/pipeline.py) and please report this"
+            )
         return tokens
 
     def _forward(self, crops):

@@ -3,6 +3,7 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2610.26213-b31b1b.svg)](https://arxiv.org/abs/2610.26213)
 [![Project page](https://img.shields.io/badge/Project-Page-blue)](https://twehrbein.github.io/exmr-website/)
 [![Model](https://img.shields.io/badge/%F0%9F%A4%97-Model-yellow)](https://huggingface.co/twehrbein/ExMR)
+[![Demo](https://img.shields.io/badge/%F0%9F%A4%97-Demo-yellow)](https://huggingface.co/spaces/twehrbein/ExMR)
 
 ![ExMR teaser](assets/teaser.jpg)
 
@@ -15,6 +16,16 @@
 
 ## News
 
+- **[2026-10-29]** [v0.1.5](https://github.com/twehrbein/ExMR/releases/tag/v0.1.5): fixes for
+  portrait phone videos (the mesh was beside the person) and for ffmpeg crashing at the end of a run;
+  foot contacts in the results, `--export_fps` (e.g. 24 or 30 fps exports), a world-frame motion that
+  starts facing +z, the mesh's shadow in the world view and world-frame ankles closer to the network's.
+- **[2026-10-26]** Online demo on [Hugging Face Spaces](https://huggingface.co/spaces/twehrbein/ExMR):
+  try ExMR in the browser, without installing anything.
+- **[2026-10-26]** [v0.1.4](https://github.com/twehrbein/ExMR/releases/tag/v0.1.4): 3D and 2D joints
+  in the results, BVH export, FBX for Unity and Unreal (through Blender) and retargeting to humanoid
+  robots with [GMR](https://github.com/YanjieZe/GMR), see [outputs](docs/OUTPUTS.md); a demo about
+  10 % faster.
 - **[2026-10-22]** [v0.1.3](https://github.com/twehrbein/ExMR/releases/tag/v0.1.3): export for
   Blender (AMASS SMPL-X file), `--snap_to_ground` and temporal smoothing.
 - **[2026-10-21]** Demo code and model weights released.
@@ -37,6 +48,9 @@ first: its weights are gated and access is approved manually, which can take a w
 
 ## Quick Start
 
+To try ExMR without installing it, the [online demo](https://huggingface.co/spaces/twehrbein/ExMR)
+runs the default mode on up to 20 seconds of a video and returns the same outputs.
+
 Reconstruct the main person in a video:
 
 ```bash
@@ -45,27 +59,32 @@ python tools/demo.py --video path/to/video.mp4 -s   # static camera (better worl
 ```
 
 For example, download the [dancing video](https://www.pexels.com/video/woman-doing-dancing-exercise-in-the-garden-3690649/)
-from Pexels (1906x1080, filmed with a static camera) and run
+from Pexels (1906x1080, filmed with a static camera; the ground is flat) and run
 
 ```bash
-python tools/demo.py --video 3690649-hd_1906_1080_30fps.mp4 -s
+python tools/demo.py --video 3690649-hd_1906_1080_30fps.mp4 -s --snap_to_ground
 ```
 
 ![Demo output on the example video: SMPL-X in the camera view (left) and in the gravity-aligned world frame (right)](assets/demo.gif)
 
-Results go to `outputs/<video name>/`: SMPL-X parameters in the camera and in a gravity-aligned
-world frame (`results.pt`, `results.npz`), the world-frame motion as an AMASS file that the SMPL-X
-Blender add-on imports (`<video name>_amass.npz`, see [Blender](docs/OUTPUTS.md#blender-and-amass))
-and rendered videos, see [outputs](docs/OUTPUTS.md).
+Results go to `outputs/<video name>/` (see [outputs](docs/OUTPUTS.md)):
+
+* `results.pt`, `results.npz`: SMPL-X parameters and joints in the camera and in a gravity-aligned
+  world frame
+* `<video name>_amass.npz`: the world-frame motion as an AMASS SMPL-X file, e.g. for
+  [Blender](docs/OUTPUTS.md#blender-and-amass), [Unity and Unreal](docs/OUTPUTS.md#fbx-for-unity-and-unreal)
+  (FBX through Blender) or [humanoid robots](docs/OUTPUTS.md#humanoid-robots-gmr)
+* `<video name>.bvh`: the world-frame motion as a [BVH](docs/OUTPUTS.md#bvh) skeleton animation
+* rendered videos of the SMPL-X mesh in the camera view and in the world frame
 
 `--mode` trades speed for accuracy. Times are for the 37-second example video (1122 frames, `-s`)
 on an RTX 4090, including model loading and rendering:
 
 | `--mode` | Person detector | 2D keypoints | Camera motion (moving camera) | Time |
 |---|---|---|---|---:|
-| `fast` | YOLO11m | RTMW-x | SimpleVO | 1&nbsp;min&nbsp;9&nbsp;s |
-| `balanced` (default) | YOLO11m | Sapiens2-1B 448x336 | SimpleVO | 1&nbsp;min&nbsp;23&nbsp;s |
-| `accurate` | YOLO11x | Sapiens2-1B 1024x768 | DPVO | 3&nbsp;min&nbsp;22&nbsp;s |
+| `fast` | YOLO11m | RTMW-x | SimpleVO | 1&nbsp;min&nbsp;3&nbsp;s |
+| `balanced` (default) | YOLO11m | Sapiens2-1B 448x336 | SimpleVO | 1&nbsp;min&nbsp;17&nbsp;s |
+| `accurate` | YOLO11x | Sapiens2-1B 1024x768 | DPVO | 2&nbsp;min&nbsp;58&nbsp;s |
 
 In our evaluation, Sapiens2-1B gives nearly the same accuracy at 448x336 and 1024x768; RTMW-x is
 slightly less accurate, mostly for the feet. With `-s` (static camera), no mode estimates camera
@@ -76,6 +95,13 @@ Other options:
 
 * `--detector`, `--pose_backend`, `--sapiens2_resolution`, `--vo`: override single parts of the
   mode, e.g. `--mode accurate --vo simplevo` without DPVO.
+* `--start`, `--end`: only the part of the video between these times, in seconds (`83.5`) or as
+  in a video player (`1:23.5`, `1:02:03`); either can be left out. The outputs go to
+  `outputs/<video name>_<start>-<end>s/` and cover only that part (see [outputs](docs/OUTPUTS.md)).
+* `--f_mm`: the camera's focal length in mm as for a full-frame camera (35 mm equivalent), if you
+  know it; for phones about 13 (0.5x lens), 24-26 (1x), 48 (2x) or 77 (3x). Without it, ExMR assumes
+  a 53° diagonal field of view (about 43 mm). The focal
+  length is used by the model, SAM 3D Body and the camera motion estimation.
 * `--fps30`: resample the video to 30 fps first. Usually not needed; ExMR is trained on 30 fps
   videos, so you may try it for videos far from 30 fps (e.g. 50 fps or more). For such videos it
   also makes the demo faster, since fewer frames are processed. The results then follow the
@@ -84,12 +110,16 @@ Other options:
   seems to fly or sink). If the scene has a single flat ground and nothing to stand on (no
   stairs, chairs, ...), the body touches the ground at least every 0.5 s, about the hang time of
   a jump; this option moves the world-frame motion vertically so that it does, as in
-  [PRIMAL](https://arxiv.org/abs/2503.17544). Jumps with a longer flight are pulled down.
+  [PRIMAL](https://arxiv.org/abs/2503.17544). Jumps with a longer flight are pulled down. The
+  demo suggests this option when the feet end up far above the ground where they touch it.
+* `--export_fps`: frame rate of the exported motion (`<name>_amass.npz`, `<name>.bvh`), e.g. 24 for
+  film or 60 for games, resampled from the video's (default). The other outputs keep the video's
+  frames.
 * `--smoothing {global,both,none}`: temporal smoothing of the output motion (Gaussian, ~33 ms).
   By default (`global`) only the world-frame motion is smoothed; the camera-frame motion stays
   raw, best aligned with the image. `both` also smooths the camera-frame motion (smoother, but
   fast foot motion is followed slightly less closely in the image); `none` keeps the raw output.
-* `--no_render`: only save the results.
+* `--no_render`: no videos, only the results (needs no nvdiffrast).
 
 Intermediate results are cached in `outputs/<video name>/cache/`, so rerunning the demo (e.g.
 with `--no_render` removed, or another option) only recomputes what changed.
@@ -122,8 +152,11 @@ results = run_video("video.mp4", "outputs/video", Options(static_cam=True, rende
 body_pose = results["smplx_global"]["body_pose"]  # (L, 63), see docs/OUTPUTS.md
 ```
 
-`Options` has the same settings as the demo's command-line options (default: `balanced` mode). The
-model files are read from `checkpoints/` (or `$EXMR_CHECKPOINT_DIR`).
+`Options` has the same settings as the demo's command-line options (default: `balanced` mode;
+`start` and `end` in seconds). The model files are read from `checkpoints/` (or
+`$EXMR_CHECKPOINT_DIR`). `exmr.pipeline` also exposes the pieces `run_video` is built from, e.g.
+for a pipeline with preloaded models: `hand_boxes`, `model_inputs`, `compute_joints`,
+`save_results` and `render`.
 
 ## How it works
 
@@ -140,7 +173,7 @@ model files are read from `checkpoints/` (or `$EXMR_CHECKPOINT_DIR`).
 | ExMR: initial whole-body estimate, then FootMR and HandMR | `exmr/model/exmr.py`, with `body_net.py` and `refiners.py` |
 | World-frame trajectory and post-processing (static joints, camera drift, ground contact, IK) | `exmr/model/global_traj.py` |
 | Temporal smoothing | `exmr/model/exmr.py`, `exmr/geometry/smoothing.py` |
-| Export for Blender (AMASS SMPL-X file) | `exmr/export.py` |
+| Export for Blender and robot retargeting (AMASS SMPL-X file) and BVH | `exmr/export.py` |
 | Rendered videos | `exmr/vis/` |
 
 ## Citation

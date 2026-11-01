@@ -5,9 +5,13 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 
+# the joints of the smplx package's output that ExMR reports: the 55 SMPL-X joints, then 21 mesh
+# vertices (nose, eyes, ears, toes, heels, fingertips)
+NUM_JOINTS = 76
+
 
 class SmplxModel(nn.Module):
-    """Vertices (10475) and joints of SMPL-X for ExMR's output parameters.
+    """Vertices (10475) and joints (76) of SMPL-X for ExMR's output parameters.
 
     Args:
         smplx_npz: the official SMPLX_NEUTRAL.npz (not distributed with ExMR, see docs/INSTALL.md)
@@ -49,14 +53,37 @@ class SmplxModel(nn.Module):
             for name, buffer in list(module.named_buffers(recurse=False)):
                 module.register_buffer(name, buffer, persistent=False)
         self.faces = torch.from_numpy(self.model.faces.astype("int64"))  # (20908, 3)
+        # the vertices of each foot: those that follow its ankle or toe joint the most
+        bone = self.model.lbs_weights.argmax(dim=-1)  # (10475,)
+        for side, joints in (("left", [7, 10]), ("right", [8, 11])):
+            ids = torch.isin(bone, torch.tensor(joints)).nonzero()[:, 0]
+            self.register_buffer(f"{side}_foot_vertices", ids, persistent=False)
 
     @property
     def J_regressor(self):
         """(55, 10475) joint regressor; the first 22 joints match SMPL's."""
         return self.model.J_regressor
 
+    @property
+    def joint_names(self):
+        """Names of the joints (76), e.g. "left_heel"."""
+        from smplx.joint_names import JOINT_NAMES
+
+        return JOINT_NAMES[:NUM_JOINTS]
+
     def forward(self, body_pose, betas, global_orient, transl, left_hand_pose, right_hand_pose):
         """SMPL-X parameters, each (L, D) -> vertices (L, 10475, 3)"""
+        return self._output(
+            body_pose, betas, global_orient, transl, left_hand_pose, right_hand_pose
+        ).vertices
+
+    def joints(self, body_pose, betas, global_orient, transl, left_hand_pose, right_hand_pose):
+        """SMPL-X parameters, each (L, D) -> joints (L, 76, 3), see joint_names"""
+        return self._output(
+            body_pose, betas, global_orient, transl, left_hand_pose, right_hand_pose
+        ).joints[:, :NUM_JOINTS]
+
+    def _output(self, body_pose, betas, global_orient, transl, left_hand_pose, right_hand_pose):
         L = body_pose.shape[0]
         zeros = body_pose.new_zeros((L, 3))
         return self.model(
@@ -70,4 +97,4 @@ class SmplxModel(nn.Module):
             leye_pose=zeros,
             reye_pose=zeros,
             expression=body_pose.new_zeros((L, self.model.num_expression_coeffs)),
-        ).vertices
+        )

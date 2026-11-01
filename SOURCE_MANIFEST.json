@@ -11,13 +11,13 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 1813,
-      "sha256": "102fa070d896f321296fd294a99e6200c0a8b2882ac3659c8a3d97268809600e"
+      "bytes": 1959,
+      "sha256": "6d06b03c1ef7f9953803efe66f9782cd48691caa9ad59ae8fc55685e72523101"
     },
     {
       "path": "AGENTS.md",
-      "bytes": 1424,
-      "sha256": "43fdcce181be5c5011be84f93e51178ee0ac45b77ca3a3eada0eb9a07ce0a104"
+      "bytes": 2139,
+      "sha256": "b365e79eb890dbd5ea081274462b2170d0226973a4ac15e1828789e3b23585a1"
     },
     {
       "path": "LICENSE",
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4405,
-      "sha256": "46a042d527eeea3efb16e3dc17558bcac32aae66a38ebd6b4ca5290f6fd8b080"
+      "bytes": 11058,
+      "sha256": "0c62eeb3719d4c964f615d3ca0d5333641a941cbad03a0ce9242573fad70efef"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -40,9 +40,14 @@
       "sha256": "2b6004b05ef9160cca0e0b04c64d00dd23c76f4ca3ad4e6c9560a2289ed01376"
     },
     {
+      "path": "Setup_PromptHMR.cmd",
+      "bytes": 882,
+      "sha256": "f81f365d7f7efc61f3105bf8a78905d43725ff658242920187dc74563615b208"
+    },
+    {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 7166,
-      "sha256": "4bfbcb6f24fb1aa20bfdafb87b89c4375b40da7fb793907546a93d3b60d11f7a"
+      "bytes": 8568,
+      "sha256": "fdab2c03d661bd7cefc11c180a4d3f298beaa50d2ff012848d5c7ae3997bbf89"
     },
     {
       "path": "app.py",
@@ -91,18 +96,23 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 15939,
-      "sha256": "4acd8c613f2206887cb03a789ed7d96655d65582f52e85dca6774c3930c0aab5"
+      "bytes": 39474,
+      "sha256": "f88d6c233a30746baf022ec2495a5f5ca202e7977e2cf73f5aa21d6b7293dd54"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 9910,
-      "sha256": "d6bc05d68a8c3df9017a1ed848d1fc4a788aad09a2900b15d02664b36d2e427a"
+      "bytes": 11607,
+      "sha256": "ff2c901d948748e6d477127418b6f5c227d64d509bde5d7eb7f1145e4697fa0a"
+    },
+    {
+      "path": "docs/CITATIONS.md",
+      "bytes": 5656,
+      "sha256": "ecc6c91a14a4dbf91677c2b0833e3744d37afc0069f46af3c64860cbce02cd4c"
     },
     {
       "path": "docs/MAMMA.md",
-      "bytes": 19253,
-      "sha256": "b438814f63b6f54b7b775a7e7f4f761069ee79003d171cbed4275d5c67bdc00e"
+      "bytes": 23465,
+      "sha256": "eb1e97d8bb92d20847445678cc58ea6eea8b90e354186c8431748b16def1fbe1"
     },
     {
       "path": "docs/MAMMA_AGENT_SETUP.md",
@@ -110,24 +120,44 @@
       "sha256": "8f832c9403cf067b773f71b18321b8b31400ec629d9b3c25fd37917a5c945368"
     },
     {
+      "path": "docs/PERFORMANCE.md",
+      "bytes": 14223,
+      "sha256": "55951143f07abd21f5fbe7c2f26e12278fcfaaf41334048fbedb1ad7449a42b9"
+    },
+    {
       "path": "docs/UPSTREAM_PORTS.md",
-      "bytes": 1715,
-      "sha256": "b645cb693b79054f747795e7d044e4709aa69ce7b9ca8588d834c6d0f0f00da5"
+      "bytes": 2175,
+      "sha256": "093712fcb1c9fd6eb69e75d3032d3b421eb8c1e7f5b1217d8dd2a96837d803e4"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 34385,
-      "sha256": "18c137f9e4e9e32510ec90ee0068c6d79a95635545b8f56561c0d65d18506663"
+      "bytes": 46488,
+      "sha256": "b9e12af88f3bf4798055058449a4e25f7b585bb0e22cded3a138caba2311e6fd"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 14377,
-      "sha256": "0079cdaee4225a7d051ea6c10bc469de00a27e45560c1984bea9035dfe7bccb4"
+      "bytes": 89249,
+      "sha256": "1e5683153982fc2c1d3fb522047f8680862008d4854452b565283811b5039bc1"
     },
     {
       "path": "docs/images/camera-view-preview.jpg",
       "bytes": 56808,
       "sha256": "2dda8c409d4c42d143b8505317a5062940ab942babe9743e800965cc4a83b922"
+    },
+    {
+      "path": "docs/images/exmr-interaction-contact.png",
+      "bytes": 336149,
+      "sha256": "2210d3cbdd46d65bb812d0c95b9f90cc766ec4a689745e53db6c69343542acd2"
+    },
+    {
+      "path": "docs/images/interaction-contact-input.png",
+      "bytes": 166612,
+      "sha256": "60c19d94255eb5f01d0456063fc63b3db7905cf18817478a9ea8bf34a09fe8d1"
+    },
+    {
+      "path": "docs/images/prompthmr-interaction-contact.png",
+      "bytes": 346668,
+      "sha256": "3726c0a2c9ba6be531b07b1b197185d2c98046380ec9c464acc7d752687a4500"
     },
     {
       "path": "docs/images/rgbmocap-workspace.png",
@@ -136,23 +166,33 @@
     },
     {
       "path": "docs/models/EXMR.md",
-      "bytes": 3943,
-      "sha256": "5ae467efb2c55aa31aab2d0325070593d47f6bdb4cb7f59a44174adaaa3fdc66"
+      "bytes": 8113,
+      "sha256": "fd85fb1db9a879d43829c71445c98b9e715f14aa6aa4284f15577d2872b56baf"
     },
     {
       "path": "docs/models/FLOWHMR.md",
-      "bytes": 4116,
-      "sha256": "ef73ee4fd10f889c36c59c1ba7e0785f9021338e773b86a158df6ec8a53c8049"
+      "bytes": 8328,
+      "sha256": "0ca09d89c3a6a9fff248b2014a2f4d588be771203d43aa22e00be29ad4128332"
     },
     {
       "path": "docs/models/GVHMR.md",
-      "bytes": 4344,
-      "sha256": "d313f99f84dd6dd110ee5d72f58ad8f58e6b344bf3bd15b322a3f4623567854c"
+      "bytes": 5915,
+      "sha256": "a43b89cde13e9168431177655c9678a37cc74219436e055066b01137276ca09e"
+    },
+    {
+      "path": "docs/models/PEAR.md",
+      "bytes": 11738,
+      "sha256": "57a26ed95be324d184ea9dc582db733553ee83429f727e99634c2dfb675db809"
+    },
+    {
+      "path": "docs/models/PROMPTHMR.md",
+      "bytes": 14194,
+      "sha256": "8ba469aba25a20d23514a72371cf9d2e121eecd7b7b41fcfc7a397c65d1ed0c2"
     },
     {
       "path": "docs/models/README.md",
-      "bytes": 3450,
-      "sha256": "8b05a5469f3e3609992a0d686aae7e0fcfecd76dd3e12b8572f284a667f1f44d"
+      "bytes": 5922,
+      "sha256": "3be817b61b7bc4d955796957990cb34e400e184c5fd02a72d30de616f391a358"
     },
     {
       "path": "docs/samples/camera-view.mp4",
@@ -183,6 +223,11 @@
       "path": "docs/samples/motion-capture.mp4",
       "bytes": 13808824,
       "sha256": "6cb138f4586ebed6620a60761d6646d658b2d496a7a166dbe5a07634b34d86a0"
+    },
+    {
+      "path": "docs/samples/multi-cam-mocap.mp4",
+      "bytes": 3633370,
+      "sha256": "0657ff52fb4f5e8c9464d4601f28233867ffd07f894ee71d31c08e6625cb0d6d"
     },
     {
       "path": "install.cmd",
@@ -260,9 +305,34 @@
       "sha256": "bbea620bc10c7d922720096a2f19892f8dbaadae17a03a4a25b61691a6a5141b"
     },
     {
+      "path": "installer/pear-assets.json",
+      "bytes": 5612,
+      "sha256": "63cd9ea4220325a328ae5df16d6ceda09c21aaf41ecb8bce48dd2d9cb88ace05"
+    },
+    {
+      "path": "installer/pear-sources.json",
+      "bytes": 941,
+      "sha256": "ecc22855b65fa68c547f9ef9a3ae3f46966c8a5263ae22892b2544a8e32bcf0f"
+    },
+    {
+      "path": "installer/pear_adapters.py",
+      "bytes": 1743,
+      "sha256": "f36fb1d7d563cbb15d8effb377470559757b92f5d5e1cbe876bf4f6f7cbf7e54"
+    },
+    {
+      "path": "installer/prompthmr-runtime-lock.json",
+      "bytes": 85747,
+      "sha256": "968f2579c04d3a7c4b4989a1b3941a245beeb438045b8a328eeb13e8fd5911c7"
+    },
+    {
+      "path": "installer/prompthmr_adapters.py",
+      "bytes": 2561,
+      "sha256": "08e1e8fb768ae7e4edf852569d70ae69fde20d2cb89dd81de4ffc2a9ca896e06"
+    },
+    {
       "path": "installer/runtime-lock.json",
       "bytes": 117713,
-      "sha256": "40bc4b4bba02255ff1f9fe574580ef336b2c8550612b3534e437ed0dd10f5fbe"
+      "sha256": "0a3c03e42a954debef5dbfa36d495499f903c7cca064ac3da3ecc02724980aac"
     },
     {
       "path": "installer/runtime_sources/antlr4_python3_runtime-4.9.3-py3-none-any/SOURCE_WHEEL.json",
@@ -961,13 +1031,18 @@
     },
     {
       "path": "installer/source-resources.json",
-      "bytes": 4097,
-      "sha256": "496b3880e6d0fa8020a30a044560c95eafaf7963558b02602d5edd688e689817"
+      "bytes": 4272,
+      "sha256": "a79f9bf618c08aec30f7a65540155d35ac6d52a2a3e9d797bb54a8c73122be68"
     },
     {
       "path": "installer/verify_mamma.py",
       "bytes": 3557,
       "sha256": "eb6ccb88905e686d91ef46449f23644ab539ec890ae5b77bd4f9ce60aa55f454"
+    },
+    {
+      "path": "installer/verify_prompthmr.py",
+      "bytes": 2905,
+      "sha256": "9fe3b87fbee89b300c42240d48c04610b07f23207e33549f3aff8f6834442499"
     },
     {
       "path": "installer/verify_runtime.py",
@@ -993,6 +1068,16 @@
       "path": "mocap/anatomical_ik.py",
       "bytes": 4652,
       "sha256": "960fa6f0b59f70ceeaeceae1fe9fde4a05c20fa22a169f01a68b7f6f9c6c50a9"
+    },
+    {
+      "path": "mocap/batch_prefetch.py",
+      "bytes": 2185,
+      "sha256": "6fb62194c76d0423ee2eef55e7ee690baf27aef3ce61fa2230b940830c46178e"
+    },
+    {
+      "path": "mocap/batch_worker.py",
+      "bytes": 5752,
+      "sha256": "c9f04c44545987ca88880b2c3a7c68035b6b1a24646c6fd0c7e228958f3d9b7e"
     },
     {
       "path": "mocap/biped_bvh.py",
@@ -1096,8 +1181,8 @@
     },
     {
       "path": "mocap/compute_policy.py",
-      "bytes": 5723,
-      "sha256": "f47c0da4b7f7671931174e2aaf8ed09a7d1fde1047fd3c07d96065b8cc14425b"
+      "bytes": 6073,
+      "sha256": "d355f7b37c395c9c745774399846880659b9b6a29d281ab5151480c2be4b6b3c"
     },
     {
       "path": "mocap/console_log.py",
@@ -1111,8 +1196,8 @@
     },
     {
       "path": "mocap/contact_pose_plan.py",
-      "bytes": 12652,
-      "sha256": "ba5972c5b3f6161ae98d29ceebdf8ec283dfeb06c5edde5d3ca4f78d0d185a8f"
+      "bytes": 13742,
+      "sha256": "c442252def49642c97925da0ea06d0f4aa1c61560629ff3e5bcd70b8aeb7cb6b"
     },
     {
       "path": "mocap/contact_temporal_root.py",
@@ -1121,8 +1206,8 @@
     },
     {
       "path": "mocap/contact_trajectory.py",
-      "bytes": 11551,
-      "sha256": "4e4edb1b20d0b3b4873b62c369aa5822e029302d03d4a92ff13626a798443c51"
+      "bytes": 12124,
+      "sha256": "3a28da4a3b7e10ce1d0b453f3e5791638dfd64df8f62535137cd267c354c9c55"
     },
     {
       "path": "mocap/contact_writer.py",
@@ -1131,8 +1216,8 @@
     },
     {
       "path": "mocap/correction.py",
-      "bytes": 45959,
-      "sha256": "a9399bb6e66506981d76113f433f012223b172aec245554c692334d7233f9150"
+      "bytes": 46583,
+      "sha256": "7b25e1eb57ed810bdf995a918d7b7633e7e558c25f982ba273f7d64783105ec3"
     },
     {
       "path": "mocap/correction_settings.py",
@@ -1146,13 +1231,18 @@
     },
     {
       "path": "mocap/engines.py",
-      "bytes": 14967,
-      "sha256": "05bfa80b429131fc7079b40b89e9daf9018b9c664fbd91fcae6199aa91436b79"
+      "bytes": 16014,
+      "sha256": "74512a9b2fb87f4fafb9f0bc963f5b5887e4069ffc59c24f656f984b9c8066fd"
     },
     {
       "path": "mocap/exmr_backend.py",
-      "bytes": 17106,
-      "sha256": "6d2702884592ca28a6fba2875b24dc2afd7ef149f8bfb24ac11acb95d9c60f0f"
+      "bytes": 20661,
+      "sha256": "6d7c85ad5ee1341338be8375136808d5ea93adabbac3d6dc63fd9d6c178a1678"
+    },
+    {
+      "path": "mocap/exmr_camera.py",
+      "bytes": 1213,
+      "sha256": "6fa25021e9772fd7affe95e07d6157d8c5037a17d9c888d664db9b99ead2253b"
     },
     {
       "path": "mocap/exmr_options.py",
@@ -1161,8 +1251,8 @@
     },
     {
       "path": "mocap/export.py",
-      "bytes": 7753,
-      "sha256": "ac46267438327f7bdfd5c231a910621f877470eb58f0d223578fa3e9a0c2cb36"
+      "bytes": 7839,
+      "sha256": "0b8580ce7bcc7a1217fbdffe3882c46ee9d32b02113a538d915d472e13a68195"
     },
     {
       "path": "mocap/export_copy.py",
@@ -1191,8 +1281,8 @@
     },
     {
       "path": "mocap/flow_backend.py",
-      "bytes": 22729,
-      "sha256": "7204c9d6f0fab769e6440a740d7fb0309e53f1c80644f70fa80e0e62712b3567"
+      "bytes": 25866,
+      "sha256": "088ec2ac27a23f255ca6d06da783a31d52a207fea8ac671de32bb215a02ade88"
     },
     {
       "path": "mocap/flow_camera.py",
@@ -1210,6 +1300,11 @@
       "sha256": "e2af2c1ab04f09af16e15be5b5c8238c4950ea16fafef2e4f9be5580b02cde8c"
     },
     {
+      "path": "mocap/flow_fast_sam.py",
+      "bytes": 3926,
+      "sha256": "319f211033a21d0fa1a83dd01a45676844df93cf95680e0d9fb7242883e3ba42"
+    },
+    {
       "path": "mocap/flow_floor.py",
       "bytes": 2009,
       "sha256": "5c33de610d8acfaa38ea4142a83ca979ec899e02325fe799e3b6cbf30ecff29a"
@@ -1221,8 +1316,8 @@
     },
     {
       "path": "mocap/flow_sam.py",
-      "bytes": 5416,
-      "sha256": "124423486da76ea75d86a6274b71a4b40837761087930617ed8a00394d1e6b46"
+      "bytes": 6547,
+      "sha256": "c1abd10ec3143cfa7d7b97283a461fa858b73f55338cde7d7842cf030eff0b95"
     },
     {
       "path": "mocap/flow_scene.py",
@@ -1251,13 +1346,13 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 101721,
-      "sha256": "b1a272690200384372ac170769c1ee5d85f1f4626e77bf8c43bd838e9e8fcab8"
+      "bytes": 105415,
+      "sha256": "a0ba5036e86724361d192b40b1e247fc065860bff3caa78e591c5ca84f743b6a"
     },
     {
       "path": "mocap/gvhmr_attention.py",
-      "bytes": 4747,
-      "sha256": "a0fa66d293dde00400c3367fc68cb6b9faeae591c87cabeeb8e06a0bf9f5feaa"
+      "bytes": 4918,
+      "sha256": "d70ff976907917224f93960f4e92732cbd65833483a15e5da7513b3d0f46bf0f"
     },
     {
       "path": "mocap/gvhmr_preprocess.py",
@@ -1371,8 +1466,8 @@
     },
     {
       "path": "mocap/model_guide.py",
-      "bytes": 5689,
-      "sha256": "00702e0789973047bd654381ffdf250092904ae633c8d2306f8656a73cf1adf2"
+      "bytes": 9267,
+      "sha256": "57aae368202a75f565168d9dff6c98154d306f9b099c2d1d4bd86f199ea07e44"
     },
     {
       "path": "mocap/model_session.py",
@@ -1381,13 +1476,13 @@
     },
     {
       "path": "mocap/models.py",
-      "bytes": 29517,
-      "sha256": "a9ff10be7ceffaf0065f620778c07034f0dc30a75804cb333af5ba752feabbda"
+      "bytes": 31459,
+      "sha256": "197eb545df73c7d4027696de69c96acea369411f87c1285e5ebeb82c436a1ca2"
     },
     {
       "path": "mocap/motion_tools.py",
-      "bytes": 10530,
-      "sha256": "3f246a8be51e20e04541cc36d1100121e21db2837ee296269ca648a9c264f7b1"
+      "bytes": 11058,
+      "sha256": "17a8d9bb43ce84075d77f6451bd9021d311b6cfe903a36706712f61db9fb286f"
     },
     {
       "path": "mocap/multilevel_contacts.py",
@@ -1406,8 +1501,98 @@
     },
     {
       "path": "mocap/paths.py",
-      "bytes": 772,
-      "sha256": "355c4644c150607c5db630540e2cd756fcf8b70d3f2a9f5e9a7ff664d91cdcc0"
+      "bytes": 976,
+      "sha256": "df9985bcf6265b1369374630a48de77a8704cba20658c2d826bca5443b66ef05"
+    },
+    {
+      "path": "mocap/pear/__init__.py",
+      "bytes": 50,
+      "sha256": "1a03adf39b6c1e6dbe0e4f8423142ef33b173d863b17b4bb0d70a39f75c82f97"
+    },
+    {
+      "path": "mocap/pear/acceleration.py",
+      "bytes": 4050,
+      "sha256": "fb59a655440bd0f2faddddbb776fe1bdb1d635c961e02c08615810b874651e53"
+    },
+    {
+      "path": "mocap/pear/bone_roll.py",
+      "bytes": 6416,
+      "sha256": "f3027754de5f0dd9c6d456f28570ec8a960d291f8feda87c996288f28a9eda23"
+    },
+    {
+      "path": "mocap/pear/core.py",
+      "bytes": 9245,
+      "sha256": "f740a7b4c9e96cd9d84a86b7b4976ff90a19a5cc634b50a92afefbea64013930"
+    },
+    {
+      "path": "mocap/pear/fixed_rig.py",
+      "bytes": 4919,
+      "sha256": "419dad6e47bf7428902ec877095b5edb69ba8ee6636d74b18bae0d8ff829915e"
+    },
+    {
+      "path": "mocap/pear/geometry_compat.py",
+      "bytes": 1974,
+      "sha256": "b3ca498bc0cb9d01b9003f8354fed69c74107ef04d1c5a599cbc4db69b4c0d2e"
+    },
+    {
+      "path": "mocap/pear/input_transform.py",
+      "bytes": 1011,
+      "sha256": "fd0378f1bb9face1b52a05f24f32a5dc5a2cea99311ccef3b88ebffe3757f9d5"
+    },
+    {
+      "path": "mocap/pear/live_view.py",
+      "bytes": 3998,
+      "sha256": "cf7606a417d0e174a61ff65aa42c7efbd2b9cbab870948543855b774d17136c6"
+    },
+    {
+      "path": "mocap/pear/parameter_io.py",
+      "bytes": 1631,
+      "sha256": "5016f8d89534dd7e0e62fa7592be662f898c2bb9b40216d4cfb4eab97eb16a05"
+    },
+    {
+      "path": "mocap/pear/preview_bones.py",
+      "bytes": 982,
+      "sha256": "0c23556d900b626117e59e2a9644b4b087aab9bbca6c7fd5f2107a7f2c5fe1f8"
+    },
+    {
+      "path": "mocap/pear/projection.py",
+      "bytes": 3782,
+      "sha256": "01e7cc11b58b9615e4ec2ce4ce429d57f98a0d7040fcc41937cf78be03cca6f4"
+    },
+    {
+      "path": "mocap/pear/session.py",
+      "bytes": 3216,
+      "sha256": "1276c11df0d5d83115d643edae98596a0c557964608e6b7f020d87a3bf9f0eba"
+    },
+    {
+      "path": "mocap/pear/temporal_filter.py",
+      "bytes": 5059,
+      "sha256": "af829508790c84edc732808dcd6dd97175a508fdd9cdbdf77c75d4af74aca08a"
+    },
+    {
+      "path": "mocap/pear/wire.py",
+      "bytes": 4666,
+      "sha256": "8e0cc9cafdc374c5dcad0621357456e30f75341449c0ca6f07a9d9ba313d1f0a"
+    },
+    {
+      "path": "mocap/pear/worker.py",
+      "bytes": 12549,
+      "sha256": "60f325208c2224d25b273258e2f1a4cba683625d4f16d9d31ae3c348ac761709"
+    },
+    {
+      "path": "mocap/pear_models.py",
+      "bytes": 4863,
+      "sha256": "b620d9eb9333a15706daaccd343a8dac851098c4324b7da5ee8ef2c8445d1f62"
+    },
+    {
+      "path": "mocap/pear_runtime.py",
+      "bytes": 2220,
+      "sha256": "fd1943cea020f15bf29b91412cb382d236f8461a44ea761d6ffedb0859dd81ed"
+    },
+    {
+      "path": "mocap/pear_ui.py",
+      "bytes": 29502,
+      "sha256": "1c5c28f4901ea12e09a1aed93a0d6a66a8ec9b3c3e9669732d0fa9b98555b781"
     },
     {
       "path": "mocap/people_store.py",
@@ -1416,8 +1601,8 @@
     },
     {
       "path": "mocap/people_ui.py",
-      "bytes": 38101,
-      "sha256": "276a445f54b4a861c5fbbf4a8c9b1036bb0163c978fe0544e8eee237f7461cc0"
+      "bytes": 38684,
+      "sha256": "fb09d6c38c9023417e276b2640a851ab43942257a4766ad3c3ecc7919d05acde"
     },
     {
       "path": "mocap/person_names.py",
@@ -1426,8 +1611,8 @@
     },
     {
       "path": "mocap/person_tracking.py",
-      "bytes": 22670,
-      "sha256": "096f62724e78996b2c944db45a2a3151e03a5a72d92ea7aad2ae000c796e2135"
+      "bytes": 22695,
+      "sha256": "39f6422998f9d77a501cd4ac88c2a62cf312cf2be0f01129e9c0e7b8a0dd2b5f"
     },
     {
       "path": "mocap/playback.py",
@@ -1466,8 +1651,8 @@
     },
     {
       "path": "mocap/project_save_ui.py",
-      "bytes": 5012,
-      "sha256": "697f6918422e6f72611670b4689d1046b623b7fc74d8eb38a211bcc9941296e5"
+      "bytes": 4951,
+      "sha256": "f22116a2031bc6e5a27a3c58fa1125fa0e295c8cbc17fa6612b39661c696950e"
     },
     {
       "path": "mocap/project_storage.py",
@@ -1476,13 +1661,53 @@
     },
     {
       "path": "mocap/project_workspace.py",
-      "bytes": 3580,
-      "sha256": "fef3a4d21040f912636f2797206391e40ea272c76a9556297c973563cbc3559f"
+      "bytes": 3604,
+      "sha256": "7e9463a0c2f62025f59d29c7eefb3e01cda488613d0d8c22c3d10e8a66eead97"
     },
     {
       "path": "mocap/project_workspace_ui.py",
-      "bytes": 9524,
-      "sha256": "f10ff648688a9c4fcb834eae1e5694afaa1e54d574495ed338c3cbc485a70b5d"
+      "bytes": 10053,
+      "sha256": "9763cff6b9940a69fd93f043a726f9b8384375951e4830877ce5f9507b37f8bb"
+    },
+    {
+      "path": "mocap/prompthmr_manager.py",
+      "bytes": 3731,
+      "sha256": "defb8be2c475fafafe4b27c55666bdc7bec42edc671a79827910f8121bfc3cfc"
+    },
+    {
+      "path": "mocap/prompthmr_models.py",
+      "bytes": 5520,
+      "sha256": "475c9a57e906c66da3f457aecb3b2fe0ad8ca42298d56d1a0acf61386550b7ba"
+    },
+    {
+      "path": "mocap/prompthmr_pipeline.py",
+      "bytes": 11400,
+      "sha256": "ec35c9d1871a6fa992ec269b324cefd8a2100cfb2f02d9ab7ad1ccc8415556b1"
+    },
+    {
+      "path": "mocap/prompthmr_publish.py",
+      "bytes": 11220,
+      "sha256": "f6db793dee88db0187b2fc38962d9ef149b5282cda0db46ccf825053e49ba08c"
+    },
+    {
+      "path": "mocap/prompthmr_runtime.py",
+      "bytes": 3378,
+      "sha256": "6a2c9d06a77f49f337f61aa1b1210a9b42557849b32ff022c33f83727cf3333b"
+    },
+    {
+      "path": "mocap/prompthmr_scene.py",
+      "bytes": 946,
+      "sha256": "7e64ea32e6c7f15881555137dd9a530e8c3ccc1ab6c7257c432d4eed95ca929f"
+    },
+    {
+      "path": "mocap/prompthmr_ui.py",
+      "bytes": 6608,
+      "sha256": "6f0b3eb8375208991cde4af8055bafc6b44c1f63a549e12c6d18d2ea95e10148"
+    },
+    {
+      "path": "mocap/queue_groups.py",
+      "bytes": 6796,
+      "sha256": "2046210f29db88c43fcd9c7604d864755f17605db84dbe88ce1ac2a6caf62b8a"
     },
     {
       "path": "mocap/resource_cache.py",
@@ -1621,13 +1846,13 @@
     },
     {
       "path": "mocap/runtime_registry.py",
-      "bytes": 4735,
-      "sha256": "a210a4bee2802b0d7ce539fa53995062245b1d35bbbbf14f112e099e5412d36e"
+      "bytes": 4747,
+      "sha256": "5e56f969d2509a4200a02911d1d801bf5b43fc50cbb03f6b903879a90533ff20"
     },
     {
       "path": "mocap/scene_camera.py",
-      "bytes": 9558,
-      "sha256": "33de9309dbb5ff6fa4609c7474cc11e313e89eaef8dfde04a0152049a7536d4d"
+      "bytes": 9912,
+      "sha256": "74eaec4058d83ae30e047667e12f8a05a9f71e6daebb3bf15b384482031722ce"
     },
     {
       "path": "mocap/scene_data.py",
@@ -1711,8 +1936,8 @@
     },
     {
       "path": "mocap/timeline_editor.py",
-      "bytes": 14421,
-      "sha256": "b58f80a159b55d5352ec1a56c708b66fe45350acc3aafa319e1fbdbd1346f4c7"
+      "bytes": 14529,
+      "sha256": "57e36aa035cbaa21368f53d4748b8e14bef745d3c3b638f8bcea7b4a5196d35c"
     },
     {
       "path": "mocap/tooltips.py",
@@ -1741,28 +1966,28 @@
     },
     {
       "path": "mocap/viewer.py",
-      "bytes": 9793,
-      "sha256": "13b3eb7e9bb32ab46a1bec6d18fd87ee7d1ab54cafd57209a1aa118d068f1381"
+      "bytes": 10547,
+      "sha256": "d0e0011b4580d2413f65b59d59216e5aadf0cb86a86afbccd51b7b533975bc87"
     },
     {
       "path": "mocap/viewport.py",
-      "bytes": 50029,
-      "sha256": "1ae0103991357d6db1cfe09a5c0ee4003d3b63b38cf2a7037ed2c10ad5430f11"
+      "bytes": 52101,
+      "sha256": "d34193b8f8119014ebcd2f88f6fa84a8b83e9eaa7671f8c871656c6f18c48ef7"
     },
     {
       "path": "mocap/worker.py",
-      "bytes": 27930,
-      "sha256": "fd3ef862b79c38069d224cfbfb621e06cd3faff89b7b3ec99b474d68166074ab"
+      "bytes": 28595,
+      "sha256": "09fe910fe434cfcdc8398cf42ce635048b42299ceae45282e5ea8607c531b4e0"
     },
     {
       "path": "mocap/worker_progress.py",
-      "bytes": 1369,
-      "sha256": "5d29bc7bf8e461277d0f1f16b7887a69e7693e8288ab60f6fb66bcce4314046a"
+      "bytes": 1952,
+      "sha256": "3ffc6fba68cd26a6a733ce0f7d58b9ee0b34b33756492769cfe4dab2bf9cdbe0"
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 33985,
-      "sha256": "2ea3ca3ed57e17cad5b5a90d94b4aba99c2aabc0d655af802d6521f3bfb3258a"
+      "bytes": 36385,
+      "sha256": "e2331dfd4448c4c35cff5a8a1d02f4143f3200dc42d060ff3c2c3c9a94591ebb"
     },
     {
       "path": "native_compat/LICENSE",
@@ -1840,6 +2065,11 @@
       "sha256": "46fea913e302fafa2281842e8b081ba34cfcbc572e2d2f36ac107bc89ed22638"
     },
     {
+      "path": "prompthmr_worker_boot.py",
+      "bytes": 1904,
+      "sha256": "d0f03516f24101cb5749f49e29001023eed0c111b9d36e341cbcf3537c0f1914"
+    },
+    {
       "path": "pyproject.toml",
       "bytes": 336,
       "sha256": "4fcfa3e86a83280d061fad1f34dc9cadb8914ffbf18112807a7a98a878287bde"
@@ -1901,13 +2131,13 @@
     },
     {
       "path": "third_party/ExMR/README.md",
-      "bytes": 9462,
-      "sha256": "bc92d8dbf855b21b31fb3998e165c00c9ec9c9e75a3bca28865f6de4ac8aff1b"
+      "bytes": 12150,
+      "sha256": "95b8bf602a5db24226ecab773b558e749bbe635ad256309b178aa7aad5cd5f93"
     },
     {
       "path": "third_party/ExMR/RGB_MOCAP_PROVENANCE.json",
-      "bytes": 349,
-      "sha256": "56339cc186743dc33431956dcef40b83fd1b6381af0c22715c75e54432a7a3bc"
+      "bytes": 1016,
+      "sha256": "dcfadc134bc7beaed8b0253e2bde5eb26fdf41d8a376b0c5d0dfe0f008c6376a"
     },
     {
       "path": "third_party/ExMR/THIRD_PARTY_NOTICES.md",
@@ -1920,9 +2150,24 @@
       "sha256": "0e5eeb82752e47dfd01db8e13ccc4c5eba9bf83f53da8285523b8d3e87247aa3"
     },
     {
+      "path": "third_party/ExMR/constraints.txt",
+      "bytes": 1834,
+      "sha256": "ea109127c25ffc3c076c739f48580f788e917e5b8627ae194aaccc0b21549953"
+    },
+    {
+      "path": "third_party/ExMR/docs/INSTALL.md",
+      "bytes": 7486,
+      "sha256": "4c0fa9b82064c10e24fc4949227f1ac56087fa9880e35c890616012a72162ace"
+    },
+    {
+      "path": "third_party/ExMR/docs/OUTPUTS.md",
+      "bytes": 12851,
+      "sha256": "2e8b12f6fe5a3fd9545f186fdade94fcc76cf1d3130509a88b3e87fa0739da9f"
+    },
+    {
       "path": "third_party/ExMR/exmr/__init__.py",
       "bytes": 99,
-      "sha256": "81b34ae480651383aeb822d1d67e6480549034f4ba751b078e2d6f55d1b9e19b"
+      "sha256": "5678d0e65b6426c07f2226cf75fc35e2ae594b6acbca1fe56db3b7597d20e4cc"
     },
     {
       "path": "third_party/ExMR/exmr/assets.py",
@@ -1936,8 +2181,8 @@
     },
     {
       "path": "third_party/ExMR/exmr/body_models/smplx_model.py",
-      "bytes": 2581,
-      "sha256": "bade2098a7bf9d88d78b361ef3a4029b165407ccbf70b81b78871556c1d69063"
+      "bytes": 3870,
+      "sha256": "a01d3a3c6e5f37cbe285477750eacc7df271fba2168c9b9a34f2c620605bc33d"
     },
     {
       "path": "third_party/ExMR/exmr/body_models/smplx_skeleton.py",
@@ -1946,8 +2191,8 @@
     },
     {
       "path": "third_party/ExMR/exmr/export.py",
-      "bytes": 2293,
-      "sha256": "2c04e35843ad25bd68fa135bd7e5a593ea87057add9efa4063160ba11f41c8b6"
+      "bytes": 9026,
+      "sha256": "cd791657a7ae1c75b4f468ff5d994ff9cd4b92c927fb4dbfaf8a9f4d4abdc09d"
     },
     {
       "path": "third_party/ExMR/exmr/geometry/__init__.py",
@@ -1956,8 +2201,8 @@
     },
     {
       "path": "third_party/ExMR/exmr/geometry/camera.py",
-      "bytes": 3932,
-      "sha256": "a67ba20e680785e8f99add358552560a0a59fecc8c889211f8a329f64aeca045"
+      "bytes": 4173,
+      "sha256": "ac18991c1912a3235535ebc8d8f89176e6667920d5f96e5d9d633c4de1e53ac0"
     },
     {
       "path": "third_party/ExMR/exmr/geometry/kinematics.py",
@@ -1996,13 +2241,13 @@
     },
     {
       "path": "third_party/ExMR/exmr/model/exmr.py",
-      "bytes": 11007,
-      "sha256": "a1ae9640f9c6795e1fe43997a76e87670f6c57a69f6a6ad2c2efa11477630535"
+      "bytes": 11623,
+      "sha256": "6e3a717275acd8e5409681fb9f608b8facc3b624e4821d2a4d47362490bc2bbd"
     },
     {
       "path": "third_party/ExMR/exmr/model/global_traj.py",
-      "bytes": 11356,
-      "sha256": "7c26f3949a87d046755657ac184e844d99152627c84481f54c1250c3b4672d66"
+      "bytes": 15010,
+      "sha256": "1f08f147adfcba6b6aba654f38fdb9eee4458dfd5e4d542b985027f7ec46cb60"
     },
     {
       "path": "third_party/ExMR/exmr/model/ik.py",
@@ -2021,8 +2266,8 @@
     },
     {
       "path": "third_party/ExMR/exmr/pipeline.py",
-      "bytes": 12706,
-      "sha256": "f6e73bae0f2ce1d6877392a05ef7f6fb134a7b746bb393cb810b82e7c625a8ce"
+      "bytes": 21264,
+      "sha256": "a07902f2b2cf0c7ab802132ad62b19a3df70f5437955c7bbaa71032284aec2d7"
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/__init__.py",
@@ -2031,13 +2276,13 @@
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/body_features.py",
-      "bytes": 7052,
-      "sha256": "4e020996b920be9ec64677dff9f7a03901c70e98199bc3722d8c3e5370450f74"
+      "bytes": 8434,
+      "sha256": "b85fc38e408df78bf063b5291d31ce9dae7321d5a19d597d38abec893cc6134c"
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/hand_features.py",
-      "bytes": 8338,
-      "sha256": "781a2b2e658e4817da619acd967361249c8f444717750c557e47039a7b12b113"
+      "bytes": 8921,
+      "sha256": "a1ebc77933cd772700d0bac0789f41b7cbb52b4729964e66df876f381be2dc82"
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/image_io.py",
@@ -2056,28 +2301,28 @@
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/keypoints/rtmw.py",
-      "bytes": 7668,
-      "sha256": "6ff8d49b46e673e0dffeb45e73f7164ce276503093a0f1e4ee350f9eb966f7e4"
+      "bytes": 8047,
+      "sha256": "1e4207ed5814774dd923c0789f969ee0bed8383c10a3ce970fa23a7e64b12259"
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/keypoints/sapiens2.py",
-      "bytes": 9204,
-      "sha256": "06db9c9307143939229d92e696401c3628853c97d19778cddb540adbb67f66b1"
+      "bytes": 9674,
+      "sha256": "d3a7364e0e50efca09f83843ee2ad95a06d38a458c34df04498c97b8d691c1b9"
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/tracker.py",
-      "bytes": 7675,
-      "sha256": "02ab4c306f38284ac5b2adc18ca91a77feaa16391e6b87edd3479ba3117c225b"
+      "bytes": 8300,
+      "sha256": "ab925f2193fe710fcfb9a379d2377779d2d48d6ad172f6903f5cb9ae2a292126"
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/video.py",
-      "bytes": 5179,
-      "sha256": "cb11b338b781aebd1336da1a1d7b3d85824fbd46affdd0d7809793a46ad2b360"
+      "bytes": 7768,
+      "sha256": "14a603d7e29a0fdaf9dade4e4fc35524d430b3a8d79c5309e75e388c94886e68"
     },
     {
       "path": "third_party/ExMR/exmr/preprocessing/visual_odometry.py",
-      "bytes": 13442,
-      "sha256": "79207f24f7c285a4767cb291b4021299dcfd4460b8f589dfe8b1872196a32d93"
+      "bytes": 14783,
+      "sha256": "1806c986cab846829865605af537d264c8cd822941bc59e914ce067e1a898ddb"
     },
     {
       "path": "third_party/ExMR/exmr/vis/__init__.py",
@@ -2086,18 +2331,18 @@
     },
     {
       "path": "third_party/ExMR/exmr/vis/render.py",
-      "bytes": 5336,
-      "sha256": "956974bfb7a740a57ab6ca84f35048f93a9b856f52b7aaa67f04223e8c51690f"
+      "bytes": 7406,
+      "sha256": "80892f41655b66c66712e3e0f59666792d3b45b5e9b77a53eea23afc6efb23fc"
     },
     {
       "path": "third_party/ExMR/exmr/vis/renderer.py",
-      "bytes": 7150,
-      "sha256": "474f3d9112bb247fde434786ab3d766e18a16c2c5f9bab9ccc37012d887ec7ac"
+      "bytes": 7344,
+      "sha256": "88de015551aa25c6ef2e9c953a4801e8cd1f8df0590d73d7d6551ee849561547"
     },
     {
       "path": "third_party/ExMR/exmr/vis/video_writer.py",
-      "bytes": 4303,
-      "sha256": "eda0110342294642a6620d2e2aee682346817481225f941cea84d66595b2a387"
+      "bytes": 4603,
+      "sha256": "fd1f8c4c52255578cabb1f28444731dbdc823a16d9cc9110d9fbd0cb9a422754"
     },
     {
       "path": "third_party/ExMR/licenses/HumanML3D_LICENSE.txt",
@@ -2127,12 +2372,12 @@
     {
       "path": "third_party/ExMR/pyproject.toml",
       "bytes": 1449,
-      "sha256": "1af3c3a4f1fdf3c9ac8999cf129c0f441b778d7382717f6c1b394c10a43399c5"
+      "sha256": "b6405f5845bdabcb299568dd55a865bf82fc0541476d7fdccfe8693f64fb977f"
     },
     {
       "path": "third_party/ExMR/requirements.txt",
-      "bytes": 910,
-      "sha256": "37bdbcc3f0bd999ed5a24ac586a6aa1b49de3cc27838797824727292d1c4824b"
+      "bytes": 1034,
+      "sha256": "6b0e043a301eeaf9866fabeeb3a49ffd78b9ae9bd0b7e5c9c0cfc8ed917c615c"
     },
     {
       "path": "third_party/ExMR/third_party/dinov3/.docstr.yaml",
@@ -3696,8 +3941,8 @@
     },
     {
       "path": "third_party/ExMR/third_party/sam-3d-body/sam_3d_body/models/decoders/promptable_decoder.py",
-      "bytes": 7389,
-      "sha256": "73c1219c176478e52358d9448d8087017e8294202653ca9fb62e2c964f7c363a"
+      "bytes": 7473,
+      "sha256": "0d909d2f1f9710e36a06209995e5885f3176594d4fb9f8ccc9d4f099bb34a65b"
     },
     {
       "path": "third_party/ExMR/third_party/sam-3d-body/sam_3d_body/models/heads/__init__.py",
@@ -3731,8 +3976,8 @@
     },
     {
       "path": "third_party/ExMR/third_party/sam-3d-body/sam_3d_body/models/meta_arch/sam3d_body.py",
-      "bytes": 80820,
-      "sha256": "851b7475f18b56891aa02606e7c0ee9e03120fa208cc85df5127b792e1abfeee"
+      "bytes": 80890,
+      "sha256": "577a570d35889939bd3b0aacef4faa30598ec246b97b8f37b70c247d3fa0aa4f"
     },
     {
       "path": "third_party/ExMR/third_party/sam-3d-body/sam_3d_body/models/modules/__init__.py",
@@ -4856,13 +5101,13 @@
     },
     {
       "path": "third_party/ExMR/tools/demo.py",
-      "bytes": 6035,
-      "sha256": "0365feaa93e5223b6ea18600820760ade8cd455ac6fea6ee43219877721a0daa"
+      "bytes": 8299,
+      "sha256": "8a6c5befe6108441c95aa3b0d7555543d42bffc4d620077da1f09fb563861875"
     },
     {
       "path": "third_party/ExMR/tools/download_models.py",
-      "bytes": 18773,
-      "sha256": "41ef41411ca52efd24420459d61f9ee4a107bc57d03ecabf90f34aff18bd9ba2"
+      "bytes": 19969,
+      "sha256": "59759a15093e1023c85fb5e3093935c9581deb167cec416ee50d3b69cd27c8e4"
     },
     {
       "path": "third_party/FlowHMR/LICENSE",
@@ -5401,8 +5646,8 @@
     },
     {
       "path": "third_party/FlowHMR/flowhmr/utils/runtime_vggt_camera.py",
-      "bytes": 15181,
-      "sha256": "8902c5a3b8af0e9f6df262e717e796950cbaa2f908bd1ed1244ee2254db2c894"
+      "bytes": 15223,
+      "sha256": "cc0fd69a066103b7fac5d5ccc6a2de6dac38b73d1cdb893c7d4e37de149a63ee"
     },
     {
       "path": "third_party/FlowHMR/flowhmr/utils/runtime_video_processing.py",
@@ -6886,8 +7131,8 @@
     },
     {
       "path": "third_party/FlowHMR/third_party/fast-sam-3d-body/RGB_MOCAP_PROVENANCE.json",
-      "bytes": 211,
-      "sha256": "50fd567e730dc8aabdeb4b7cb1da79324f9e6d57491ffb768fb5d974ae22653d"
+      "bytes": 468,
+      "sha256": "8ac46280fc2ffd75e3d441deba84acf897777c52f640dba9a607a5a74fb876e4"
     },
     {
       "path": "third_party/FlowHMR/third_party/fast-sam-3d-body/SAM_LICENSE",
@@ -7021,8 +7266,8 @@
     },
     {
       "path": "third_party/FlowHMR/third_party/fast-sam-3d-body/sam_3d_body/models/meta_arch/sam3d_body.py",
-      "bytes": 176166,
-      "sha256": "33d6c8969d69d3b6185df831986387f76f888293eebb7378d30ba29cbb4e8a40"
+      "bytes": 177095,
+      "sha256": "87c933f34ba98e1c277963120264b63fc94bd55e6df584d796d2bb26f317b803"
     },
     {
       "path": "third_party/FlowHMR/third_party/fast-sam-3d-body/sam_3d_body/models/modules/__init__.py",
@@ -12436,8 +12681,8 @@
     },
     {
       "path": "tools/check_source.py",
-      "bytes": 3921,
-      "sha256": "d90060394d629e3caee30a440de2136c0c34e5152eea811e0da1a4cca069bdb5"
+      "bytes": 3971,
+      "sha256": "2c65548b8abe5d4893c191a7caaea03076b17ab5f6bed26235af3143ac60106e"
     },
     {
       "path": "tools/configure_mamma.py",
@@ -12456,8 +12701,8 @@
     },
     {
       "path": "tools/git_managed_install.py",
-      "bytes": 5606,
-      "sha256": "b4e5826a9dca0f91cc2d78c054782608cac4f264c1b3a8902fdf11d788ea2307"
+      "bytes": 5686,
+      "sha256": "e3f6cbe11315e1a6624e4d91febd2a697ebc7f9196a616b7321b4173df94bca9"
     },
     {
       "path": "tools/git_transaction.py",
@@ -12493,6 +12738,16 @@
       "path": "tools/setup_mamma.py",
       "bytes": 14090,
       "sha256": "783731563bc03da8302d0a6bf2c2d433232b3d76f06a61063e56511d42fe076f"
+    },
+    {
+      "path": "tools/setup_pear.py",
+      "bytes": 4947,
+      "sha256": "ff9be39a046f9afa0c083cd0afc175ccde0e2241ea1e6eb1b692230b262e73bc"
+    },
+    {
+      "path": "tools/setup_prompthmr.py",
+      "bytes": 9016,
+      "sha256": "97565c79a0c07160a03397e76617333c2c63ce1014638d9e4c032db654c295d6"
     },
     {
       "path": "tools/stage_assets.py",

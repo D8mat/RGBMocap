@@ -36,6 +36,8 @@ def predict(model,data,project,emit):
     if not failed:return result
     # Never shrink the temporal/key context or move silently to a CPU backend.
     gc.collect();torch.cuda.empty_cache()
+    from .memory_mode import announce
+    announce('GVHMR temporal attention','low_memory','Automatic full-context query-split recovery after CUDA memory pressure.',emit)
     free,total=capacity()
     low=gvhmr_plan(frames,0,total)
     if frames<=2048:

@@ -111,6 +111,7 @@ def export_project(project: Path, result="auto"):
     exmr=state.get('pipeline',{}).get('model')=='exmr'
     if exmr:label='ExMR original'
     if mamma:label='MAMMA original'
+    if state.get('pipeline',{}).get('model')=='prompthmr':label='PromptHMR original'
     from .motion_tools import has_handflow
     if has_handflow(result):label+=' + HandFlow'
     atomic_json(project / "export.json", {"format": "BVH", "frames": len(selected["body_pose"]), "fps": fps,

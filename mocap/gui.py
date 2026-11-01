@@ -41,10 +41,13 @@ from .people_ui import PeopleWorkspace
 from .project_save_ui import ProjectSaving
 from .project_workspace_ui import ModelWorkspace
 STAGES.update(mamma_prepare='Prepare Multi-view Videos',mamma_masks='MAMMA Person Masks',mamma_landmarks='MAMMA Surface Landmarks',mamma_camera='MAMMA Cameras',mamma_fit='MAMMA 3D Fit',mamma_publish='MAMMA Motion Correction and Preview')
+STAGES.update(prompthmr_prepare='Prepare PromptHMR Video',prompthmr_track='PromptHMR People and Masks',prompthmr_pose='PromptHMR Camera, Keypoints and Motion',prompthmr_world='PromptHMR Shared World and Post-optimization',prompthmr_publish='PromptHMR Motion Correction and Preview')
 STAGES['save_project']='Save Project As'
 STAGES.update(people='Find People',person='Prepare Person Motion')
 STAGES.update(flow_camera='Estimate Scene Camera / VGGT-Omega', flow_features='Extract Body and Hand Features / SAM', flowhmr='Reconstruct Motion / FlowHMR', flow_export='Prepare FlowHMR Preview and FBX', import_model='Import Model')
 STAGES.update(exmr_preprocess='ExMR Body, Hand and Foot Keypoints',exmr_features='ExMR Body and Hand Features',exmr='Reconstruct Motion / ExMR')
+
+STAGES.update(flow_batch='Process FlowHMR Motion',exmr_batch='Process ExMR Motion',gvhmr_batch='GVHMR Multi-person',features='GVHMR Image Observations')
 
 class ModelDownloadDialog(QDialog):
     """Readable, selectable provider instructions with bounded scrolling."""
@@ -126,7 +129,7 @@ class ModelsDialog(QDialog):
         self.window = window
         self.tool = MOTION_TOOLS[tool_key or window.model_choice.currentData()]
         from .models import STAGE_REQUIREMENTS
-        keys = ({key for key in STAGE_REQUIREMENTS['mamma_assets']} if self.tool.key=='mamma' else
+        keys = ({key for key in STAGE_REQUIREMENTS[self.tool.key+'_assets']} if self.tool.key in ('mamma','prompthmr','pear') else
                 {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())})
         # Keep public automatic downloads together, followed by manual-only files.
         # Stable sorting preserves the existing component order within each group.
@@ -141,6 +144,13 @@ class ModelsDialog(QDialog):
         if self.tool.key=='mamma':
             from .mamma_manager import runtime_panel
             layout.addWidget(runtime_panel(self))
+        elif self.tool.key=='prompthmr':
+            from .prompthmr_manager import runtime_panel
+            layout.addWidget(runtime_panel(self))
+        elif self.tool.key=='pear':
+            from .pear_runtime import status
+            note=QLabel(status()[1]+'\nPEAR support is included in install.cmd and update.cmd. Uses the existing shared runtime; no CUDA compiler is needed. Model files are prepared separately below.')
+            note.setWordWrap(True);layout.addWidget(note)
         self.table = QTableWidget(len(self.models), 3)
         self.table.setHorizontalHeaderLabels(["Model", "Status", "Action"])
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -322,7 +332,7 @@ class ModelsDialog(QDialog):
             raise ValueError("This model is not part of the selected motion tool.")
         model = BY_KEY[key]
         name, _ = QFileDialog.getOpenFileName(picker_parent or self, 'Import ' + model.name, '',
-            f'Model file ({model.path.name});;All files (*)')
+            ('PEAR assets (assets.zip);;All files (*)' if key=='pear_geometry' else f'Model file ({model.path.name});;All files (*)'))
         if name:
             self.start_model_jobs([('import_model', ['--model', key, '--video', name])])
 
@@ -330,8 +340,10 @@ class ModelsDialog(QDialog):
 
 from .character_ui import CharacterWorkspace
 from .mamma_ui import MammaWorkspace
+from .prompthmr_ui import PromptHMRWorkspace
+from .pear_ui import PearWorkspace
 
-class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
+class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
@@ -339,6 +351,7 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         self.setMinimumSize(1100, 700)
         self.video_path = None
         self.init_mamma()
+        self.init_pear()
         self.project = None
         self.workspace_root=None
         self._workspace_loading=False
@@ -415,6 +428,8 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
 
     @read_only_checks
     def update_readiness(self):
+        if self._pear_active:
+            self.pear_sync_controls();return
         if getattr(self,'_readiness_depth',0):
             self._readiness_pending=True
             return
@@ -469,12 +484,15 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         self.import_character_action.setEnabled(not self.busy and not self.contact_saving)
         self.flow_sampling.setEnabled(not self.busy)
         self.fast_sam.setEnabled(not self.busy)
+        self.flow_acceleration.setVisible(self.fast_sam.isChecked())
+        self.flow_acceleration.setEnabled(not self.busy)
         self.exmr_camera.setEnabled(not self.busy)
         self.exmr_smoothing.setEnabled(not self.busy)
         self.analyze_button.setVisible(tool.key=='gvhmr')
         self.sync_correction_floor_preview()
         if hasattr(self,'camera_preview'):self.camera_preview.check()
         self.sync_mamma_controls()
+        self.sync_prompthmr_controls()
 
     def sync_correction_floor_preview(self):
         self.motion_view.correction_floor_applicable=self.correction_mode.currentData()=='flat'
@@ -493,6 +511,7 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             dialog.deleteLater()
 
     def select_model(self, *_):
+        if self.pear_select_model():return
         tool = MOTION_TOOLS[self.model_choice.currentData()]
         if self.workspace_root is not None and not self._workspace_loading and tool.key!=getattr(self,'_selected_tool',None):
             if self.busy or self.contact_saving:
@@ -552,6 +571,7 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         self.set_active_result(self.selected_result())
 
     def current_export(self):
+        if self._pear_active:return None
         info=self.contact_tracks.get(base_result(self.active_result))
         if self.active_result.startswith('corrected_') and (self.contact_saving or (info and info.get('unsaved'))):return None
         # selected_export checks source, correction and target receipts itself.
@@ -627,6 +647,13 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             self.load_video(Path(name))
 
     def load_video(self, path):
+        if self._pear_active:
+            self.stop_playback()
+            self.pear_camera.blockSignals(True)
+            self.pear_camera.setCurrentIndex(0)
+            self.pear_camera.blockSignals(False)
+            self.video_readable=False
+            self.pear_source_changed()
         if self.model_choice.currentData()=='mamma':
             return self.load_mamma_videos([path])
         try:
@@ -641,6 +668,8 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             self.setWindowTitle('RGB MoCap | Motion Workspace')
             self.flow_sampling.setCurrentIndex(self.flow_sampling.findData(0))
             self.fast_sam.setChecked(True)
+            self.flow_batch4.setChecked(True)
+            self.flow_gpu_crop.setChecked(True)
             self.exmr_camera.setCurrentIndex(0)
             self.exmr_smoothing.setChecked(True)
             self.handflow_refine.blockSignals(True)
@@ -701,6 +730,9 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
 
     @batch_readiness
     def load_project(self, project):
+        if self._pear_active:
+            self.pear_leave()
+            self.model_choice.blockSignals(True);self.model_choice.setCurrentIndex(self.model_choice.findData(self._selected_tool));self.model_choice.blockSignals(False)
         from .project_workspace import is_workspace
         if is_workspace(project):return self.open_workspace(project)
         from .project_storage import project_to_open, source_video
@@ -715,6 +747,11 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             self.status.setText(str(error))
             return False
         manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
+        if manifest.get('pipeline',{}).get('model')=='prompthmr':
+            group=(project/manifest.get('people_root','.')).resolve()
+            if (group/'prompthmr_pending.json').exists():
+                self.status.setText('PromptHMR publication is incomplete. Reconstruct again; previous projects were preserved.');return False
+            self.restore_prompthmr_options(manifest.get('prompthmr_options',{}))
         if manifest.get('pipeline',{}).get('model')=='mamma':
             group=(project/manifest.get('people_root','.')).resolve()
             if (group/'mamma_pending.json').exists():
@@ -730,8 +767,11 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         self.setWindowTitle('RGB MoCap | '+(saved_root.name if saved_root else 'Motion Workspace'))
         pipeline = manifest.get("pipeline", {})
         from .flow_camera import saved_interval
-        from .flow_sam import saved_fast_sam
-        self.fast_sam.setChecked(saved_fast_sam(project,manifest))
+        from .flow_sam import saved_options
+        flow=saved_options(project,manifest)
+        self.fast_sam.setChecked(flow['fast_sam'])
+        self.flow_batch4.setChecked(flow['sam_batch4'])
+        self.flow_gpu_crop.setChecked(flow['sam_gpu_crop'])
         from .exmr_options import saved as saved_exmr
         exmr=saved_exmr(project,manifest)
         self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr['static_camera']))
@@ -796,6 +836,7 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         return True
 
     def seek(self, index):
+        self.pear_seek(index)
         self.frame_number.blockSignals(True)
         self.frame_number.setValue(index + 1)
         self.frame_number.blockSignals(False)
@@ -825,6 +866,8 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             self.clip_label.setText("Clip: no video")
 
     def present_frame(self, index):
+        if self._pear_active:
+            self.pear_submit();return
         # 3D and overlays advance only when the corresponding decoded image is ready.
         self.motion_view.index = index
         self.motion_view.scene_time=self.source_offset+index/(self.info['fps'] if self.info else 30)
@@ -850,6 +893,7 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         self.timer.stop()
         self.timer_resolution.release()
         self.set_playback_indicator(False)
+        self.pear_playback_stopped()
 
     def set_playback_indicator(self, playing):
         label = "Pause" if playing else "Play"
@@ -858,10 +902,12 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         self.play_button.setAccessibleName(label)
 
     def step_frames(self, amount):
+        if self._pear_active and self.pear_camera.currentData() is not None:return
         self.stop_playback()
         self.slider.setValue(max(0, min(self.slider.maximum(), self.slider.value() + amount)))
 
     def toggle_play(self):
+        if self._pear_active and self.pear_camera.currentData() is not None:return
         if self.timer.isActive():
             self.stop_playback()
         elif self.video_path and self.info and self.video_readable:
@@ -965,6 +1011,7 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
     def run_full(self):
         tool = MOTION_TOOLS[self.model_choice.currentData()]
         if tool.key=='mamma':return self.run_mamma()
+        if tool.key=='prompthmr':return self.run_prompthmr()
         if tool.key=='exmr' and self.people_root is not None:
             from .storage import atomic_json
             path=self.people_root/'project.json';state=json.loads(path.read_text(encoding='utf-8'))
@@ -973,7 +1020,7 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         if tool.key=='flowhmr' and self.people_root is not None:
             from .storage import atomic_json
             path=self.people_root/'project.json';state=json.loads(path.read_text(encoding='utf-8'))
-            state['flow_options']={**state.get('flow_options',{}),'camera_interval':self.flow_sampling.currentData(),'fast_sam':self.fast_sam.isChecked()}
+            state['flow_options']={**state.get('flow_options',{}),**self.selected_flow_options()}
             atomic_json(path,state)
         refine = bool(tool.refinement) and self.htd_refine.isChecked()
         foot = tool.key=='gvhmr' and self.footmr_refine.isChecked()
@@ -1157,8 +1204,13 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             frames=int(arguments[arguments.index('--end-frame')+1])-int(arguments[arguments.index('--first-frame')+1])
         model=arguments[arguments.index('--model')+1] if '--model' in arguments else ''
         result=arguments[arguments.index('--result')+1] if '--result' in arguments else self.active_result
-        key=(stage,tool,frames,model,result,self.compute_mode.currentData(),self.fast_sam.isChecked(),self.flow_sampling.currentData(),self.exmr_camera.currentData())
+        key=(stage,tool,frames,model,result,self.compute_mode.currentData(),self.fast_sam.isChecked(),self.flow_batch4.isChecked(),self.flow_gpu_crop.isChecked(),self.flow_sampling.currentData(),self.exmr_camera.currentData())
         if not isinstance(estimate,(int,float)) or not math.isfinite(estimate) or not 1<=estimate<=7*86400:estimate=None
+        if stage in ('flow_batch','exmr_batch','gvhmr_batch'):
+            from .queue_groups import argument
+            items=json.loads(argument(arguments,'--batch-items'))
+            key=(*key,argument(arguments,'--batch-phase'),tuple((item['project'],item['result']) for item in items),len(items))
+            estimate=None
         estimate=self.task_state.history.get(key,estimate)
         return key,estimate
 
@@ -1175,7 +1227,14 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             else:
                 self.progress.setRange(0,1000);self.progress.setValue(round(1000*current/total))
 
+    def cleanup_batch_request(self):
+        from .queue_groups import remove_request
+        path=getattr(self,'_batch_request',None);self._batch_request=None
+        try:remove_request(path)
+        except OSError as error:self.log.append('Could not remove worker request: '+str(error))
+
     def next_job(self):
+        self.cleanup_batch_request()
         self.guard_timer.stop()
         self.processing_guard = None
         if not self.jobs or self.failed or self.cancelled:
@@ -1237,13 +1296,16 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             else:
                 self.next_character_refresh()
             return
+        from .queue_groups import join_single_pipeline
+        self.jobs = join_single_pipeline(self.jobs, self.project)
         stage, arguments = self.jobs.pop(0)
         if stage in {'gvhmr', 'refine', 'footmr', 'handflow', 'correct',
                      'flow_camera', 'flow_features', 'flowhmr',
                      'exmr_preprocess', 'exmr_features', 'exmr'}:
             self._batch_has_motion = True
-        if stage.startswith('mamma_'):self._batch_has_motion=True
+        if stage.startswith(('mamma_','prompthmr_')) or stage in ('flow_batch','exmr_batch','gvhmr_batch'):self._batch_has_motion=True
         self.current_stage = stage
+        self._batch_inner_stage=stage
         if arguments is None:
             arguments = ["--project", str(self.project)]
         elif stage in {"export", "footmr", "handflow", "correct", 'flow_export'} and "--project" not in arguments:
@@ -1264,6 +1326,14 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         self.task_timer.start();self.update_task_progress()
         self.progress.setRange(0, 0)
         self.buffer = ""
+        if stage in ('flow_batch','exmr_batch','gvhmr_batch'):
+            from .queue_groups import write_request
+            try:
+                self._batch_request=write_request(stage,arguments)
+            except (OSError,ValueError) as error:
+                self.failed=True;self.log.append(str(error));self.status.setText('Cannot prepare people processing: '+str(error))
+                self.next_job();return
+            arguments=['--request',str(self._batch_request),'--project',str(self.job_project)]
         command = worker_command(stage, *arguments)
         self.process = QProcess(self)
         self.process.setWorkingDirectory(str(ROOT))
@@ -1273,6 +1343,8 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         environment.insert("RGB_MOCAP_COMPUTE_MODE", self.compute_mode.currentData())
         environment.insert('RGB_MOCAP_FLOW_INTERVAL',str(self.flow_sampling.currentData()))
         environment.insert('RGB_MOCAP_FLOW_FAST_SAM','1' if self.fast_sam.isChecked() else '0')
+        environment.insert('RGB_MOCAP_FLOW_BATCH4','1' if self.flow_batch4.isChecked() else '0')
+        environment.insert('RGB_MOCAP_FLOW_GPU_CROP','1' if self.flow_gpu_crop.isChecked() else '0')
         environment.insert('RGB_MOCAP_EXMR_OPTIONS',json.dumps({'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'}))
         self.process.setProcessEnvironment(environment)
         self.process.readyReadStandardOutput.connect(self.read_stdout)
@@ -1304,7 +1376,7 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
                 path=self.job_project/'project.json'
                 try:
                     state=json.loads(path.read_text(encoding='utf-8'))
-                    state.setdefault('stages',{})[self.current_stage]={'status':'failed','error':message}
+                    state.setdefault('stages',{})[self._batch_inner_stage]={'status':'failed','error':message}
                     atomic_json(path,state)
                 except (OSError,ValueError) as error:self.log.append('Could not save stopped stage: '+str(error))
 
@@ -1333,7 +1405,13 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         if self.people_event(event):
             self._queued_task_estimates=[self.task_descriptor(s,a) for s,a in self.jobs]
             self.update_task_progress();return
-        if kind=='mamma_ready':
+        if kind=='batch_item_start':
+            self.job_project=Path(event['project']);self._batch_inner_stage=event['stage']
+            self._task_actor=f"Actor/take {event['index']}/{event['count']}"
+            self.task_state.update(dict(current=0,total=0,phase=f"batch:{event['phase']}:{event['index']}",message='Loading actor data'),time.monotonic())
+            self.status.setText(self._task_actor+' · '+STAGES.get(event['stage'],event['stage']))
+            self.update_task_progress()
+        elif kind in ('mamma_ready','prompthmr_ready'):
             self.workspace_root=Path(event['root'])
             self.load_project(Path(event['project']))
             self.set_active_result(event['result'])
@@ -1354,6 +1432,8 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
         elif kind == 'save_cancelled':
             self.cancelled=True
             self.status.setText(event['message'])
+        elif kind == 'resource_mode':
+            self.log.append(event['message'])
         elif kind == "progress":
             message=event.get('message','Processing...')
             self.log.status_terminal(message)
@@ -1369,9 +1449,9 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             self.failed = True
             self.task_timer.stop();self.task_info.setText('Failed')
             self.status.setText("Processing failed. " + event.get("message", "See the console for details."))
-            self.log.write_terminal(self.status.text())
+            self.log.append(self.status.text())
         elif kind == "complete":
-            self.task_state.cached|=bool(event.get('cached',False))
+            if not event.get('batch_inner'):self.task_state.cached|=bool(event.get('cached',False))
             self.log.append(f"{STAGES.get(event['stage'])}: {event.get('elapsed', 0):.2f} s · {event.get('output')}")
         self.log.ensureCursorVisible()
 
@@ -1399,14 +1479,18 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
                 self.process = None
             self.jobs.clear()
             self.cleanup_fbx_export()
+            self.cleanup_batch_request()
             self.cleanup_project_save()
             self.failed = True
             self.busy = False
             self.finish_single_tracking()
+            self.finish_people_jobs()
             self.status.setText("Cannot start the processing engine. Check the app installation.")
             self.update_readiness()
 
     def cancel_job(self):
+        self.pear_leave()
+        self.pear_stop_scan()
         if self.character_process is not None:
             self.cancel_character();return
         if self.current_stage=='save_project' and getattr(self,'_project_save_request',None):
@@ -1746,6 +1830,8 @@ class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,
             worker = self.process
             if worker:
                 worker.waitForFinished(3000)
+        self.pear_leave()
+        self.pear_stop_scan()
         if self.character_process is not None:
             self.cancel_character();self.character_process.waitForFinished(5000)
         self.character_loader.close()

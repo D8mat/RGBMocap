@@ -1,0 +1,220 @@
+# Demo outputs
+
+`python tools/demo.py --video <video>` writes to `--output_dir` (default `outputs/<video name>`, with
+`--start`/`--end` `outputs/<video name>_<start>-<end>s`):
+
+| File | Content |
+|---|---|
+| `results.pt` | reconstruction: SMPL-X parameters and 3D/2D joints (PyTorch, see below) |
+| `results.npz` | the same as NumPy arrays, with flattened keys (`smplx_incam_body_pose`, ...) |
+| `<name>_amass.npz` | the world-frame motion as an AMASS SMPL-X file, e.g. for [Blender](#blender-and-amass), [Unity and Unreal](#fbx-for-unity-and-unreal) or [humanoid robots](#humanoid-robots-gmr) |
+| `<name>.bvh` | the world-frame motion as a [BVH](#bvh) skeleton animation (centimeters), e.g. for animation software |
+| `<name>_incam.mp4` | SMPL-X mesh rendered over the input video |
+| `<name>_global.mp4` | SMPL-X mesh in the world frame, with a ground plane and the mesh's shadow straight down on it (a gap between a foot and its shadow: the foot is above the ground), seen by a static camera |
+| `<name>_incam_global.mp4` | both side by side (scaled down to at most 4096 pixels wide) |
+| `cache/` | cached preprocessing results (reused when the demo is run again with the same settings) |
+| `run.json` | the video and options of the run (e.g. `smoothing`, `start`, `end`) |
+
+With `--start`/`--end`, all outputs cover only that part of the video: their first frame is the
+first frame at or after `--start`. Tracking, camera motion, the model and the ground see only that
+part, so the results differ slightly from the same frames of a run on the whole video.
+
+Which output for what:
+
+| To ... | use |
+|---|---|
+| analyze the motion, e.g. joint positions in Python | `results.npz` or `results.pt`: SMPL-X parameters and joints ([results.pt](#resultspt)) |
+| see the SMPL-X body in Blender | `<name>_amass.npz` with the SMPL-X Blender add-on ([Blender and AMASS](#blender-and-amass)) |
+| use the body in Unity or Unreal | an FBX exported from Blender ([FBX](#fbx-for-unity-and-unreal)) |
+| animate your own character, e.g. in Blender, Maya or MotionBuilder | `<name>.bvh`, retargeted to the character's rig ([BVH](#bvh)) |
+| drive a humanoid robot | `<name>_amass.npz` with GMR ([humanoid robots](#humanoid-robots-gmr)) |
+
+## results.pt
+
+```python
+results = torch.load("results.pt")
+```
+
+For a video with `L` frames:
+
+| Key | Shape | Description |
+|---|---|---|
+| `smplx_incam` | dict | SMPL-X parameters in the camera frame (x right, y down, z forward); not smoothed over time unless `--smoothing both` |
+| `smplx_global` | dict | SMPL-X parameters in a gravity-aligned world frame (y up); the motion starts at the origin (x, z) facing +z and stands on the ground y=0: the lowest mesh vertex over all frames is at y=0 (with `--snap_to_ground`: the lowest vertex within every 0.5 s); smoothed over time unless `--smoothing none` |
+| `joints_incam`, `joints_global` | <code>(L,&nbsp;76,&nbsp;3)</code> | 3D joints of `smplx_incam` and `smplx_global` in meters, see [joints](#joints) |
+| `joints_2d` | <code>(L,&nbsp;76,&nbsp;2)</code> | `joints_incam` projected into the image with `K_fullimg`, in pixels |
+| `joint_names` | 76 | names of the joints, e.g. `left_heel` |
+| `static_conf_logits` | `(L, 6)` | logits of [left ankle, left foot, right ankle, right foot, left wrist, right wrist] being static (not moving in the world frame: usually, but not necessarily, in contact with the ground or an object) |
+| `foot_contact` | `(L, 2)` | whether the [left, right] foot touches the ground: its ankle or foot is static (`static_conf_logits` above 0.8 in probability) and it is the lowest part of the body (within 5 cm), e.g. to lock the feet when retargeting the motion to another character |
+| `K_fullimg` | <code>(L,&nbsp;3,&nbsp;3)</code> | camera intrinsics used (from `--f_mm`, else estimated from the image size) |
+| `bbx_xyxy` | `(L, 4)` | tracked bounding box of the person, `[x1, y1, x2, y2]` in pixels |
+| `fps` | float | frame rate of the processed video |
+
+Both SMPL-X parameter dicts contain, per frame, axis-angle rotations:
+
+| Key | Shape | Description |
+|---|---|---|
+| `global_orient` | `(L, 3)` | root rotation |
+| `body_pose` | `(L, 63)` | 21 body joints, relative to their parent |
+| `left_hand_pose`, `right_hand_pose` | `(L, 45)` | 15 finger joints per hand (full axis-angle, no PCA, flat hand mean) |
+| `betas` | `(L, 10)` | body shape (the same for all frames) |
+| `transl` | `(L, 3)` | root translation in meters |
+
+Face parameters (jaw, eyes, expression) are not estimated; use zeros.
+
+To get the mesh with the [smplx](https://github.com/vchoutas/smplx) package:
+
+```python
+import smplx
+
+params = results["smplx_incam"]  # or results["smplx_global"]
+L = len(params["body_pose"])
+model = smplx.SMPLX(
+    "SMPLX_NEUTRAL.npz", use_pca=False, flat_hand_mean=True, num_betas=10, batch_size=L
+)  # batch_size: the face parameters, which ExMR does not estimate, default to zeros of that size
+output = model(**params)
+vertices = output.vertices  # (L, 10475, 3)
+joints = output.joints[:, :76]  # (L, 76, 3): joints_incam or joints_global of results.pt
+```
+
+`exmr.body_models.smplx_model.SmplxModel` gives the same vertices and joints.
+
+### Joints
+
+The 76 joints are the 55 joints of the SMPL-X skeleton followed by 21 points on the mesh surface,
+in the order of the [smplx](https://github.com/vchoutas/smplx) package's output (`joint_names`):
+
+| Index | Joints |
+|---|---|
+| 0-21 | pelvis and 21 body joints (the same as SMPL's first 22, e.g. for comparisons with SMPL-based methods) |
+| 22-24 | jaw, left and right eye (the face is not estimated: they follow the head) |
+| 25-54 | 15 finger joints per hand, left hand first |
+| 55-59 | nose, right and left eye, right and left ear (surface points) |
+| 60-65 | big toe, small toe and heel, left foot first (surface points) |
+| 66-75 | fingertips, thumb to pinky, left hand first (surface points) |
+
+The skeleton joints are rotation centers inside the body, the surface points lie on the skin, like
+the foot and fingertip keypoints of 2D detectors such as OpenPose.
+
+`exmr.pipeline.compute_joints` computes the joint keys (`joints_incam`, `joints_global`,
+`joints_2d`, `joint_names`) from the SMPL-X parameters, e.g. for results of ExMR versions before
+0.1.4, which have none:
+
+```python
+from exmr.body_models.smplx_model import SmplxModel
+from exmr.pipeline import compute_joints
+
+results |= compute_joints(results, SmplxModel("SMPLX_NEUTRAL.npz"))
+```
+
+## Blender and AMASS
+
+`<name>_amass.npz` holds the world-frame motion (`smplx_global`) in the layout of the SMPL-X files
+of [AMASS](https://amass.is.tue.mpg.de), which the SMPL-X Blender add-on imports:
+
+1. Download "SMPL-X for Blender" from the [SMPL-X website](https://smpl-x.is.tue.mpg.de)
+   (registration, Blender 4.5 or newer) and install the zip in Blender (Edit > Preferences > Get
+   Extensions > Install from Disk).
+2. In the 3D viewport's sidebar (View > Sidebar), tab "SMPL Models", click "Add Animation" and
+   select the file. The default settings fit (Format: AMASS, Hand pose reference: Flat).
+3. Set "Target framerate" to the file's frame rate (`mocap_frame_rate`) or a divisor of it, e.g. 25
+   for a 25 fps video: the add-on rejects targets above the frame rate and otherwise keeps every
+   (frame rate / target)-th frame, rounded down. Its default of 30 suits 30 and 60 fps videos,
+   and files exported with `--export_fps 30`.
+4. For the exact SMPL-X mesh, enable "Use keyframed corrective pose weights" (slower import and
+   playback). Without it, the skeleton moves the same, but the mesh lacks SMPL-X's pose-dependent
+   shape corrections.
+
+The add-on's default body model is SMPL-X "locked head" (without the head bun of SMPL-X v1.1,
+which ExMR uses). The joints and the body agree within about a millimeter; only the head differs.
+
+As in AMASS, the world frame is z-up with the ground at z=0: the motion is `smplx_global` rotated
+by 90 degrees about the x-axis, i.e. the point (x, y, z) of `smplx_global` is at (x, -z, y). The
+hand poses are relative to the flat hand, as in `results.pt`.
+
+| Key | Shape | Description |
+|---|---|---|
+| `poses` | `(L, 165)` | axis-angle rotations of the 55 SMPL-X joints: root, 21 body joints, jaw, 2 eyes, 15 + 15 finger joints (jaw and eyes are zero) |
+| `root_orient`, `pose_body`, `pose_jaw`, `pose_eye`, `pose_hand` | `(L, 3)`, `(L, 63)`, `(L, 3)`, `(L, 6)`, `(L, 90)` | the same, split into parts |
+| `trans` | `(L, 3)` | root translation in meters |
+| `betas` | `(16,)` | body shape: ExMR's 10 betas, padded with zeros to the 16 of AMASS (`num_betas`: 16) |
+| `gender`, `surface_model_type` | | `neutral`, `smplx` |
+| `mocap_frame_rate` | | frame rate, rounded to an integer (the Blender add-on reads it as one); the exact rate is `fps` in `results.pt` |
+
+`exmr.export.save_amass` writes the file from `results.pt`, e.g. for results of an earlier ExMR
+version:
+
+```python
+from exmr.body_models.smplx_model import SmplxModel
+from exmr.export import save_amass
+
+smplx = SmplxModel("SMPLX_NEUTRAL.npz")
+save_amass(results["smplx_global"], results["fps"], "motion_amass.npz", smplx)
+```
+
+### FBX for Unity and Unreal
+
+The add-on also exports the animated SMPL-X body as FBX: after importing the AMASS file, select
+the body's mesh, click "Export FBX" (tab "SMPL Models", panel "Export") and choose the Format
+(Unity or Unreal) and "Blend Shapes: None: Apply shape space". The default blend shapes, SMPL-X's
+shape and pose corrective shapes, are not animated by the import and make the file much larger
+(150 MB instead of 5 MB for the example video).
+
+## BVH
+
+`<name>.bvh` holds the world-frame motion (`smplx_global`) as a skeleton animation, e.g. to put
+the motion on another character in Blender, Maya or MotionBuilder:
+
+- the 55 joints of the SMPL-X skeleton, fingers included, named as in `joint_names` (`pelvis`,
+  `left_hip`, ...), with end sites at the big toes, the fingertips, the chin and the eyes
+- the skeleton in the SMPL-X rest pose (a T-pose) of the person's body shape, in centimeters, y up
+- one frame per video frame (`Frame Time`: 1 / frame rate); in every frame, the joints are at
+  `joints_global` of `results.pt` (in meters there). With `--export_fps`, the frames are resampled
+  to that rate instead (also in `<name>_amass.npz`), e.g. 24 fps for film: the rotations are
+  interpolated on the sphere (slerp), the root position linearly
+- the root (`pelvis`) with absolute positions; the rotation order of the pelvis, shoulders, elbows
+  and ankles differs from the others' XYZ, which keeps them away from gimbal lock, and the angles
+  do not jump by 360 degrees between frames
+- the jaw and the eyes do not move (the face is not estimated)
+
+In Blender: File > Import > Motion Capture (.bvh) with Scale 0.01 (centimeters to meters), and
+"Update Scene FPS" and "Update Scene Duration" checked. The BVH has no mesh; for the SMPL-X body,
+import the AMASS file (above).
+
+`exmr.export.save_bvh` writes the file from `results.pt`:
+
+```python
+from exmr.body_models.smplx_model import SmplxModel
+from exmr.export import save_bvh
+
+smplx = SmplxModel("SMPLX_NEUTRAL.npz")
+save_bvh(results["smplx_global"], results["fps"], "motion.bvh", smplx)
+```
+
+## Humanoid robots (GMR)
+
+[GMR](https://github.com/YanjieZe/GMR) (General Motion Retargeting) retargets AMASS SMPL-X files
+to humanoid robots, e.g. the Unitree G1 and H1, Booster T1 or Fourier N1 (see its list).
+
+![The example video (left) and its ExMR motion (with --snap_to_ground) retargeted to a Unitree G1 by GMR (right)](../assets/robot_g1.gif)
+
+Install GMR as described in its README, put ExMR's `checkpoints/body_models/smplx/SMPLX_NEUTRAL.npz`
+into GMR's `assets/body_models/smplx/` and run, in the GMR repository:
+
+```bash
+python scripts/smplx_to_robot.py --smplx_file <name>_amass.npz --robot unitree_g1 \
+    --save_path <name>_unitree_g1.pkl --rate_limit
+```
+
+- The robot keeps the height of the motion above the ground, so run ExMR with `--snap_to_ground`
+  if the scene allows it (see the [README](../README.md)): otherwise vertical drift of the
+  world-frame motion lets the robot float or sink.
+- GMR treats motions below 30 fps as 30 fps motions without resampling them, so e.g. a 25 fps
+  motion plays too fast. For videos below 30 fps, run ExMR with `--export_fps 30`.
+- GMR retargets the body only and ignores the finger motion, also for robots with hands. For robot
+  hands, the [joints](#joints) contain per hand the wrist, the three finger joints and the
+  fingertip of every finger: the 21 hand keypoints (in another order) that hand retargeting tools
+  such as [dex-retargeting](https://github.com/dexsuite/dex-retargeting) take.
+- Sudden robot arm motions that the SMPL-X mesh does not show come from the retargeting: GMR
+  solves every frame on its own and can switch the robot's arm between joint configurations that
+  reach the same pose. The same happens with ground-truth motion.

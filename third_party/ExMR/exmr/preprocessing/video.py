@@ -1,10 +1,12 @@
 """Video probing, frame extraction and re-encoding (ffmpeg / PyAV / TurboJPEG)."""
 
+import collections
 import functools
+import math
 import re
 import shutil
 import subprocess
-from fractions import Fraction
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import av
@@ -36,7 +38,34 @@ def extract_frames(video_path, output_dir, quality=2):
         ["-i", video_path, "-fps_mode", "passthrough", "-q:v", quality, "-start_number", 0,
          output_dir / "%06d.jpg"]
     )  # fmt: skip
-    return sum(1 for p in output_dir.glob("*.jpg") if re.fullmatch(r"\d{6}", p.stem))
+    return len(frame_paths(output_dir))
+
+
+def frame_paths(frame_dir):
+    """The extracted frames' files frame_dir/%06d.jpg, in order."""
+    return sorted(p for p in Path(frame_dir).glob("*.jpg") if re.fullmatch(r"\d{6}", p.stem))
+
+
+def read_frames(paths, threads=8):
+    """Yields the (H, W, 3) BGR uint8 images of the JPEG files paths, in order, decoded by a pool
+    of threads (OpenCV releases the GIL) at most 2 * threads frames ahead. One thread decodes
+    1080p JPEGs at ~200 frames/s, a fifth of OpenCV's video decoding; 8 decode them as fast, 4K
+    ones twice as fast."""
+    with ThreadPoolExecutor(threads) as pool:
+        pending = collections.deque()
+        for path in paths:
+            pending.append(pool.submit(_imread, path))
+            if len(pending) > 2 * threads:
+                yield pending.popleft().result()
+        while pending:
+            yield pending.popleft().result()
+
+
+def _imread(path):
+    img = read_bgr_frame(path)
+    if img is None:
+        raise RuntimeError(f"Could not read {path}")
+    return img
 
 
 def frame_size(frame_dir):
@@ -120,21 +149,52 @@ def h264_args(crf):
     return [*codec, "-pix_fmt", "yuv420p"]
 
 
-def encode_frames(frame_dir, out_path, fps, crf=17):
-    """frame_dir/%06d.jpg -> constant-frame-rate H.264 video with exactly that many frames.
-
-    Used to rebuild variable-frame-rate or damaged videos, whose container frame count disagrees
-    with the frames ffmpeg decodes, so that every reader sees the same frames.
-    """
-    fps = Fraction(fps).limit_denominator(1000)
-    _run_ffmpeg(
-        ["-framerate", fps, "-start_number", 0, "-i", Path(frame_dir) / "%06d.jpg",
-         *h264_args(crf), out_path]
-    )  # fmt: skip
-    return out_path
-
-
 def resample_fps(in_path, out_path, fps=30, crf=17):
     """Re-encode a video to a constant frame rate (drops/duplicates frames)."""
     _run_ffmpeg(["-i", in_path, "-vf", f"fps={fps}", "-an", *h264_args(crf), out_path])
     return out_path
+
+
+def cut(in_path, out_path, start=None, end=None, fps=None, crf=17):
+    """The frames of a video with timestamps in [start, end) (seconds; None: from its beginning /
+    to its end), encoded losslessly: they are exactly the input's frames. With fps, resampled to
+    that frame rate instead (re-encoded as in resample_fps)."""
+    # -ss before -i: seek in the input, frame-accurate (decoded frames before start are dropped);
+    # the frames' timestamps then count from start. The end is a trim filter (keeps timestamps
+    # < end, then ends the stream): -t / -to would count from the first frame after start instead
+    # (one frame too many if start falls between frames). In videos whose time base is the frame
+    # interval (e.g. 1/25 s), a start between two frames is rounded, which can shift the end by a
+    # frame
+    filters = [f"trim=end={end - (start or 0):.6f}"] if end is not None else []
+    if fps is None:
+        codec = ["-fps_mode", "passthrough", "-c:v", "libx264", "-preset", "ultrafast", "-qp", 0]
+    else:
+        filters.append(f"fps={fps}")
+        codec = h264_args(crf)
+    _run_ffmpeg(
+        ["-ss", f"{start or 0:.6f}", "-i", in_path, "-an",
+         *(["-vf", ",".join(filters)] if filters else []), *codec, out_path]
+    )  # fmt: skip
+    with av.open(str(out_path)) as c:
+        if not c.streams.video or not c.streams.video[0].frames:
+            raise ValueError(f"no frames between start={start} and end={end} (seconds)")
+    return out_path
+
+
+def parse_time(text):
+    """Seconds from a time "83.5", "1:23.5" or "0:01:23.5" ([[hh:]mm:]ss)."""
+    error = ValueError(f"not a time: {text!r} (use seconds or [hh:]mm:ss)")
+    parts = text.strip().split(":")
+    if not 1 <= len(parts) <= 3:
+        raise error
+    seconds = 0.0
+    for i, part in enumerate(parts):
+        try:
+            value = float(part)
+        except ValueError:
+            raise error from None
+        # minutes and seconds after a colon are below 60
+        if not math.isfinite(value) or value < 0 or (i > 0 and value >= 60):
+            raise error
+        seconds = seconds * 60 + value
+    return seconds

@@ -10,11 +10,12 @@ class MotionTool:
     reconstruction: tuple[str, ...]
     refinement: tuple[str, ...] = ()
     input_setup_only: bool = False
+    live: bool = False
 
     def stages(self, refine=False, footmr=False, correction=False, handflow=False):
-        if self.input_setup_only:
+        if self.input_setup_only or self.live:
             return []
-        if self.key == 'mamma':return list(self.reconstruction)
+        if self.key in ('mamma','prompthmr'):return list(self.reconstruction)
         if self.key == 'flowhmr':
             return [*self.reconstruction, *(('correct',) if correction else ()), 'flow_export']
         return [*self.reconstruction, *(self.refinement if refine else ()), *(('footmr',) if footmr and self.key == 'gvhmr' else ()),
@@ -22,10 +23,11 @@ class MotionTool:
                 *(("correct",) if correction else ()), "export"]
 
 
-MOTION_TOOLS = {"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine")),
+MOTION_TOOLS = {"pear": MotionTool("pear", "PEAR · Live (Experimental)", (), live=True),"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine")),
                 "flowhmr": MotionTool("flowhmr", "FlowHMR", ("track", "flow_camera", "flow_features", "flowhmr")),
                 "exmr": MotionTool("exmr", "ExMR", ("track", "exmr_preprocess", "exmr_features", "exmr")),
-                "mamma": MotionTool("mamma", "MAMMA", ("mamma_prepare","mamma_masks","mamma_landmarks","mamma_camera","mamma_fit","mamma_publish"))}
+                "mamma": MotionTool("mamma", "MAMMA", ("mamma_prepare","mamma_masks","mamma_landmarks","mamma_camera","mamma_fit","mamma_publish")),
+                "prompthmr": MotionTool("prompthmr", "PromptHMR", ("prompthmr_prepare","prompthmr_track","prompthmr_pose","prompthmr_world","prompthmr_publish"))}
 
 
 class UnsupportedMotionTool(ValueError):
@@ -42,7 +44,13 @@ def require_supported_project(project):
     from pathlib import Path
     path=Path(project)/'project.json'
     state=json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
-    return require_supported_tool(state.get('pipeline',{}).get('model','gvhmr'))
+    return require_offline_tool(state.get('pipeline',{}).get('model','gvhmr'))
+
+
+def require_offline_tool(model):
+    tool=require_supported_tool(model)
+    if tool.live:raise UnsupportedMotionTool('PEAR is a transient live preview, not a saved reconstruction model. Project files were preserved.')
+    return tool
 
 # Derived results never replace either upstream prediction.
 RESULTS = {

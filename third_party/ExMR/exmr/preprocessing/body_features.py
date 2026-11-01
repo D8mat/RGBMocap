@@ -8,6 +8,8 @@ import sys
 import warnings
 from pathlib import Path
 
+from mocap.batch_prefetch import batch_source
+
 import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import ToTensor
@@ -86,31 +88,44 @@ class SamBodyFeatures:
     Args:
         checkpoint_dir: directory with model.ckpt, model_config.yaml and assets/mhr_model.pt of
             facebook/sam-3d-body-dinov3
+        fp16: run the backbone in float16 instead of the checkpoint's bfloat16 (SAM 3D Body's own
+            FP16_TYPE option). Faster only with FP16 accumulation
+            (torch.backends.cuda.matmul.allow_fp16_accumulation); tokens change at the 1e-3 level
     """
 
     TOKEN_DIM = 1024
 
-    def __init__(self, checkpoint_dir, batch_size=32, num_workers=8, device="cuda"):
+    def __init__(self, checkpoint_dir, fp16=False, batch_size=32, num_workers=8, device="cuda", low_memory=False):
         sam_3d_body, self._transforms, self._load_image, self._prepare_batch, self._to = (
             _import_sam_3d_body()
         )
         checkpoint_dir = Path(checkpoint_dir)
-        # built on the GPU: initializing the weights on the CPU takes ~5 s, and the checkpoint
-        # replaces them anyway
-        with _quiet_model_loading(), torch.device(device):
+        # Fast loading initializes on GPU; Low Memory accepts slower CPU
+        # initialization to avoid holding temporary checkpoint/model copies in VRAM.
+        load_device = "cpu" if low_memory else device
+        with _quiet_model_loading(), torch.device(load_device):
             model, model_cfg = sam_3d_body.load_sam_3d_body(
                 str(checkpoint_dir / "model.ckpt"),
-                device=device,
+                device=load_device,
                 mhr_path=str(checkpoint_dir / "assets" / "mhr_model.pt"),
             )
         assert model.cfg.MODEL.DECODER.DO_HAND_DETECT_TOKENS
-        self.model = model.eval()
+        if fp16:
+            for t in [*model.backbone.parameters(), *model.backbone.buffers()]:
+                if t.dtype == torch.bfloat16:
+                    t.data = t.data.half()
+            model.backbone_dtype = torch.float16
+        self.model = model.eval().to(device)
         self.input_size = model_cfg.MODEL.IMAGE_SIZE
         self.batch_size, self.num_workers, self.device = batch_size, num_workers, device
 
         # the decoder returns (tokens, pose_output); token 0 is the pose token
         self._tokens = None
-        self.model.decoder.register_forward_hook(self._store_tokens)
+        self._token_hook = self.model.decoder.register_forward_hook(self._store_tokens)
+
+    def close(self):
+        self._token_hook.remove()
+        self._tokens = None
 
     def _store_tokens(self, _module, _inputs, output):
         self._tokens = output[0].detach()
@@ -118,6 +133,10 @@ class SamBodyFeatures:
     @torch.no_grad()
     def __call__(self, frame_dir, bbx_xyxy, K_fullimg):
         """frame_dir with %06d.jpg frames, bbx_xyxy (L, 4), K_fullimg (L, 3, 3) -> (L, 1024)"""
+        # Final pose readouts are unused after the collected body token.
+        # Intermediate pose feedback and keypoint-token updates remain active.
+        self.model._mocap_features_only=True
+        self.model.decoder._mocap_features_only=True
         t = self._transforms
         transform = t.Compose(
             [
@@ -138,8 +157,8 @@ class SamBodyFeatures:
         )
         tokens = torch.zeros((len(dataset), self.TOKEN_DIM), dtype=torch.float32)
         i = 0
-        with tqdm(total=len(dataset), desc="SAM 3D Body features", unit="frame") as pbar:
-            for batch in loader:
+        with batch_source(loader, batch_bytes=self.batch_size*3*1024*1024*4) as batches, tqdm(total=len(dataset), desc="SAM 3D Body features", unit="frame") as pbar:
+            for batch in batches:
                 bs = batch["img"].shape[0]
                 batch = self._to(batch, self.device)
                 self.model._initialize_batch(batch)
@@ -147,6 +166,11 @@ class SamBodyFeatures:
                 tokens[i : i + bs] = self._tokens[:, 0].cpu()
                 i += bs
                 pbar.update(bs)
+        if not torch.isfinite(tokens).all():
+            raise RuntimeError(
+                "Non-finite SAM 3D Body features, probably a float16 overflow: disable FP16 "
+                "accumulation in run_video (exmr/pipeline.py) and please report this"
+            )
         return tokens
 
 

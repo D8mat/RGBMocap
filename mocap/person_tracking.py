@@ -53,7 +53,8 @@ class AppearanceEncoder:
                 embedding = torch.nn.functional.normalize(self.model((tensor-self.mean)/self.std), dim=1)
             return embedding.cpu().numpy()
         # A small model; bounded batches and retry outside the OOM exception scope.
-        batch = 4 if os.environ.get('RGB_MOCAP_COMPUTE_MODE') == 'low_memory' else 16
+        from .memory_mode import effective_mode
+        batch = 4 if effective_mode() == 'low_memory' else 16
         first = 0
         while first < len(boxes):
             failed = False

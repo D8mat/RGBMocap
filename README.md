@@ -30,6 +30,12 @@ https://github.com/user-attachments/assets/b93775d2-c63e-441f-8f8a-84391b229154
 
 [Download original sample](docs/samples/camera-view.mp4)
 
+### Multi Cam MoCap
+
+https://github.com/user-attachments/assets/4c0b290b-4a65-4287-8d22-c63c96b3d080
+
+[Download original sample](docs/samples/multi-cam-mocap.mp4)
+
 ## Install and run
 
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**
@@ -40,7 +46,10 @@ https://github.com/user-attachments/assets/b93775d2-c63e-441f-8f8a-84391b229154
    cd RGBMocap
    ```
 
-2. Download and install the required runtimes, Blender and FFmpeg:
+2. Prepare the runtimes for ExMR, FlowHMR and GVHMR with their supported add-ons,
+   plus PEAR live-preview support,
+   Blender, FFmpeg and native motion correction. AI weights and registered body
+   files are downloaded separately in Model Manager:
 
    ```cmd
    install.cmd
@@ -59,15 +68,62 @@ To update, close the app and run `update.cmd` from the same folder. See the
 [installation guide](docs/USER_GUIDE.md#install) for disk space, prerequisites
 and recovery.
 
-### Optional multi-camera mode (MAMMA)
+### Optional model runtimes
 
-Select **MAMMA** to open two or more synchronized fixed-camera videos of the
-same performance. The views share one trim and timeline. Automatic VGGT camera
-calibration and imported calibration are supported. See the [MAMMA guide](docs/MAMMA.md).
+`install.cmd` prepares ExMR, FlowHMR, GVHMR and the small shared-runtime support
+for [PEAR live preview](docs/models/PEAR.md). Install the following only if
+you use them, after the base installation:
 
-MAMMA requires its separate `Setup_MAMMA.cmd` runtime, Visual Studio 2022 C++
-Build Tools, CUDA Toolkit 12.8 and separately obtained model files. Review the
-provider terms before installation. Existing single-camera runtimes stay separate.
+| Model | Separate setup command | Installation and usage |
+| --- | --- | --- |
+| MAMMA | `Setup_MAMMA.cmd` | [MAMMA guide](docs/MAMMA.md) |
+| PromptHMR | `Setup_PromptHMR.cmd` | [PromptHMR guide](docs/models/PROMPTHMR.md) |
+
+MAMMA and PromptHMR require **Visual Studio 2022 C++ Build Tools**, the Windows SDK and
+**CUDA Toolkit 12.8** for local native builds. Close the app and review the
+provider terms before setup. Then reopen it and prepare the selected model's
+files in **Model Manager**. Their optional runtimes do not require each other;
+`install.cmd` and `update.cmd` do not install them.
+
+PEAR reuses the base shared runtime with a small support overlay prepared by
+`install.cmd` and `update.cmd`. No separate setup or compiler is required.
+Model files are prepared separately.
+
+### Install with an AI agent
+
+After cloning, open this repository folder in a local coding agent such as Codex.
+The [agent guide](docs/AGENT_GUIDE.md) covers setup, models, capture, retargeting,
+projects and resources. For example, ask:
+
+```text
+Help me install and run RGB MoCap on this Windows PC.
+Read AGENTS.md and docs/AGENT_GUIDE.md first. Check the GPU and free disk space,
+run install.cmd, and launch RGBMoCap.cmd. Help me prepare the ExMR model files.
+Preserve existing models, projects and settings, and keep the pinned runtimes.
+Tell me when I need to sign in, accept provider terms or download a file manually.
+```
+
+For multi-camera capture, add:
+
+```text
+Also enable MAMMA. Follow docs/MAMMA_AGENT_SETUP.md to check the C++/CUDA tools,
+run Setup_MAMMA.cmd after the required license review, and verify the native CUDA
+modules. Help me prepare its models without changing the other model runtimes.
+```
+
+For PromptHMR instead, add:
+
+```text
+Also enable PromptHMR. Follow docs/models/PROMPTHMR.md and docs/AGENT_GUIDE.md.
+Check the C++/CUDA tools, run Setup_PromptHMR.cmd after the required license
+review, verify its CUDA checks, and help prepare the exact Model Manager files.
+Keep other runtimes and existing projects unchanged.
+```
+
+MAMMA's [agent setup guide](docs/MAMMA_AGENT_SETUP.md) and the
+[PromptHMR guide](docs/models/PROMPTHMR.md) include build checks and recovery.
+Provider login and license acceptance remain your responsibility;
+do not put passwords or account tokens in the agent chat.
 
 ## Features
 
@@ -77,35 +133,93 @@ provider terms before installation. Existing single-camera runtimes stay separat
 - Export source animation as FBX; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
 - Save projects with separate results for each AI model.
+- Preview one person's live body/finger bones from a webcam or video with PEAR.
 
 ## How it works
 
-1. Open a video, select an AI model and prepare its files in **Model Manager**.
-2. Choose the people to capture and click **Reconstruct 3D**.
+1. Select an AI model and prepare its files in **Model Manager**, then use
+   **File > Open Video**. For MAMMA, select it before opening synchronized camera
+   videos; thumbnails switch the preview and one timeline trim applies to all views.
+2. For ExMR, FlowHMR or GVHMR, optionally use **Find person** to select people.
+   PromptHMR tracks people together during reconstruction.
+   MAMMA detects people during reconstruction; keep **VGGT (Automatic)** and
+   enter an approximate **Reference Height (m)**, or import camera calibration.
+   Click **Reconstruct 3D**.
 3. Review the motion, edit contacts if needed and **Apply Correction**.
 4. Export FBX, or import a character, retarget the motion and export it.
 
+For **PEAR · Live (Experimental)**, choose a webcam or open a video, then click **Start Live
+Tracking**. It provides a bone preview without recording, correction or export.
+See the [PEAR guide](docs/models/PEAR.md) for its controls.
+
 ## Supported AI models
 
-| Model / original project | Body representation | Fingers |
-| --- | --- | --- |
-| [ExMR](https://github.com/twehrbein/ExMR) | SMPL-X | Included |
-| [FlowHMR](https://github.com/flowhmr/flowhmr) | SMPL-H | Included |
-| [GVHMR](https://github.com/zju3dv/GVHMR) | SMPL-X | Optional HandFlow add-on |
+In our subjective tests, **PromptHMR** could improve relative placement and
+interactions between multiple people in a **single video**, but its overall
+motion quality was lower than **ExMR**. It does not support finger tracking.
+
+| Model / original project | Body representation | Fingers | Setup and use |
+| --- | --- | --- | --- |
+| [PEAR](https://github.com/Pixel-Talk/PEAR) · experimental live preview; may be unstable | SMPL-X / FLAME | Included | [PEAR guide](docs/models/PEAR.md) |
+| [ExMR](https://github.com/twehrbein/ExMR) | SMPL-X | Included | [ExMR guide](docs/models/EXMR.md) |
+| [FlowHMR](https://github.com/flowhmr/flowhmr) | SMPL-H | Included | [FlowHMR guide](docs/models/FLOWHMR.md) |
+| [GVHMR](https://github.com/zju3dv/GVHMR) | SMPL-X | Optional HandFlow add-on | [GVHMR guide](docs/models/GVHMR.md) |
+| [MAMMA](https://mamma.is.tue.mpg.de/) · multi-view motion capture | SMPL-X | Included | [MAMMA guide](docs/MAMMA.md) |
+| [PromptHMR](https://github.com/yufu-wang/PromptHMR) | SMPL-X | Not generated | [PromptHMR guide](docs/models/PROMPTHMR.md) |
 
 Requires 64-bit Windows, a compatible NVIDIA GPU/driver and OpenGL 4.3.
 Model files are acquired separately; some require registration and license acceptance.
 
-**Disk space:** allow about **45 GB (42 GiB)** for the app, all AI runtimes,
-Blender and all supported model files, including optional add-ons. Videos,
-projects, imported characters, exports, generated caches and retained download
-archives need additional space. See the [storage details](docs/USER_GUIDE.md#install).
+**Installed models and runtimes:** approximately **67.8 GB (63.1 GiB)** for the
+five offline models, including supported add-ons, Blender and FFmpeg. Measured without
+projects, caches or retained downloads; shared files are counted once.
+
+| Configuration | Runtime | Models | Total |
+| --- | ---: | ---: | ---: |
+| ExMR + FlowHMR + GVHMR and supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
+| MAMMA additional files | 6.11 GiB | 3.42 GiB | 9.54 GiB |
+| PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
+| **Five offline models** | **24.68 GiB** | **38.44 GiB** | **63.11 GiB** |
+| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.84 GiB |
+
+Including PEAR, the estimated combined model/runtime total is about
+**65.95 GiB (70.8 GB)**, before the additional space listed below.
+
+**MAMMA and PromptHMR require separate runtime installation:** run
+`Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` after `install.cmd`, as described
+[above](#optional-model-runtimes). They are not installed by `install.cmd` or
+`update.cmd`; obtain weights separately in Model Manager.
+
+App source, C++/CUDA compiler tools, installation temporary files and saved work
+need additional space. These are measured sizes, not a setup free-space guarantee.
+See [storage and installation details](docs/USER_GUIDE.md#installed-size).
 
 [Cache and project cleanup: paths and deletion effects](docs/USER_GUIDE.md#storage-and-cleanup).
+
+## Resources and speed
+
+Start with **Resource Mode > Automatic**. It uses the fast supported path when
+memory permits and falls back to a supported Low Memory path when needed.
+Memory-saving methods depend on the model; **Low Memory** can trade slower
+loading/transfers and more system RAM for lower VRAM use. See each model's guide
+for implemented options and limits.
+
+Short paired tests reduced peak allocated VRAM from **5.68 to 3.87 GiB** for ExMR
+and **6.10 to 2.77 GiB** for FlowHMR. Separate short-clip tests of connected
+processing phases cut worker time by **44% for ExMR** and **24% for FlowHMR**,
+with unchanged measured peak VRAM. These are different tests, not full-job
+speed guarantees. See [resource modes, measured savings and acceleration](docs/PERFORMANCE.md)
+for conditions, per-model results and output differences.
 
 ## Documentation
 
 - [User guide: installation, controls and settings](docs/USER_GUIDE.md)
+- [Model guides: files, defaults, options and limitations](docs/models/README.md)
+- [Research papers and citations](docs/CITATIONS.md)
+- [Recorded processing time, VRAM and RAM](docs/USER_GUIDE.md#recorded-processing-time-and-vram)
+- [Resource modes and measured optimizations](docs/PERFORMANCE.md)
+- [MAMMA: additional installation, model files and multi-video workflow](docs/MAMMA.md)
+- [PromptHMR: additional installation, model files and fixed-camera workflow](docs/models/PROMPTHMR.md)
 - [Development and builds](docs/BUILD.md)
 - [Agent operating and development guide](docs/AGENT_GUIDE.md)
 - [Source validation](docs/VALIDATION.md)
@@ -113,3 +227,12 @@ archives need additional space. See the [storage details](docs/USER_GUIDE.md#ins
 
 Original RGB MoCap code and documentation use the [MIT License](LICENSE).
 Third-party components and model files retain their own licenses.
+
+
+## Custom export and camera tools
+
+This fork retains FBX, generic/Biped BVH and portable Blender project export,
+optional T-pose at frame 0, explicit output selection, relative video bundles,
+Camera Preview, tracked Blender cameras and optional background rotation refinement.
+Experimental FlowHMR camera translation remains optional and is not metric calibrated.
+MAMMA preview/export uses the primary calibrated camera and its video.

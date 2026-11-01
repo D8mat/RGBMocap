@@ -1,7 +1,8 @@
 {
   "repository": "https://github.com/yangtiming/Fast-SAM-3D-Body",
   "commit": "d72aa36913a1673ace029d345f437561a85ec9e2",
-  "local_source_changes": false,
+  "local_source_changes": true,
+  "local_changes": "Optional bounded video-frame hand-crop callback, multi-image GPU crop support, and token-only return after complete body/hand decoders. Default upstream inference remains available; model precision and crop resolution are unchanged.",
   "compile": false,
   "weights_bundled": false
 }

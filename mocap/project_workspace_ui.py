@@ -9,10 +9,15 @@ from .video import select_preview
 
 
 class ModelWorkspace:
+    def selected_flow_options(self):
+        return dict(camera_interval=self.flow_sampling.currentData(), fast_sam=self.fast_sam.isChecked(),
+                    sam_batch4=self.flow_batch4.isChecked(), sam_gpu_crop=self.flow_gpu_crop.isChecked())
+
     def workspace_settings(self):
         return dict(result=self.active_result,correction=self.selected_correction_options(),
             mamma_options=self.mamma_options(),
-            flow_options={'camera_interval':self.flow_sampling.currentData(),'fast_sam':self.fast_sam.isChecked()},
+            prompthmr_options=self.prompthmr_options(),
+            flow_options=self.selected_flow_options(),
             exmr_options={'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'})
 
     def restore_workspace_settings(self,settings):
@@ -26,11 +31,14 @@ class ModelWorkspace:
         flow=settings.get('flow_options',{})
         self.flow_sampling.setCurrentIndex(max(0,self.flow_sampling.findData(flow.get('camera_interval',0))))
         self.fast_sam.setChecked(flow.get('fast_sam',True))
+        self.flow_batch4.setChecked(flow.get('sam_batch4',True))
+        self.flow_gpu_crop.setChecked(flow.get('sam_gpu_crop',True))
         exmr=settings.get('exmr_options',{})
         self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr.get('static_camera',True)))
         self.exmr_smoothing.setChecked(exmr.get('smoothing','global')=='global')
         self.active_result=self.selected_result()
         self.restore_mamma_options(settings.get('mamma_options',{}))
+        self.restore_prompthmr_options(settings.get('prompthmr_options',{}))
 
     def workspace_view(self):
         fps=self.info['fps'] if self.info else 30.
@@ -40,13 +48,14 @@ class ModelWorkspace:
                     for key in ('yaw','pitch','distance','pan','scene_center')},'target':self.motion_view.target().tolist()})
 
     def remember_workspace_model(self):
+        if getattr(self,"_pear_active",False):return
         root=self.workspace_root
         if root is None:return
         if self.project is not None:
             state=manifest(self.project)
             state.setdefault('pipeline',{})['result']=self.active_result
             settings=self.workspace_settings()
-            for key in ('correction','flow_options','exmr_options'):state[key]=settings[key]
+            for key in ('correction','flow_options','exmr_options','prompthmr_options'):state[key]=settings[key]
             atomic_json(self.project/'project.json',state)
             saved=workspace.set_active(root,state['pipeline']['model'],self.project,self.workspace_view())
             model=state['pipeline']['model']

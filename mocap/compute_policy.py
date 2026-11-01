@@ -43,7 +43,8 @@ def configure_worker_cpu(stage):
 def prefetch_plan(available_ram,total_ram,logical=None,mode=None):
     """Overlap CPU crops only when the desktop has spare CPU and RAM."""
     logical=logical or os.cpu_count() or 1
-    mode=mode or os.environ.get('RGB_MOCAP_COMPUTE_MODE','auto')
+    from .memory_mode import effective_mode
+    mode=mode or effective_mode()
     return 2 if (mode!='low_memory' and logical>=8 and
                  available_ram-ram_reserve(total_ram)>=6*GIB) else 0
 
@@ -68,7 +69,8 @@ def gvhmr_plan(frames,free_vram,total_vram):
 
 
 def image_plan(stage,free_vram,available_ram,mode=None):
-    mode=mode or os.environ.get('RGB_MOCAP_COMPUTE_MODE','auto')
+    from .memory_mode import effective_mode
+    mode=mode or effective_mode()
     if mode not in MODES:mode='auto'
     import sys
     torch=sys.modules.get('torch')
@@ -97,8 +99,9 @@ def memory_pressure_message(available,total,commit=None):
     if available>=reserve and (commit is None or commit>=GIB):return None
     detail=f'Available RAM {available/GIB:.2f} GiB (system reserve {reserve/GIB:.2f} GiB)'
     if commit is not None:detail+=f'; Windows allocation headroom {commit/GIB:.2f} GiB'
+    from .memory_mode import GUIDANCE
     return ('Processing stopped because available system memory is low. '+detail+
-            '. Close other apps or use a shorter clip. Completed stages can be reused.')
+            '. '+GUIDANCE+' Completed stages can be reused.')
 
 
 def retry_cuda(operation,batch,on_retry,oom_type=None,cleanup=None):
@@ -119,6 +122,10 @@ def retry_cuda(operation,batch,on_retry,oom_type=None,cleanup=None):
                 import gc,torch
                 gc.collect();torch.cuda.empty_cache()
             else:cleanup()
+            from .memory_mode import effective_mode,announce
+            if effective_mode()!='low_memory':
+                os.environ['RGB_MOCAP_EFFECTIVE_MODE']='low_memory'
+                announce('GPU inference','low_memory','Automatic recovery: reducing the image batch after CUDA memory pressure.')
             on_retry(batch)
 
 

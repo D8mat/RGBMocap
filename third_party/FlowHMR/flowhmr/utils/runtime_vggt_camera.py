@@ -201,6 +201,7 @@ def extract_vggt_camera(
     camera_only: bool = False,
     keep_frames: bool = False,
     frame_interval: int = 1,
+    model_loader=None,
 ) -> VGGTCameraResult:
     frame_interval = max(1, int(frame_interval))
     if output_npz and osp.exists(output_npz):
@@ -265,7 +266,7 @@ def extract_vggt_camera(
             target_len = sample_indices[-1] + 1
         print(f"  [vggt] sampled {len(frame_paths)}/{target_len} frames (interval={frame_interval})")
 
-        model = _load_vggt_model(checkpoint_path, device_obj, camera_only=camera_only)
+        model = (model_loader or _load_vggt_model)(checkpoint_path, device_obj, camera_only=camera_only)
         images = load_and_preprocess_images(
             frame_paths,
             mode=preprocess_mode,

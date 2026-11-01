@@ -12,6 +12,8 @@ that observation as a universal ranking.
 
 Run the normal `install.cmd`, then select **GVHMR > Model Manager**. Required
 rows depend on enabled add-ons; disabling an add-on skips its processing.
+GVHMR does not require `Setup_MAMMA.cmd`, `Setup_PromptHMR.cmd` or their
+C++/CUDA native-build prerequisites.
 
 | Stage | Key files under the app's `models/` folder |
 | --- | --- |
@@ -24,6 +26,8 @@ rows depend on enabled add-ons; disabling an add-on skips its processing.
 Model Manager lists the exact shared tracking and add-on requirements. Use the
 supported versions and import checks. Standard SMPL-X v1.1 and MANO may require
 provider registration; MAMMA's locked-head bodies cannot replace this body.
+PromptHMR reuses this standard SMPL-X Neutral file, while its runtime and
+other weights remain separate.
 Automatic downloads, particularly Google Drive files, can fail; use the row's
 **Manual Download...** and **Import...** actions. See [model preparation](../USER_GUIDE.md#prepare-models).
 
@@ -67,9 +71,35 @@ HandFlow can still make finger mistakes, and neither add-on fixes a wrong person
 or an unobserved pose. Correction retains original motion for comparison.
 
 RAM/Windows allocation-headroom monitoring, adaptive supported GPU work and
-allocation-error reporting stay active. Long-sequence context can still fail
+allocation-error reporting stay active. Automatic keeps the fast path when GPU
+memory is sufficient and selects existing Low Memory image processing when
+needed. Full temporal context is preserved; dense attention remains enabled
+when it fits. Resource decisions and memory advice appear in Console and CMD.
+
+### Measured effects
+
+On Windows with RTX 5090 32 GB, Ryzen 9 9950X and 96 GB RAM:
+
+- A short 60-frame mode check with HTD, FootMR and HandFlow showed **no meaningful
+  whole-job VRAM saving**: Automatic **4.204 GiB**, Low Memory **4.203 GiB**.
+  RAM working set was **6.87 → 6.85 GiB**. Times were **127.53 → 113.28 s**, but
+  single-pass startup/cache variation does not establish that Low Memory is faster.
+- A separate two-person, 60+45-frame test of feature/core processing **without
+  add-ons** reduced **56.02 → 22.97 s** (59% less time) through model reuse.
+  Allocated VRAM stayed about **2.82 GiB**. This was one timing trial, excluding
+  discovery, camera estimation, correction and export.
+
+Low Memory does not force slower query splitting when dense attention already
+fits. Full-sequence motion context still consumes memory, so these short tests
+do not establish long-video capacity. See [shared measurements and limitations](../PERFORMANCE.md).
+
+Long-sequence context can still fail
 to fit; no option guarantees a particular duration on every PC. Historical
 [time/VRAM measurements](../USER_GUIDE.md#recorded-processing-time-and-vram)
 include HTD, FootMR and HandFlow and are individual observations, not minimum
 specifications. See [validation](../VALIDATION.md) and
 [licenses](../../THIRD_PARTY_NOTICES.md).
+
+## Citation
+
+[GVHMR paper](https://arxiv.org/abs/2409.06662) · [Research citations and BibTeX](../CITATIONS.md#gvhmr)

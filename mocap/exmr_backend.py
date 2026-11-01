@@ -9,12 +9,13 @@ import numpy as np
 from .paths import ROOT, HOME, UPSTREAM
 from .storage import atomic_json, sha256
 from .resource_cache import code_hash
+from .model_session import set_memory_budget
 from .compute_policy import gpu_memory_fraction
 from .result_artifacts import file_stat
 from .exmr_options import saved
 
 STAGES=('exmr_preprocess','exmr_features','exmr')
-VERSION=1
+VERSION=2
 LINKS={'exmr':'exmr/exmr.safetensors','smplx':'body_models/smplx/SMPLX_NEUTRAL.npz',
        'exmr_sapiens':'sapiens2/sapiens2_1b_pose.safetensors',
        'flow_sam':'sam-3d-body-dinov3/model.ckpt','flow_sam_config':'sam-3d-body-dinov3/model_config.yaml',
@@ -45,7 +46,7 @@ def activate():
     for name in ('exmr','third_party/sapiens2/sapiens','third_party/hamer/hamer','third_party/dinov3'):
         if not (root/name).is_dir():raise RuntimeError('ExMR runtime is missing. Repair the application installation.')
     for path in (root,root/'third_party/sapiens2',root/'third_party/hamer'):
-        sys.path.insert(0,str(path))
+        if str(path) not in sys.path:sys.path.insert(0,str(path))
     os.environ.update(PYOPENGL_PLATFORM='win32',WANDB_MODE='disabled',PYTHONNOUSERSITE='1')
     weights=HOME/'cache/exmr/assets';weights.mkdir(parents=True,exist_ok=True)
     for key,name in LINKS.items():
@@ -63,7 +64,9 @@ def activate():
         if repository=='facebookresearch/dinov3':
             repository=str(root/'third_party/dinov3');kwargs['source']='local'
         return original(repository,*args,**kwargs)
-    torch.hub.load=local_hub
+    if not getattr(original, '_rgb_exmr', False):
+        local_hub._rgb_exmr=True
+        torch.hub.load=local_hub
     config=root/'configs/hamer_model_config.yaml'
     if sha256(config)!='0e5eeb82752e47dfd01db8e13ccc4c5eba9bf83f53da8285523b8d3e87247aa3':
         raise RuntimeError('ExMR HaMeR configuration is damaged. Repair the application.')
@@ -98,7 +101,7 @@ def camera(project,emit):
     """One rotation estimate for the whole scene, sliced for visible takes."""
     import torch
     root=scene_root(project);state=json.loads((root/'project.json').read_text(encoding='utf-8'))
-    config=saved(root,state);context=dict(input=file_stat(root/'input.mp4'),frames=state['frames'],static=config['static_camera'],version=1)
+    config=saved(root,state);context=dict(input=file_stat(root/'input.mp4'),frames=state['frames'],static=config['static_camera'],version=3,odometry=sha256(UPSTREAM/'ExMR/exmr/preprocessing/visual_odometry.py'),reader=sha256(Path(__file__).with_name('exmr_camera.py')))
     receipt=root/'exmr_camera.json';path=root/'exmr_camera.npy'
     valid=False
     try:valid=json.loads(receipt.read_text())['identity']==context and json.loads(receipt.read_text())['output']==file_stat(path)
@@ -110,8 +113,8 @@ def camera(project,emit):
         if config['static_camera']:rotations=np.broadcast_to(np.eye(3,dtype=np.float32),(state['frames'],3,3)).copy()
         else:
             emit('progress',current=0,total=0,message='ExMR: estimate one scene camera rotation (SimpleVO)')
-            from exmr.pipeline import _simplevo_rotations
-            rotations=np.asarray(_simplevo_rotations(root/'input.mp4'),np.float32)
+            from .exmr_camera import rotations as estimate_rotations
+            rotations=np.asarray(estimate_rotations(root/'input.mp4',state['frames']),np.float32)
         if rotations.shape!=(state['frames'],3,3) or not np.isfinite(rotations).all():raise ValueError('ExMR camera has incomplete frames')
         temporary=root/'exmr_camera.partial.npy';np.save(temporary,rotations);os.replace(temporary,path)
         atomic_json(receipt,dict(identity=context,output=file_stat(path)))
@@ -132,6 +135,7 @@ def identity(project,stage):
            'exmr':['tracking.npz','exmr_keypoints.pt','exmr_body_features.pt','exmr_hand_features.pt']}[stage]
     root=scene_root(project);root_state=json.loads((root/'project.json').read_text(encoding='utf-8'))
     return dict(version=VERSION,stage=stage,inputs={name:file_stat(project/name) for name in files},
+        memory_policy={name:sha256(ROOT/'mocap'/name) for name in ('memory_mode.py','gpu_offload.py','model_session.py','batch_prefetch.py')},
         root_input=file_stat(root/'input.mp4'),take=state.get('person_frames'),frames=state['frames'],fps=state['fps'],
         options=saved(root,root_state) if stage=='exmr' else {'pose':'Sapiens2-1B 448x336'},
         models={key:file_stat(BY_KEY[key].path) for key in STAGE_REQUIREMENTS[stage]},
@@ -140,6 +144,11 @@ def identity(project,stage):
             'exmr_features':('image_io.py','body_features.py','hand_features.py'),
             'exmr':(),
         }[stage]},
+        feature_decoder={name:sha256(UPSTREAM/'ExMR/third_party/sam-3d-body/sam_3d_body/models'/name)
+            for name in ('decoders/promptable_decoder.py','meta_arch/sam3d_body.py')} if stage=='exmr_features' else {},
+        upstream_api=sha256(UPSTREAM/'ExMR/exmr/pipeline.py'),
+        motion_solver={name:sha256(UPSTREAM/'ExMR/exmr'/name) for name in
+            ('model/exmr.py','model/global_traj.py','model/ik.py','geometry/camera.py')} if stage=='exmr' else {},
         code=code_hash(Path(__file__)),upstream=sha256(UPSTREAM/'ExMR/RGB_MOCAP_PROVENANCE.json'))
 
 
@@ -187,12 +196,13 @@ def complete_stage(project,stage,output,elapsed,cached,emit):
     emit('complete',stage=stage,cached=cached,elapsed=0 if cached else elapsed,output=str(output))
 
 
-def run_stage(project,stage,result,emit,force=False):
+def run_stage(project,stage,result,emit,force=False,feature_phase=None):
     import torch,cv2,psutil
     from .models import missing,BY_KEY
     from .engines import save_tensor
     project=Path(project);state=json.loads((project/'project.json').read_text(encoding='utf-8'));n=state['frames']
     if stage not in STAGES or result not in ('auto','initial','corrected_initial'):raise ValueError('Unsupported ExMR stage/result')
+    if feature_phase not in (None,'body','hand') or (feature_phase and stage!='exmr_features'):raise ValueError('Invalid ExMR feature phase')
     if n<1:raise ValueError('ExMR clip is empty')
     absent=missing(stage)
     if absent:raise ValueError('Open ExMR Model Manager and prepare: '+', '.join(m.name for m in absent))
@@ -214,48 +224,94 @@ def run_stage(project,stage,result,emit,force=False):
         complete_stage(project,stage,project/outputs[0],old.get('elapsed',0),True,emit);return
     if not torch.cuda.is_available():raise RuntimeError('ExMR requires a supported NVIDIA CUDA GPU. Check System in Help for details.')
     started=time.monotonic()
-    free,total=torch.cuda.mem_get_info();torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
+    free,total=torch.cuda.mem_get_info();set_memory_budget(free,total)
     torch.set_num_threads(4);cv2.setNumThreads(2);torch.manual_seed(0);np.random.seed(0)
     torch.cuda.reset_peak_memory_stats();atomic_json(pending,dict(identity=signature))
     # Invalidate the old source generation as soon as new observations begin.
     atomic_json(project/'exmr_pending.json',dict(stage=stage,identity=signature))
     root,weights=activate()
+    from .model_session import acquire,model_key,release
     from exmr import pipeline as P
-    from exmr.assets import Assets
     with np.load(project/'tracking.npz',allow_pickle=False) as tracking:
         boxes=torch.from_numpy(tracking['boxes'].copy()).float();k=torch.from_numpy(tracking['K'].copy()).float()
     if boxes.shape!=(n,4) or not torch.isfinite(boxes).all():raise ValueError('ExMR actor tracking has the wrong frame count')
     if k.ndim==2:k=k[None].repeat(n,1,1)
     if tuple(k.shape)!=(n,3,3) or not torch.isfinite(k).all():raise ValueError('Invalid original camera intrinsics')
-    from exmr.preprocessing.keypoints.mappings import COCO23,COCO63_LEFT_HAND,COCO63_RIGHT_HAND
     if stage=='exmr_preprocess':
         from exmr.preprocessing.keypoints.sapiens2 import Sapiens2Keypoints
         emit('progress',current=0,total=n,message='ExMR: body, hand and foot keypoints (Balanced)')
-        values=Sapiens2Keypoints(BY_KEY['exmr_sapiens'].path,resolution='448x336',num_workers=0)(frame_dir(project,n),boxes)
+        from .memory_mode import run as memory_run
+        directory=frame_dir(project,n)
+        def keypoints(low):
+            model=acquire(model_key('sapiens',BY_KEY['exmr_sapiens'].path,low_memory=low),
+                lambda:Sapiens2Keypoints(BY_KEY['exmr_sapiens'].path,resolution='448x336',num_workers=0,low_memory=low))
+            try:return model(directory,boxes)
+            finally:release(model)
+        values=memory_run('ExMR Sapiens',keypoints,6.,emit)
         save_tensor(values,project/outputs[0])
     elif stage=='exmr_features':
         directory=frame_dir(project,n)
         from exmr.preprocessing.body_features import SamBodyFeatures
-        emit('progress',current=0,total=n,message='ExMR: SAM body features')
-        values=SamBodyFeatures(weights/'sam-3d-body-dinov3',batch_size=8,num_workers=0)(directory,boxes,k)
-        save_tensor(values,project/'exmr_body_features.pt');del values;gc.collect();torch.cuda.empty_cache()
+        from .memory_mode import run as memory_run
+        def body_features(low):
+            model=acquire(model_key('exmr_sam',*[BY_KEY[key].path for key in ('flow_sam','flow_sam_config','flow_mhr')],low_memory=low),
+                lambda:SamBodyFeatures(weights/'sam-3d-body-dinov3',batch_size=8,num_workers=0,low_memory=low))
+            try:return model(directory,boxes,k)
+            finally:release(model)
+        body_receipt=project/'exmr_body_partial.json'
+        body_valid=False
+        # A hand-only phase reuses the validated body partial, including after
+        # a forced body phase in this same pipeline. Force still rebuilds hands.
+        if feature_phase is not None and (not force or feature_phase=='hand'):
+            try:
+                partial=json.loads(body_receipt.read_text(encoding='utf-8'))
+                body_valid=partial['identity']==signature and partial['output']==file_stat(project/'exmr_body_features.pt')
+                if body_valid:
+                    values=load(project/'exmr_body_features.pt')
+                    body_valid=tuple(values.shape)==(n,1024) and bool(torch.isfinite(values).all())
+                    del values
+            except (OSError,ValueError,KeyError,RuntimeError,EOFError):pass
+        if not body_valid:
+            emit('progress',current=0,total=n,message='ExMR: SAM body features')
+            values=memory_run('ExMR body features',body_features,5.5,emit)
+            save_tensor(values,project/'exmr_body_features.pt');del values;gc.collect();torch.cuda.empty_cache()
+            if identity(project,stage)!=signature:raise ValueError('ExMR inputs changed during body feature extraction')
+            atomic_json(body_receipt,dict(identity=signature,output=file_stat(project/'exmr_body_features.pt')))
+        if feature_phase=='body':
+            emit('complete',stage=stage,output=str(project/'exmr_body_features.pt'),cached=body_valid,elapsed=time.monotonic()-started)
+            return
         prepare_mano(root,weights)
-        from exmr.preprocessing.hand_features import HamerHandFeatures,hand_boxes_from_keypoints
-        from exmr.preprocessing.keypoints import VISIBILITY_THRESHOLD
-        points=load(project/'exmr_keypoints.pt');threshold=VISIBILITY_THRESHOLD['sapiens2']
-        hand_boxes=torch.stack([hand_boxes_from_keypoints(points[:,COCO63_LEFT_HAND],threshold),hand_boxes_from_keypoints(points[:,COCO63_RIGHT_HAND],threshold)],1)
+        from exmr.preprocessing.hand_features import HamerHandFeatures
+        points=load(project/'exmr_keypoints.pt')
+        hand_boxes=P.hand_boxes(points,'sapiens2')
         emit('progress',current=0,total=n,message='ExMR: left and right hand features')
-        values=HamerHandFeatures(weights/'hamer',batch_size=8,num_workers=0)(directory,hand_boxes)
+        def hand_features(low):
+            model=acquire(model_key('hamer',*[BY_KEY[key].path for key in ('hand_hamer','hand_mean','mano_right')],low_memory=low),
+                lambda:HamerHandFeatures(weights/'hamer',batch_size=8,num_workers=0,low_memory=low))
+            try:return model(directory,hand_boxes)
+            finally:release(model)
+        values=memory_run('ExMR hand features',hand_features,5.5,emit)
         save_tensor(values,project/'exmr_hand_features.pt')
     else:
-        from exmr.geometry.camera import bbx_xys_from_xyxy,cam_angvel_from_rotations
         config=saved(scene_root(project));rotations=camera(project,emit)
         if len(rotations)!=n:raise ValueError('ExMR take camera and motion lengths differ')
-        data=dict(kp2d=load(project/'exmr_keypoints.pt')[:,COCO23].clone(),bbx_xys=bbx_xys_from_xyxy(boxes,base_enlarge=1.2).float(),
-            bbx_xyxy=boxes,K_fullimg=k,cam_angvel=cam_angvel_from_rotations(rotations),
-            body_feat=load(project/'exmr_body_features.pt'),hand_feat=load(project/'exmr_hand_features.pt'))
+        data=P.model_inputs(load(project/'exmr_keypoints.pt'),boxes,k,rotations,
+            load(project/'exmr_body_features.pt'),load(project/'exmr_hand_features.pt'),'sapiens2')
         emit('progress',current=0,total=n,message='ExMR: reconstruct and refine full body, feet and fingers')
-        native=P._run_model(data,P.Options(static_cam=config['static_camera'],smoothing=config['smoothing'],snap_to_ground=False,render=False),state['fps'],Assets(weights))
+        from exmr.model.exmr import ExMR
+        model=acquire(model_key('exmr',BY_KEY['exmr'].path,BY_KEY['smplx'].path),
+            lambda:ExMR.from_pretrained(BY_KEY['exmr'].path,BY_KEY['smplx'].path))
+        try:
+            with torch.inference_mode():
+                output=model(**{key:value[None].cuda() for key,value in data.items()},
+                    static_cam=config['static_camera'],snap_to_ground=False,
+                    smooth_incam=False,smooth_global=config['smoothing']!='none',fps=state['fps'],
+                    normalize_world=False)
+                native={space:{key:value[0].cpu() for key,value in output[space].items()} for space in ('smplx_incam','smplx_global')}
+                native.update(static_conf_logits=output['static_conf_logits'][0].cpu(),K_fullimg=k,bbx_xyxy=boxes)
+                del output
+        finally:release(model)
+        del model
         native['fps']=state['fps'];validate_native(native,n)
         import smplx
         body=smplx.SMPLX(str(BY_KEY['smplx'].path),flat_hand_mean=False,use_pca=False).eval()

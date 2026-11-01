@@ -212,7 +212,9 @@ class PeopleWorkspace:
                 jobs.extend((stage,['--project',str(project),'--result',kind]) for stage in ('correct','export'))
         if not jobs:
             self.status.setText('Reconstruct a person before applying the shared scene floor.');return
-        self._people_batch=True;self._people_return_id=self.active_person_id
+        self._people_batch=True
+        self._people_inference_jobs=[]
+        self._people_post_jobs=[];self._people_return_id=self.active_person_id
         self._people_return_project=self.project
         self.start_jobs(jobs, refresh_characters=True)
 
@@ -628,6 +630,7 @@ class PeopleWorkspace:
         finish=round((end-root_manifest['start'])*fps)
         self._people_stages=[s for s in stages if s!='track']
         self._people_batch=True
+        self._people_inference_jobs=[];self._people_post_jobs=[]
         self._people_return_id=self.active_person_id if any(p['id']==self.active_person_id for p in selected) else selected[0]['id']
         self._people_return_project=None
         self._people_result=result or self.active_result
@@ -654,7 +657,12 @@ class PeopleWorkspace:
                       for path in event['projects'] for stage in post]
             # Prepare every actor's original camera/motion before resolving the
             # one automatic scene plane or committing any corrected exports.
-            self.jobs=jobs+self.jobs+deferred
+            self._people_inference_jobs.extend(jobs)
+            self._people_post_jobs.extend(deferred)
+            if not any(stage=='person' for stage,_ in self.jobs):
+                from .queue_groups import grouped_jobs
+                self.jobs=grouped_jobs(self._people_inference_jobs,self.people_root)+self.jobs+self._people_post_jobs
+                self._people_inference_jobs=[];self._people_post_jobs=[]
             return True
         if event['type']=='people_found':
             self._people_found_root=Path(event['project'])
@@ -670,6 +678,7 @@ class PeopleWorkspace:
             self.status.setText(f'{self.people_list.count()} people found. Check people to extract; select a row to preview.')
         if not self._people_batch:return
         self._people_batch=False
+        self._people_inference_jobs=[];self._people_post_jobs=[]
         root=self.people_root
         ident=self._people_return_id
         if root:

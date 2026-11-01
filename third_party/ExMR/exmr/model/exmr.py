@@ -86,6 +86,7 @@ class ExMR(nn.Module):
         smooth_incam=False,
         smooth_global=True,
         fps=30.0,
+        normalize_world=True,
     ):
         """
         Args:
@@ -108,14 +109,18 @@ class ExMR(nn.Module):
                 smoother, but follows fast motion, e.g. of the feet, slightly less closely in
                 the image
             smooth_global: smooth the world-frame motion over time (Gaussian, SMOOTHING_SIGMA)
+            normalize_world: normalize the first world pose to face +z at x=z=0.
+                RGB MoCap disables this to preserve its existing scene/camera frame.
             fps: frame rate of the video, for the time windows of snap_to_ground, of the
                 static-camera drift correction and of the smoothing
         Returns:
             dict with
               smplx_incam: SMPL-X parameters in the camera frame (each (B, L, D))
               smplx_global: SMPL-X parameters in the gravity-aligned world frame (y up, ground
-                  at y=0 with postprocess or snap_to_ground)
-              static_conf_logits: (B, L, 6) static-contact logits of
+                  at y=0 with postprocess or snap_to_ground; with postprocess and normalize_world,
+                  the motion starts
+                  at x=z=0 facing +z)
+              static_conf_logits: (B, L, 6) logits of being static (not moving) for
                   [L_ankle, L_foot, R_ankle, R_foot, L_wrist, R_wrist]
         """
         B, L = kp2d.shape[:2]
@@ -219,6 +224,11 @@ class ExMR(nn.Module):
         if postprocess and not snap_to_ground:
             # one shift for all frames, so last: puts the final mesh on the ground
             smplx_global["transl"] = global_traj.put_on_ground(smplx_global, self.body_model)
+        if postprocess and normalize_world:
+            # facing +z in the first frame, as BVH, Blender and Unity expect a character to start
+            smplx_global["global_orient"], smplx_global["transl"] = global_traj.face_forward(
+                smplx_global, self.decoder
+            )
 
         return {
             "smplx_incam": smplx_incam,

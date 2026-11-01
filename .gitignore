@@ -49,6 +49,7 @@ __pycache__/
 *.mp4
 !/docs/samples/motion-capture.mp4
 !/docs/samples/character-retargeting.mp4
+!/docs/samples/multi-cam-mocap.mp4
 *.avi
 *.mov
 *.mkv
@@ -95,10 +96,15 @@ third_party/**/.git/
 /third_party/FlowHMR/checkpoints/
 /third_party/FlowHMR/ckpts/
 /third_party/GVHMR/inputs/
+/third_party/FootMR/inputs/
+/third_party/HTD-Refine/inputs/
 
 
 # One versioned, verified native module; models and runtimes remain excluded.
 !/prebuilt/motion-correction/_motion_correction.cp310-win_amd64.pyd
 /tools/bin/
+
+# Local temporary shader/kernel caches
+/temp/
 
 !/docs/samples/camera-view.mp4

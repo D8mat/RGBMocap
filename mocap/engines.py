@@ -22,7 +22,7 @@ def activate(name: str) -> Path:
     # and timm version never leak into the GUI or another model.
     root = UPSTREAM / name
     for path in (root, COMPAT):
-        sys.path.insert(0, str(path))
+        if str(path) not in sys.path:sys.path.insert(0, str(path))
     os.chdir(root)
     os.environ.setdefault("YOLO_CONFIG_DIR", str(MODELS / "yolo" / "settings"))
     import torch
@@ -34,7 +34,7 @@ def activate(name: str) -> Path:
 def link_models(root: Path) -> None:
     """Hard links keep upstream relative paths working without copying GB files."""
     for key,model in BY_KEY.items():
-        if key == 'person_reid':
+        if key == 'person_reid' or key.startswith('phmr_'):
             continue  # Discovery-only weights are never used by motion backends.
         source = model.path
         if not source.exists():
@@ -193,7 +193,11 @@ def pva(project: Path, emit) -> Path:
     return target
 
 
-def features(project: Path, emit) -> Path:
+def features(project: Path, emit, phase=None) -> Path:
+    import time
+    started=time.monotonic()
+    if phase not in (None,'pose','features'):raise ValueError('Invalid GVHMR feature phase')
+    from .model_session import acquire,model_key,reusable_bytes
     root = activate("GVHMR")
     link_models(root)
     import numpy as np
@@ -206,9 +210,9 @@ def features(project: Path, emit) -> Path:
     from .inference_data import streamed_features
     from .compute_policy import image_plan,prefetch_plan
     import psutil
-    tracking = np.load(project / "tracking.npz")
-    bbx = get_bbx_xys_from_xyxy(torch.from_numpy(tracking["boxes"]), base_enlarge=1.2)
-    plan=image_plan('gvhmr',torch.cuda.mem_get_info()[0],psutil.virtual_memory().available)
+    with np.load(project / "tracking.npz") as tracking:boxes=tracking["boxes"].copy()
+    bbx = get_bbx_xys_from_xyxy(torch.from_numpy(boxes), base_enlarge=1.2)
+    plan=image_plan('gvhmr',torch.cuda.mem_get_info()[0]+reusable_bytes(),psutil.virtual_memory().available)
     memory=psutil.virtual_memory()
     plan['prefetch_batches']=prefetch_plan(memory.available,memory.total)
     plan.update(deterministic_conv=True,tf32=False)
@@ -220,10 +224,11 @@ def features(project: Path, emit) -> Path:
         return lambda current,total:emit('progress',stage='features',message=message,current=current,total=total)
     emit("progress", stage="gvhmr", message="Computing GVHMR joint observations", current=0, total=3)
     keypoint_path = project / "gvhmr_keypoints.pt"
-    if cached(project,state,keypoint_path.name):
+    pose_cached=cached(project,state,keypoint_path.name)
+    if pose_cached:
         kp = torch.load(keypoint_path, map_location="cpu", weights_only=False)
     else:
-        pose = VitPoseExtractor()
+        pose = acquire(model_key("gv_pose",BY_KEY["vitpose"].path),VitPoseExtractor)
         kp = streamed_features(project,bbx,pose.extract,plan['image_batch'],plan['prefetch_batches'],
             progress('Computing GVHMR joint observations'))
         save_tensor(kp, keypoint_path)
@@ -231,12 +236,16 @@ def features(project: Path, emit) -> Path:
         del pose
         gc.collect()
         torch.cuda.empty_cache()
+    if phase=='pose':
+        emit('complete',stage='features',output=str(keypoint_path),cached=pose_cached,elapsed=time.monotonic()-started)
+        return keypoint_path
     emit("progress", stage="gvhmr", message="Computing image features", current=1, total=3)
     feature_path = project / "features.pt"
-    if cached(project,state,feature_path.name):
+    feature_cached=cached(project,state,feature_path.name)
+    if feature_cached:
         features = torch.load(feature_path, map_location="cpu", weights_only=False)
     else:
-        extractor = Extractor()
+        extractor = acquire(model_key("gv_features",BY_KEY["hmr2"].path),Extractor)
         features = streamed_features(project,bbx,lambda images,boxes: extractor.extract_video_features(images,boxes),
             plan['image_batch'],plan['prefetch_batches'],progress('Computing GVHMR image features'))
         save_tensor(features, feature_path)
@@ -244,6 +253,7 @@ def features(project: Path, emit) -> Path:
         del extractor
         gc.collect()
         torch.cuda.empty_cache()
+    if phase=='features':emit('complete',stage='features',output=str(feature_path),cached=pose_cached and feature_cached,elapsed=time.monotonic()-started)
     return feature_path
 
 
@@ -258,14 +268,18 @@ def gvhmr(project: Path, emit) -> Path:
     import hmr4d.model.gvhmr.utils.endecoder
     from hmr4d.model.gvhmr.gvhmr_pl_demo import DemoPL
     from hydra import compose, initialize_config_module
-    tracking = np.load(project / "tracking.npz")
+    with np.load(project / "tracking.npz") as tracking:tracking={key:tracking[key].copy() for key in tracking.files}
     bbx = get_bbx_xys_from_xyxy(torch.from_numpy(tracking["boxes"]), base_enlarge=1.2)
     kp = torch.load(project / "gvhmr_keypoints.pt", map_location="cpu", weights_only=False)
     features_tensor = torch.load(project / "features.pt", map_location="cpu", weights_only=False)
     with initialize_config_module(version_base="1.3", config_module="hmr4d.configs"):
         cfg = compose(config_name="demo")
-    model = DemoPL(cfg.pipeline).eval().cuda()
-    model.load_pretrained_model(BY_KEY["gvhmr"].path)
+    from .model_session import acquire,model_key
+    def build():
+        model = DemoPL(cfg.pipeline).eval().cuda()
+        model.load_pretrained_model(BY_KEY["gvhmr"].path)
+        return model
+    model = acquire(model_key('gvhmr',BY_KEY['gvhmr'].path),build)
     data = {"length": torch.tensor(len(bbx)), "bbx_xys": bbx, "kp2d": kp,
             "K_fullimg": torch.from_numpy(tracking["K"])[None].expand(len(bbx), 3, 3),
             "cam_angvel": torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float32)[None].expand(len(bbx), 6),

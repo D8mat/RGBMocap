@@ -8,6 +8,7 @@ import gc, hashlib, json, math, os, sys, uuid
 import numpy as np
 from .paths import ROOT, UPSTREAM
 from .storage import atomic_json, sha256
+from .model_session import set_memory_budget
 from .compute_policy import gpu_memory_fraction
 from .result_artifacts import file_stat
 
@@ -64,7 +65,8 @@ def activate():
             # never unexpectedly duplicate multi-GB weights at inference time.
             try:target.symlink_to(model.path)
             except OSError as error:raise RuntimeError('Keep the app and its models on the same drive, or enable Windows symbolic links.') from error
-    os.chdir(root);sys.path.insert(0,str(root))
+    os.chdir(root)
+    if str(root) not in sys.path:sys.path.insert(0,str(root))
     os.environ.setdefault('WANDB_MODE','disabled')
     # An upstream hub import would otherwise require a first-run network fetch.
     original=torch.hub.load
@@ -72,14 +74,18 @@ def activate():
         if repo=='facebookresearch/dinov3':
             repo=str(root/'third_party/dinov3');kwargs['source']='local'
         return original(repo,model,*args,**kwargs)
-    torch.hub.load=local_hub
+    if not getattr(original, '_rgb_flow', False):
+        local_hub._rgb_flow=True
+        torch.hub.load=local_hub
     upstream_load=torch.load
     allowed={str((root/name).resolve()) for name in ASSET_LINKS.values()}
     def official_load(path,*args,**kwargs):
         if isinstance(path,(str,Path)) and str(Path(path).resolve()) in allowed:
             kwargs.setdefault('weights_only',False)
         return upstream_load(path,*args,**kwargs)
-    torch.load=official_load
+    if not getattr(upstream_load, '_rgb_flow', False):
+        official_load._rgb_flow=True
+        torch.load=official_load
     return root
 
 
@@ -111,18 +117,22 @@ def identity(project,stage):
         if root!=project and (root/'flow_camera.npz').exists():files['root_camera']=file_stat(root/'flow_camera.npz')
     import inspect
     # Export/rig improvements must not discard expensive camera/SAM/inference.
-    functions={'flow_camera':(camera,camera_interval), 'flow_features':(features,), 'flowhmr':(infer,validate_motion)}
+    functions={'flow_camera':(camera,camera_interval), 'flow_features':(features,_features), 'flowhmr':(infer,validate_motion)}
     if stage=='flow_export':
         code={name:sha256(ROOT/'mocap'/name) for name in ('flow_export.py','source_pose_fit.py','mixamo_rig.py','bvh_bind.py','mixamo_data.py')}
     else:
         code={'adapter':hashlib.sha256(''.join(inspect.getsource(f) for f in (*functions[stage],activate,load_tensor,save_tensor)).encode()).hexdigest()}
     upstream={'flow_camera':'flowhmr/utils/runtime_vggt_camera.py','flow_features':'flowhmr/utils/runtime_sam_features.py','flowhmr':'flowhmr/pipeline/pipeline_v2m.py'}.get(stage)
     if upstream:code[upstream]=sha256(UPSTREAM/'FlowHMR'/upstream)
+    if stage in ('flow_camera','flow_features'):
+        for name in ('memory_mode.py','gpu_offload.py','model_session.py'):code[name]=sha256(ROOT/'mocap'/name)
     if stage in ('flow_camera','flowhmr'):code['flow_camera.py']=sha256(ROOT/'mocap/flow_camera.py')
-    if stage=='flow_features':code['flow_sam.py']=sha256(ROOT/'mocap/flow_sam.py')
     if stage=='flow_features':
-        from .flow_sam import saved_fast_sam, source_identity
+        for name in ('flow_sam.py','flow_fast_sam.py','batch_prefetch.py'):code[name]=sha256(ROOT/'mocap'/name)
+    if stage=='flow_features':
+        from .flow_sam import saved_fast_sam, source_identity, acceleration_options
         code['sam_source']=source_identity(saved_fast_sam(project,state))
+        code['sam_acceleration']=acceleration_options(project,state)
     import torch
     return dict(version=VERSION,stage=stage,inputs=files,camera_interval=selected if stage=='flow_camera' else None,
         models={key:file_stat(BY_KEY[key].path) for key in STAGE_REQUIREMENTS[stage] if not (stage=='flow_camera' and selected==-1)},
@@ -162,8 +172,21 @@ def camera(project,emit,force=False):
     from flowhmr.utils.runtime_vggt_camera import extract_vggt_camera
     target=project/'flow_camera.partial.npz'
     target.unlink(missing_ok=True)  # upstream must not reuse a partial extraction
-    extract_vggt_camera(str(project/'input.mp4'),output_npz=str(target),frame_range=(0,n-1),
-        expected_len=n,frame_interval=interval,keep_frames=False,camera_only=True)
+    from .memory_mode import run as memory_run
+    from .gpu_offload import load_vggt,release
+    def estimate(low):
+        models=[]
+        def loader(path,device,camera_only=True):
+            model=load_vggt(path,device,camera_only,low_memory=low);models.append(model);return model
+        try:
+            target.unlink(missing_ok=True)
+            return extract_vggt_camera(str(project/'input.mp4'),output_npz=str(target),frame_range=(0,n-1),
+                expected_len=n,frame_interval=interval,keep_frames=False,camera_only=True,model_loader=loader)
+        finally:
+            for model in models:release(model)
+            models.clear()
+    samples=len(set(range(0,n,interval))|{n-1})
+    memory_run('FlowHMR VGGT camera',estimate,6.+.1*samples,emit)
     with np.load(target,allow_pickle=False) as data:
         if data['camera_RT_yup'].shape!=(n,4,4) or data['K'].shape!=(n,3,3) or not all(np.isfinite(data[k]).all() for k in ('camera_RT_yup','K')):
             raise ValueError('VGGT-Omega returned incomplete camera data')
@@ -174,35 +197,71 @@ def camera(project,emit,force=False):
 
 
 def features(project,emit):
+    from .memory_mode import run as memory_run
+    from .flow_sam import acceleration_options
+    state=json.loads((project/'project.json').read_text(encoding='utf-8'))
+    estimate=5.5 if acceleration_options(project,state)['sam_batch4'] else 4.5
+    return memory_run('FlowHMR SAM features',lambda low:_features(project,emit,low),estimate,emit)
+
+
+def _features(project,emit,low_memory):
     import cv2, torch
-    from .flow_sam import build_extractor, saved_fast_sam
+    from .flow_sam import build_extractor, saved_fast_sam, acceleration_options
     state=json.loads((project/'project.json').read_text(encoding='utf-8'));n=state['frames']
     with np.load(project/'tracking.npz',allow_pickle=False) as data:boxes=data['boxes'].copy()
     if boxes.shape!=(n,4):raise ValueError('Tracking and video frame counts differ')
     k=np.array([[math.hypot(state['width'],state['height']),0,state['width']/2],
                 [0,math.hypot(state['width'],state['height']),state['height']/2],[0,0,1]],np.float32)
     fast=saved_fast_sam(project,state)
-    extractor=build_extractor(torch.device('cuda'),fast=fast)
+    options=acceleration_options(project,state)
+    from .model_session import acquire, model_key
+    from .models import BY_KEY
+    extractor=acquire(model_key('flow_sam',*[BY_KEY[k].path for k in ('flow_sam','flow_sam_config','flow_mhr')],fast=fast,low_memory=low_memory),
+        lambda:build_extractor(torch.device('cuda'),fast=fast,low_memory=low_memory))
     cap=cv2.VideoCapture(str(project/'input.mp4'));cap.set(cv2.CAP_PROP_N_THREADS,2) if hasattr(cv2,'CAP_PROP_N_THREADS') else None
     from .flow_sam import extract_tokens
     tokens=torch.empty((n,3072),dtype=torch.float32);anchors=[]
     try:
-        for index in range(n):
-            ok,frame=cap.read()
-            if not ok:raise ValueError(f'Cannot decode FlowHMR frame {index+1}')
-            token,outputs=extract_tokens(extractor,cv2.cvtColor(frame,cv2.COLOR_BGR2RGB),boxes[index:index+1],torch.from_numpy(k[None]),placement=index<min(n,30))
-            if token.shape!=(3072,) or not torch.isfinite(token).all():raise ValueError(f'Body/hand feature extraction failed at frame {index+1}')
-            tokens[index]=token.float()
-            if index<min(n,30) and outputs:
-                # MHR70 defines hips at 9/10, in metres in OpenCV camera space.
-                person=outputs[0]
-                pelvis=person['pred_keypoints_3d'][[9,10]].mean(0)+person['pred_cam_t']
-                if np.isfinite(pelvis).all() and pelvis[2]>.05:anchors.append([index,*pelvis.tolist()])
-            if index%10==0 or index==n-1:emit('progress',current=index+1,total=n,message='Extract body and hand features (Fast SAM)' if fast else 'Extract body and hand features (Original SAM)')
+        batch_size = 4 if options['sam_batch4'] and not low_memory else 1
+        if fast:
+            emit('info', message=f"Fast SAM acceleration: {batch_size} frame(s) per batch; GPU hand crops {'on' if options['sam_gpu_crop'] else 'off'}.")
+        if options['sam_batch4'] and low_memory:
+            emit('info', message='Low Memory: using one frame per SAM batch to reduce VRAM. GPU hand crop selection is retained.')
+        def cpu_batches():
+            for begin in range(0,n,batch_size):
+                count=min(batch_size,n-begin);images=[]
+                for index in range(begin,begin+count):
+                    ok,frame=cap.read()
+                    if not ok:raise ValueError(f'Cannot decode FlowHMR frame {index+1}')
+                    images.append(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB))
+                yield begin,count,images
+        from .batch_prefetch import batch_source
+        with batch_source(cpu_batches(), batch_bytes=batch_size*state['width']*state['height']*3) as batches:
+            for begin,count,images in batches:
+                if any(options.values()):
+                    from .flow_fast_sam import extract_batch
+                    values, outputs = extract_batch(extractor, images, boxes[begin:begin+count],
+                        torch.from_numpy(k[None]), gpu_crops=options['sam_gpu_crop'], placement=begin<30)
+                else:
+                    token, outputs = extract_tokens(extractor, images[0], boxes[begin:begin+1],
+                        torch.from_numpy(k[None]), placement=begin<30)
+                    values = token[None]
+                if values.shape != (count,3072) or not torch.isfinite(values).all():
+                    raise ValueError(f'Body/hand feature extraction failed at frame {begin+1}')
+                tokens[begin:begin+count] = values.float()
+                for offset, person in enumerate(outputs):
+                    index = begin+offset
+                    if index >= min(n,30):break
+                    # MHR70 hips, metres in original OpenCV camera coordinates.
+                    pelvis = person['pred_keypoints_3d'][[9,10]].mean(0)+person['pred_cam_t']
+                    if np.isfinite(pelvis).all() and pelvis[2]>.05:anchors.append([index,*pelvis.tolist()])
+                if begin//10 != (begin+count)//10 or begin+count==n:
+                    emit('progress',current=begin+count,total=n,message='Extract body and hand features (Fast SAM)' if fast else 'Extract body and hand features (Original SAM)')
         if cap.read()[0]:raise ValueError('Video contains more frames than its project manifest')
     finally:
         cap.release()
-        for hook in extractor._hooks:hook.remove()
+        from .model_session import release
+        release(extractor)
     save_tensor(project/'flow_tokens.pt',tokens)
     atomic_json(project/'flow_placement.json',dict(camera_pelvis=anchors,intrinsics=k.tolist(),method='Constant X/Z placement from SAM MHR70 pelvis; native FlowHMR height and motion retained'))
     return project/'flow_tokens.pt'
@@ -218,12 +277,15 @@ def infer(project,emit):
     if tokens.shape!=(n,3072) or not torch.isfinite(tokens).all():raise ValueError('Invalid cached SAM features; rerun feature extraction.')
     with np.load(project/'flow_camera.npz',allow_pickle=False) as data:rt=torch.from_numpy(data['camera_RT_yup'].copy())
     if tuple(rt.shape)!=(n,4,4):raise ValueError('Camera and body frame counts differ')
-    pipeline=build_pipeline(load_yaml(str(BY_KEY['flow_config'].path)),device='cuda',ckpt=str(checkpoint),validation_steps=20)
-    weights=load_tensor(checkpoint)
-    weights=weights.get('model_state_dict',weights.get('state_dict',weights))
-    if any(name not in weights or tuple(weights[name].shape)!=tuple(value.shape) for name,value in pipeline.named_parameters()):
-        raise ValueError('FlowHMR checkpoint is missing required learned parameters. Repair its checkpoint and configuration.')
-    del weights
+    from .model_session import acquire,model_key
+    def build():
+        pipeline=build_pipeline(load_yaml(str(BY_KEY['flow_config'].path)),device='cuda',ckpt=str(checkpoint),validation_steps=20)
+        weights=load_tensor(checkpoint)
+        weights=weights.get('model_state_dict',weights.get('state_dict',weights))
+        if any(name not in weights or tuple(weights[name].shape)!=tuple(value.shape) for name,value in pipeline.named_parameters()):
+            raise ValueError('FlowHMR checkpoint is missing required learned parameters. Repair its checkpoint and configuration.')
+        return pipeline
+    pipeline=acquire(model_key('flowhmr',checkpoint,BY_KEY['flow_config'].path),build)
     emit('progress',current=0,total=20,message='FlowHMR: integrate 20 ODE steps')
     from .flow_camera import relative_camera
     with torch.inference_mode():
@@ -296,7 +358,7 @@ def run_stage(project,stage,result,emit,force=False):
         if not torch.cuda.is_available():raise RuntimeError('FlowHMR requires a supported NVIDIA CUDA GPU.')
         free,total=torch.cuda.mem_get_info()
     validate_length(n)
-    if free is not None:torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
+    if free is not None:set_memory_budget(free,total)
     if not static:activate()
     atomic_json(pending,dict(stage=stage,started=time.time()))
     if stage=='flow_camera':output=camera(project,emit,force=force)

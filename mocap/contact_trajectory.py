@@ -230,3 +230,16 @@ def material_slip(before, after, active, weights, fps):
         result['support_material_speed_'+label+'_max_mps'] = float(speed.max()) if len(speed) else None
         result['support_material_speed_'+label+'_p95_mps'] = float(np.quantile(speed, .95)) if len(speed) else None
     return result
+
+
+def free_follow_weights(active, transition):
+    """Finite C1 blend to the actual free trajectory outside contact."""
+    out = np.zeros(active.shape, dtype=np.float64)
+    for foot in (0, 1):
+        for a, b in runs(transition[:, foot] & ~active[:, foot]):
+            left = a > 0 and active[a-1, foot]
+            right = b < len(active) and active[b, foot]
+            t = np.arange(1, b-a+1, dtype=np.float64)/(b-a+1)
+            smooth = t*t*(3-2*t)
+            out[a:b, foot] = 0 if left and right else smooth if left else 1-smooth if right else 1
+    return out
