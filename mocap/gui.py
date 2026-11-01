@@ -33,6 +33,7 @@ STAGES['rig']='Prepare Bone Preview'
 STAGES['save_fbx']='Save FBX'
 STAGES['copy_bvh']='Save BVH'
 STAGES['save_blend']='Save Blender Project'
+STAGES['save_blend_scene']='Save MAMMA Blender Scene'
 STAGES["footmr"] = "Refine Ankles / FootMR"
 STAGES["handflow"] = "Infer Fingers / HandFlow"
 STAGES['correct'] = 'Motion Correction'
@@ -1250,7 +1251,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
                                    (f' · Elapsed {duration(elapsed)}' if elapsed is not None else ''))
             self.progress.setRange(0, 100)
             self.progress.setValue(0 if self.failed or self.cancelled else 100)
-            if self.current_stage in ('save_fbx','copy_bvh','save_blend'):
+            if self.current_stage in ('save_fbx','copy_bvh','save_blend','save_blend_scene'):
                 # Saving a derived file does not replace scene/preview data.
                 # Reloading the people scene here moves a following camera.
                 if not self.failed and not self.cancelled:
@@ -1719,6 +1720,9 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.camera_preview.apply_export(dialog)
         if dialog.exec()!=QDialog.Accepted:return
         self._source_export_options=dialog.options()
+        if self._source_export_options['format']=='blend_scene':
+            from .blend_multicam_ui import export_scene
+            export_scene(self);return
         if self.export_checked_people():return
         source = self.current_export()
         if source is None:

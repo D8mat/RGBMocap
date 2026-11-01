@@ -1327,3 +1327,17 @@ three-camera decode/thumbnail/close cycles, VGGT loading policy tests and
 52-bone BVH rotation/translation/T-pose checks passed locally. A legacy export
 worker fixture was unavailable; its inference/export check was not completed.
 No new model inference or native optional-runtime compilation was tested.
+
+
+## Blender MAMMA whole scene (2026-11-01)
+
+A local 383-frame MAMMA result exported two people and four calibrated cameras.
+Blender 4.5 reopened the completed bundle after staging-folder relocation.
+PC2 evaluated mesh vertices matched first, middle and final cached frames;
+independent native SMPL-X evaluation matched the source surface within 1e-6 m
+at the sampled frame. All camera matrices and projected sample pixels matched
+calibration (pixel tolerance 0.01). Per-camera resolutions, relative movie
+paths and body/armature counts passed. An overview render was inspected.
+GUI checks covered the new format, disabled inserted T-pose and preserved
+existing Blender export controls. No new inference or real-time playback
+benchmark was run; this clip does not test disjoint actor take intervals.

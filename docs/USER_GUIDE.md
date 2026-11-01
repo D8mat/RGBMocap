@@ -661,3 +661,27 @@ optional T-pose at frame 0, explicit output selection, relative video bundles,
 Camera Preview, tracked Blender cameras and optional background rotation refinement.
 Experimental FlowHMR camera translation remains optional and is not metric calibrated.
 MAMMA preview/export uses the primary calibrated camera and its video.
+
+
+## Blender MAMMA whole-scene export
+
+Select a reconstructed MAMMA person and check the people to include. Choose
+File > Export Motion > Blender MAMMA scene: meshes + all cameras (.blend).
+A new bundle folder contains the .blend file, videos/ and meshes/. Keep them
+together when moving or sharing the scene. The current Original/Corrected
+selection is preserved; stale results require Prepare Preview/Apply Correction.
+
+Overview - all cameras contains baked full-resolution SMPL-X surfaces, separate
+editable reference skeletons, calibrated cameras, synchronized video panels,
+a reference floor and studio lights. Camera - name scenes share the bodies
+and use each video's image dimensions and pixel aspect. Camera backgrounds
+are viewport references; video panels render in Overview only. No T-pose is
+inserted. Actor takes retain their frame offsets and disappear outside their
+recorded intervals. PC2 mesh caches preserve exact body deformation, but are
+not skinned to the reference skeletons. No inference or motion refitting runs.
+
+Requires the MAMMA inference videos and camera-world.json plus current mesh
+previews. Nonzero lens-distortion calibration is rejected; use undistorted
+video/calibration. Automatic camera scale/floor remain estimates. The floor
+is a presentation aid, not reconstructed geometry. Other models keep their
+existing per-person Blender export.

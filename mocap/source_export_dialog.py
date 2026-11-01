@@ -13,6 +13,7 @@ class SourceExportDialog(QDialog):
         self.format = QComboBox()
         self.format.addItem('FBX (.fbx)', 'fbx')
         self.format.addItem('Blender project + video (.blend)', 'blend')
+        self.format.addItem('Blender MAMMA scene: meshes + all cameras (.blend)', 'blend_scene')
         self.format.addItem('BVH — 3ds Max Biped (.bvh)', 'bvh_biped')
         self.format.addItem('BVH — Generic / Blender (.bvh)', 'bvh')
         form.addRow('Format', self.format)
@@ -70,6 +71,12 @@ class SourceExportDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+        self.scene_note=QLabel('MAMMA scene: checked people, exact animated body meshes, reference skeletons and all calibrated cameras with videos in one folder. Keeps the original timeline; no inserted T-pose. Mesh caches can be large.')
+        self.scene_note.setWordWrap(True);layout.insertWidget(layout.count()-1,self.scene_note)
+        def scene_mode():
+            enabled=self.format.currentData()=='blend_scene'
+            self.scene_note.setVisible(enabled);self.tpose.setEnabled(not enabled)
+        self.format.currentIndexChanged.connect(scene_mode);scene_mode()
         self.setMinimumWidth(420)
 
     def options(self):

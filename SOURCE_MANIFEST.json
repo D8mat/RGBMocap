@@ -131,13 +131,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 46488,
-      "sha256": "b9e12af88f3bf4798055058449a4e25f7b585bb0e22cded3a138caba2311e6fd"
+      "bytes": 47889,
+      "sha256": "284366186abb226090ec50c0f2546ff5e2d7b9f891c5cd0abf22f9072150b89c"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 89249,
-      "sha256": "1e5683153982fc2c1d3fb522047f8680862008d4854452b565283811b5039bc1"
+      "bytes": 90063,
+      "sha256": "72e107e1709b1614d9e0d3ca2c3194b27915de27edc37391b7fb8851d89244e5"
     },
     {
       "path": "docs/images/camera-view-preview.jpg",
@@ -1100,6 +1100,21 @@
       "sha256": "8fa84fcf77d3d7f6dc32d9ea62ad3e4555aa9b08687aa657516e2c16b370877f"
     },
     {
+      "path": "mocap/blend_multicam_export.py",
+      "bytes": 11030,
+      "sha256": "5cfb741bb62104053d1a2d704b19d2b69df186666bf5207bcf051df807acabbb"
+    },
+    {
+      "path": "mocap/blend_multicam_scene.py",
+      "bytes": 7919,
+      "sha256": "5380cc66141a67a9058089dc31af41c3c148fb76d672d5a10d5f66e076972af3"
+    },
+    {
+      "path": "mocap/blend_multicam_ui.py",
+      "bytes": 2425,
+      "sha256": "6809cec1c8ee573fbc0fc826a5c9e01787ffa49874db0bd36f251e099e2ad0dc"
+    },
+    {
       "path": "mocap/bone_gl.py",
       "bytes": 1193,
       "sha256": "d9db5db73b7b7409e929e4d3f27b7b284b4708b44389ee244d5c238bd703bec9"
@@ -1346,8 +1361,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 105415,
-      "sha256": "a0ba5036e86724361d192b40b1e247fc065860bff3caa78e591c5ca84f743b6a"
+      "bytes": 105647,
+      "sha256": "455118584e80819d32f4e9d423b265708ab206b4a4c524b24b24f57421a9d0e6"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1886,8 +1901,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 5931,
-      "sha256": "3c8d49df1a27acc3ccf2451f0006d77e34469f23d40f42668deee681f9e6d8ba"
+      "bytes": 6614,
+      "sha256": "1f9ccacaa5c72f1d0dd4bed671e3bb3a24857ca3ba488e9165e31544a3a5953b"
     },
     {
       "path": "mocap/source_pose_fit.py",
@@ -1976,8 +1991,8 @@
     },
     {
       "path": "mocap/worker.py",
-      "bytes": 28595,
-      "sha256": "09fe910fe434cfcdc8398cf42ce635048b42299ceae45282e5ea8607c531b4e0"
+      "bytes": 28874,
+      "sha256": "766b6a8391e07b793c83144d4774198d2873d0fa057d0e088c874b9ef5d09d68"
     },
     {
       "path": "mocap/worker_progress.py",
