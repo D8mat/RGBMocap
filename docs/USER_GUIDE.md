@@ -511,3 +511,16 @@ existing camera-center trajectory remain unchanged.
 Blender bundles include per-sample diagnostics in `camera_report.json`. Pixel
 errors use a 960-pixel-wide analysis image and describe background alignment,
 not motion-capture accuracy. Disable the option to use the saved camera alone.
+
+
+## MAMMA multi-camera capture
+
+Select MAMMA in AI Motion Model, then open synchronized fixed-camera videos of
+the same performance. Camera thumbnails switch the preview; one common trim
+applies to every view. Follow [the dedicated guide](MAMMA.md) for model files,
+manual or automatic calibration, correction, export and the optional runtime.
+This integration does not automatically synchronize separately started videos.
+Our source export options (T-pose, BVH and Blender) remain available for prepared
+source takes. Camera Preview and Blender bundles use the primary calibrated
+camera/video for MAMMA; selecting a different input thumbnail does not change
+that export camera. Saved MAMMA cameras are fixed, not moving-camera tracks.

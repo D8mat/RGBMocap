@@ -30,6 +30,8 @@ def validate_transform(value):
 
 
 def camera_sources(project):
+    if (project/'mamma_source.json').exists():
+        return {name:stamp(project/name) for name in ('hmr4d_results.pt','input.mp4','mamma_source.json') if (project/name).exists()}
     if (project/'exmr_camera_sources.json').exists():
         # ExMR's paired native roots and registered shape determine the camera.
         # Publishing its first preview must not change the shared-floor identity.
@@ -47,7 +49,10 @@ def read_camera(project):
     record=json.loads(path.read_text(encoding='utf-8'))
     if record.get('version')!=VERSION or record.get('sources')!=camera_sources(project):return None
     from .paths import MODELS
-    model=MODELS/('body_models/smplh/neutral/model.npz' if record.get('source_model')=='flowhmr' else 'body_models/smplx/SMPLX_NEUTRAL.npz')
+    if record.get('source_model')=='mamma':
+        from .mamma_body import body_path
+        model=body_path(project)
+    else:model=MODELS/('body_models/smplh/neutral/model.npz' if record.get('source_model')=='flowhmr' else 'body_models/smplx/SMPLX_NEUTRAL.npz')
     if model.exists() and record.get('model')!=stamp(model):return None
     validate_transform(record['world_to_camera'])
     intrinsic=np.asarray(record['K'],dtype=float)
@@ -79,6 +84,9 @@ def prepare_cameras(root):
     if not state:raise ValueError('No people group')
     rows=take_projects(root,state)
     manifest=json.loads((root/'project.json').read_text(encoding='utf-8'))
+    if manifest.get('pipeline',{}).get('model')=='mamma':
+        from .mamma_scene import prepare_cameras as prepare_mamma
+        return prepare_mamma(root)
     if manifest.get('pipeline',{}).get('model')=='flowhmr':
         from .flow_scene import prepare_cameras as prepare_flow
         return prepare_flow(root,rows)

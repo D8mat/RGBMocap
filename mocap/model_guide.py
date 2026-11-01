@@ -12,11 +12,13 @@ BENCHMARKS = {
     'exmr': ('1m 08s', '11.32', '19.31'),
 }
 PROJECT_URLS = {
+    'mamma': 'https://mamma.is.tue.mpg.de/',
     'gvhmr': 'https://github.com/zju3dv/GVHMR',
     'flowhmr': 'https://github.com/flowhmr/flowhmr',
     'exmr': 'https://github.com/twehrbein/ExMR',
 }
 DESCRIPTIONS = {
+    'mamma': 'Multi-view reconstruction of one or several people from two or more synchronized fixed-camera videos of the same performance. No fixed camera-count maximum; practical capacity depends on available RAM and VRAM. Detects people automatically; Find person is not needed. Uses SAM 2.1 masks, FP32 landmarks and VGGT cameras, or your compatible camera calibration. Body and finger motion, original results and contact-corrected results are preserved. Best suited to views that complement each other; occlusion and bad masks can cause errors. Slower than single-video methods. Requires the separate Setup_MAMMA.cmd runtime and registered restricted-use models. See Model Manager > Runtime Setup and docs/MAMMA.md.',
     'gvhmr': 'Lowest overall motion quality in our tests, but sometimes better for unusual poses such as backflips. '
              'No native finger tracking. Optional HandFlow adds finger motion; FootMR refines ankles, and HTD refines body motion. These add processing time.',
     'flowhmr': 'Slow, but the best overall motion quality in our tests. Tracks body and fingers together without a separate finger add-on.',
@@ -26,7 +28,7 @@ DESCRIPTIONS = {
 
 def guide_html(selected):
     descriptions = ''.join(
-        f'<p><b>{tool.label}</b> &nbsp; <a href="{PROJECT_URLS[key]}">GitHub project</a><br>'
+        f'<p><b>{tool.label}</b> &nbsp; <a href="{PROJECT_URLS[key]}">Original project</a><br>'
         f'{DESCRIPTIONS[key]}</p>' for key, tool in MOTION_TOOLS.items())
     rows = ''.join(
         ('<tr bgcolor="#303f50">' if key == selected else '<tr>') +
@@ -47,7 +49,12 @@ Try another model if a particular movement looks wrong.</p>""" + descriptions + 
 <p>GVHMR: HTD + FootMR + HandFlow on. FlowHMR: original SAM; today's Fast SAM can
 be faster. Recorded processing only, excluding tracking, app correction and export.
 Memory shows measured worker peaks, not minimum requirements. Results vary by video and PC.</p>
-<p>All three support Motion Correction for foot and hand contacts. Contact correction reduces sliding;
+<h3>MAMMA: separate multi-view workflow</h3>
+<p>A manual app test with three 1080p-bounded camera videos, two people and 413 frames at 30 fps
+took 11m 52s through correction and preview on the test PC. Masks: 4m 18s; landmarks: 1m 30s;
+VGGT cameras: 14s; 3D fitting: 4m 54s; correction/preview: 32s. This is a different clip and workflow
+from the table above, so it is not a direct speed comparison. Start with a short common trim.</p>
+<p>All four support Motion Correction for foot and hand contacts. Contact correction reduces sliding;
 it is separate from tracking fingers or refining ankle angles.</p></body></html>"""
 
 

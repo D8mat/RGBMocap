@@ -91,6 +91,8 @@ MODELS_LIST.extend([
           download_url='https://huggingface.co/facebook/sapiens2-pose-1b/resolve/f5fed8b97b99698d5eea1d14ff0855d0b4c3f000/sapiens2_1b_pose.safetensors',
           expected_sha256='2dab7014a17e99e460c18817325a71dd7a81ce48d87027f01c2ee7d7b3af969f'),
 ])
+from .mamma_models import ASSETS as MAMMA_ASSETS, KEYS as MAMMA_KEYS, INSTRUCTIONS as MAMMA_INSTRUCTIONS
+MODELS_LIST.extend(Model(**entry) for entry in MAMMA_ASSETS)
 BY_KEY = {model.key: model for model in MODELS_LIST}
 MANUAL_INSTRUCTIONS = {
     'mano_right': '1. Open the Recommended download link below, or click Open Download Page. This opens the official download server for the exact archive. Sign in and accept the provider terms; register on the official MANO website if needed.\n2. Download mano_v1_2.zip. If browsing the MANO website instead, this is Models & Code > Models & Code.\n3. Extract the ZIP and open mano_v1_2/models.\n4. Return to Hand Model / MANO Right, click Import and select MANO_RIGHT.pkl. Keep this PKL file intact.\nHandFlow uses a right-hand canonical model for both hands, reflecting the left result back. The separate SMPL-H downloads cannot replace this hand model.',
@@ -103,6 +105,8 @@ MANUAL_INSTRUCTIONS = {
     'flow_config': '1. Open the supported file link below. It selects config.yml inside flowhmr_latest at the app-supported revision.\n2. Save that file. If your browser displays its contents, use the file download button or Save As to save config.yml.\n3. Return to FlowHMR configuration and click Import. Use the configuration paired with the supported flowhmr_latest checkpoint.',
 
 }
+
+MANUAL_INSTRUCTIONS.update(MAMMA_INSTRUCTIONS)
 
 for _key in ('mano_right','smplh'):
     MANUAL_INSTRUCTIONS[_key] += ('\nIf the MANO website shows 502 Bad Gateway, use the Recommended download link below '
@@ -173,6 +177,8 @@ def manual_instructions_html(key: str) -> str:
     links = [('Official website', model.url)]
     if key in {'smplx','smpl'}:
         links.append(('Download page (sign-in required)', manual_download_page(key)))
+    if key in {'mamma','mamma_vertices'}:
+        links.append(('MAMMA Data (registration and sign-in required)', 'https://mamma.is.tue.mpg.de/download.php'))
     if model.drive_id:
         links.append(('Download file: ' + model.path.name, 'https://drive.google.com/file/d/' + model.drive_id + '/view'))
     elif model.download_url:
@@ -218,12 +224,19 @@ STAGE_REQUIREMENTS = {
     'exmr_preprocess': ('exmr_sapiens',),
     'exmr_features': ('flow_sam','flow_sam_config','flow_mhr','hand_hamer','hand_mean','mano_right'),
     'exmr': ('exmr','smplx'),
+    'mamma_assets': MAMMA_KEYS,
+    'mamma_prepare': MAMMA_KEYS,
+    'mamma_masks': ('mamma_sam2','mamma_yolo','mamma_clip'),
+    'mamma_landmarks': ('mamma','mamma_vertices'),
+    'mamma_camera': ('flow_vggt',),
+    'mamma_fit': ('mamma_vertices','mamma_body','mamma_body_male','mamma_body_female'),
+    'mamma_publish': ('mamma_body','mamma_vertices'),
 }
 
 
 def ready(model: Model) -> bool:
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr')) or model.key in ('smplh','mano_right')):
+    if valid and (model.key.startswith(('flow','hand','exmr','mamma')) or model.key in ('smplh','mano_right')):
         import json
         try:
             receipt=json.loads(model.path.with_suffix(model.path.suffix+'.receipt.json').read_text(encoding='utf-8'))

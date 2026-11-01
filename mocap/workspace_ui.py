@@ -379,6 +379,7 @@ def build_workspace(w):
     exmr.addWidget(w.exmr_smoothing)
     w.model_choice.setItemData(w.model_choice.findData('exmr'),tooltip_text('ExMR: body and finger tracking. Generally fast, with good motion quality in our subjective tests.'),Qt.ToolTipRole)
     w.model_pages.addWidget(w.exmr_page)
+    w.build_mamma_settings()
     shared_settings=QWidget()
     settings = QVBoxLayout(shared_settings)
     settings.setContentsMargins(8, 0, 8, 8)

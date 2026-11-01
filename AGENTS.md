@@ -2,6 +2,13 @@
 
 Read [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) before operating or changing this project. It covers installation, model selection, GUI workflows, retargeting, projects, resources, data protection and the main code paths. Consult the linked user and developer guides for detail.
 
+For model-specific files, defaults and workflow, use [docs/models/README.md](docs/models/README.md).
+
+For MAMMA runtime installation, native SAM 2/SDF builds or repair, follow
+[docs/MAMMA_AGENT_SETUP.md](docs/MAMMA_AGENT_SETUP.md). It distinguishes automatic
+setup from custom builds and requires actual CUDA verification before registering
+a manually built environment.
+
 - This is the Windows Git/CMD distribution. Preserve the separate pinned runtimes and model-specific behavior.
 - Treat local `models/`, `projects/`, `cache/`, `character_scenes/`, runtime folders, external project folders and registered model data as user-owned. Do not delete, overwrite, upload or migrate them without appropriate user authorization. Ignore rules are not backups.
 - Preserve inference and selected-result behavior when working on preview, contacts or export. Review the relevant code and validation records before changing numerical processing.

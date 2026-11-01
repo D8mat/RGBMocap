@@ -8,7 +8,7 @@ from .storage import atomic_json
 
 class ProjectSaving:
     def save_project_as(self):
-        if self.busy or self.contact_saving or self.video_path is None:
+        if self.busy or self.contact_saving or self.mamma_pending or self.video_path is None:
             return
         if any(info.get('unsaved') for info in self.contact_tracks.values()):
             self.status.setText('Save the contact timing successfully before saving a project copy.')
@@ -21,7 +21,7 @@ class ProjectSaving:
             self.submit_project_save(Path(name))
 
     def submit_project_save(self, target):
-        if self.busy or self.contact_saving or self.video_path is None:
+        if self.busy or self.contact_saving or self.mamma_pending or self.video_path is None:
             return False
         if any(info.get('unsaved') for info in self.contact_tracks.values()):
             self.status.setText('Save the contact timing successfully before saving a project copy.')
@@ -46,6 +46,8 @@ class ProjectSaving:
                 preview_fps=self.info['fps'],
                 workspace_view=self.workspace_view(),
                 workspace_settings=self.workspace_settings(),
+                mamma_inputs=self.mamma_inputs,
+                mamma_active_camera=self.mamma_active_camera,
                 flow_options={'camera_interval':self.flow_sampling.currentData(),'fast_sam':self.fast_sam.isChecked()},
                 exmr_options={'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'},
                 correction=self.selected_correction_options(), frame=self.slider.value(),

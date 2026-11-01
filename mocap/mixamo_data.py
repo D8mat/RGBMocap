@@ -31,7 +31,10 @@ def current(project,kind):
         require_supported_project(project)
         if float(state.get('fps',30))!=record['fps']:return False
         from .models import BY_KEY
-        model=BY_KEY[record.get('model_key','smplx')].path
+        if state.get('pipeline',{}).get('model')=='mamma':
+            from .mamma_body import body_path
+            model=body_path(project)
+        else:model=BY_KEY[record.get('model_key','smplx')].path
         if model.is_file() and record.get('model_stat') is not None and file_stat(model)!=record['model_stat']:return False
         for name,stamp in record['sources'].items():
             from .project_storage import resolve_reference
@@ -99,7 +102,8 @@ def prepare(project, result, emit=lambda *a, **k: None, body=None):
     from .correction import contact_strength
     from .models import BY_KEY
     project = Path(project)
-    model = BY_KEY['smplx'].path
+    from .mamma_body import body_path
+    model = body_path(project)
     model_stamp = file_stat(model)
     if body is None:
         body = smplx.SMPLX(str(model), gender='neutral', num_pca_comps=12, flat_hand_mean=False, batch_size=1).eval()

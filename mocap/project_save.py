@@ -80,6 +80,21 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
         raise ValueError('The project video is missing. Restore it before saving a copy.')
     media_internal = source is not None and media.is_relative_to(source)
     relative_media = media.relative_to(source).as_posix() if media_internal else 'media/' + media.name
+    # Each camera video is a project asset. Copy external inputs once; retain
+    # project-relative references so the saved folder can be moved intact.
+    camera_entries=request.get('mamma_inputs') or state.get('mamma_inputs',[])
+    camera_copies=[];saved_cameras=[]
+    if camera_entries:
+        from .mamma_inputs import resolved_entries
+        for i,entry in enumerate(resolved_entries(source or target,camera_entries)):
+            camera_path=Path(entry['path'])
+            if not camera_path.is_file():raise ValueError('Camera video is missing: '+camera_path.name)
+            internal=source is not None and camera_path.is_relative_to(source)
+            relative=(relative_media if camera_path==media else camera_path.relative_to(source).as_posix()
+                      if internal else f'media/cameras/{i+1:02d}/'+camera_path.name)
+            if camera_path!=media and not internal:camera_copies.append((camera_path,relative))
+            value=dict(entry,media=relative,path=str(target/relative))
+            saved_cameras.append(value)
     staging = target.parent / ('.' + target.name + '.saving-' + uuid.uuid4().hex)
     def check():
         if cancelled():
@@ -117,6 +132,7 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
                 total += stamp.st_size
         if not media_internal:
             total += media.stat().st_size
+        total+=sum(path.stat().st_size for path,_ in camera_copies)
         if shutil.disk_usage(target.parent).free < total + 64 * 1024**2:
             raise OSError('Not enough free space to save this project.')
         check()
@@ -126,6 +142,8 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
                 copy_file(path, staging / path.relative_to(source), stamp)
         if not media_internal:
             copy_file(media, staging / relative_media, media.stat())
+        for camera_path,relative in camera_copies:
+            copy_file(camera_path,staging/relative,camera_path.stat())
         if not source:
             from . import video
             from .project_workspace import create
@@ -139,6 +157,9 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
         if grouped:
             value=manifest(staging)
             value.update(name=target.name,media=relative_media,time_offset=offset,active_model=request.get('model',value['active_model']))
+            if saved_cameras:
+                value['mamma_inputs']=saved_cameras
+                value['mamma_active_camera']=request.get('mamma_active_camera',state.get('mamma_active_camera',0))
             origins=value.setdefault('origins',[])
             if source and not any(p['path']==str(source) and p.get('relative','.')=='.' for p in origins):
                 origins.append(dict(path=str(source),relative='.'))

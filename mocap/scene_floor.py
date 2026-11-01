@@ -6,6 +6,7 @@ from pathlib import Path
 import hashlib,json,math
 from .people_store import load_people,read_people_json,root_for,safe_child,media_receipt
 from .storage import atomic_json
+from .validation_snapshot import snapshot_value
 
 VERSION=1
 
@@ -69,23 +70,28 @@ def inputs(root):
         raise ValueError('Shared camera reference is out of date')
     validate_transform(reference['world_to_camera'])
     manifest=read_people_json(root/'project.json')
+    mamma=manifest.get('pipeline',{}).get('model')=='mamma'
     flow=manifest.get('pipeline',{}).get('model')=='flowhmr'
     model=MODELS/('body_models/smplh/neutral/model.npz' if flow else 'body_models/smplx/SMPLX_NEUTRAL.npz')
-    model_stamp=stamp(model) if model.exists() else None
+    model_stamp=stamp(model) if model.exists() and not mamma else None
     rows=[]
     for ident,project in take_projects(root,state):
         camera=read_people_json(project/'scene_camera.json')
         source=stamp(project/'hmr4d_results.pt')
         if camera['sources']['hmr4d_results.pt']!=source:raise ValueError('Actor camera is out of date')
-        if model_stamp is not None and camera['model']!=model_stamp:raise ValueError('Scene body model changed')
+        if mamma:
+            from .mamma_body import body_path
+            if camera['model']!=stamp(body_path(project)):raise ValueError('MAMMA actor body changed')
+        elif model_stamp is not None and camera['model']!=model_stamp:raise ValueError('Scene body model changed')
         validate_transform(camera['world_to_camera'])
         rows.append(dict(person=ident,project=project.relative_to(root).as_posix(),source=source,
-            world_to_camera=camera['world_to_camera']))
-        if model_stamp is None:model_stamp=camera.get('model')
+            world_to_camera=camera['world_to_camera'],**({'body':camera['model']} if mamma else {})))
+        if model_stamp is None and not mamma:model_stamp=camera.get('model')
     return dict(version=VERSION,input=media_receipt(root),model=model_stamp,
         reference=reference['world_to_camera'],actors=rows)
 
 
+@snapshot_value
 def current_resolution(root):
     path=Path(root)/'scene_floor_resolved.json'
     if not path.exists():return None
@@ -117,6 +123,7 @@ def resolve(root,body=None):
     if read_people_json(root/'project.json').get('pipeline',{}).get('model')=='flowhmr':
         from .flow_floor import resolve
         return resolve(root,options)
+    mamma=read_people_json(root/'project.json').get('pipeline',{}).get('model')=='mamma'
     context=inputs(root);height=options['floor'];samples=0;warning=''
     if options['auto_floor']:
         import numpy as np
@@ -124,7 +131,7 @@ def resolve(root,body=None):
         from scipy.spatial.transform import Rotation
         from .correction import SoleGeometry,prepare_contacts
         from .paths import MODELS
-        if body is None:
+        if body is None and not mamma:
             import smplx
             model=MODELS/'body_models/smplx/SMPLX_NEUTRAL.npz'
             if not model.exists():raise FileNotFoundError('Import the body model to estimate the shared scene floor.')
@@ -136,7 +143,11 @@ def resolve(root,body=None):
             project=safe_child(root,row['project'])
             record=torch.load(project/'hmr4d_results.pt',map_location='cpu',weights_only=False,mmap=True)
             params=record['smpl_params_global'];length=len(params['body_pose'])
-            geometry=SoleGeometry(body,params['betas'][0].numpy())
+            if mamma:
+                from .mamma_body import model_for
+                actor_body=model_for(project)
+            else:actor_body=body
+            geometry=SoleGeometry(actor_body,params['betas'][0].numpy())
             transform=inverse@np.asarray(row['world_to_camera']);rotation=transform[:3,:3]
             probabilities=record['net_outputs']['static_conf_logits'][0,:,:4]
             if len(probabilities)!=length:raise ValueError('Scene contact and motion frame counts differ')
@@ -154,7 +165,7 @@ def resolve(root,body=None):
                 if active.any():values.extend(h[active].tolist())
                 samples+=end-first
             if values:estimates.setdefault(row['person'],[]).append(float(np.quantile(values,.05)))
-            del record,params,geometry,probabilities
+            del record,params,geometry,probabilities,actor_body
         # Equal actor weighting prevents a long/overlapping take dominating.
         height=float(np.median([np.median(v) for v in estimates.values()])) if estimates else 0.
         if not estimates:warning='No reliable ground samples. Shared reference floor 0 m is used; adjust it manually if needed.'

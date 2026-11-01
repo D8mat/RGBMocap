@@ -177,6 +177,8 @@ class SceneDataLoader(QThread):
             return load_scene(root,kind,cancelled)
         if psutil.virtual_memory().available<256*1024**2:
             raise MemoryError('Free at least 256 MiB RAM to open a shared people scene.')
+        if (root/'mamma_pending.json').exists():
+            raise ValueError('MAMMA publication is incomplete; finish reconstruction before opening this scene.')
         state=load_people(root)
         if state is None:raise ValueError('People group unavailable')
         projects=take_projects(root,state)
@@ -202,6 +204,7 @@ class SceneDataLoader(QThread):
         contact_intervals=0
         try:
             if asset:self.model_cache=asset
+            static_assets={}
             for ident,project in projects:
                 if cancelled():raise LoadCancelled()
                 manifest=json.loads((project/'project.json').read_text(encoding='utf-8'))
@@ -228,12 +231,21 @@ class SceneDataLoader(QThread):
                         from .paths import MODELS
                         asset_path=MODELS/'body_models/smplx'/asset_path.name
                     stat=asset_path.stat();key=(str(asset_path.resolve()),stat.st_size,stat.st_mtime_ns)
+                    if manifest.get('pipeline',{}).get('model')=='mamma':
+                        # The body filename includes the registered source,
+                        # constant actor shape and adapter hash. Takes of one
+                        # actor must not retain duplicate static skin arrays.
+                        from .mamma_body import body_path
+                        key=('mamma-body',body_path(project).name)
+                    if key in static_assets:self.model_cache=static_assets[key]
                     if self.model_cache is None or self.model_cache['key']!=key:
                         with np.load(asset_path,allow_pickle=False) as data:
                             self.model_cache={name:data[name] for name in ('packed','faces','offsets','neighbors','vertex_count')}
                         self.model_cache['key']=key
-                    if scene.asset and scene.asset['key']!=key:raise ValueError('Scene body models differ')
-                    scene.asset=self.model_cache
+                    static_assets[key]=self.model_cache
+                    # Each take retains its actor's exact shape asset. Identical
+                    # assets still share arrays and GPU buffers.
+                    if scene.asset is None:scene.asset=self.model_cache
                     mesh=FrameArray(project/Path(info['frames_file']).name,max_blocks=1);arrays['mesh']=mesh
                     if mesh.shape!=(len(joints),FRAME_FLOATS) or mesh.dtype!=np.float32:raise ValueError('Invalid scene mesh')
                     manifest=json.loads((project/'project.json').read_text(encoding='utf-8'))

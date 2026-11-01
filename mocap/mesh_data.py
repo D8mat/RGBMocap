@@ -28,7 +28,8 @@ def prepare_mesh_preview(project, model_path=None, kinds=None):
     from smplx.lbs import batch_rodrigues, batch_rigid_transform
     from .paths import MODELS
     project = Path(project)
-    model_path = Path(model_path or MODELS / "body_models/smplx/SMPLX_NEUTRAL.npz")
+    from .mamma_body import body_path
+    model_path = Path(model_path) if model_path is not None else body_path(project)
     body = smplx.SMPLX(str(model_path), gender="neutral", num_pca_comps=12,
                       flat_hand_mean=False, batch_size=1).eval()
     stat = model_path.stat()

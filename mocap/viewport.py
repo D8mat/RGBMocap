@@ -719,10 +719,10 @@ class MotionView(ViewportBase):
                 from .mesh_gl import MeshRenderer
                 renderer_type=MeshRenderer
                 self.ensure_mesh_renderer(renderer_type)
-                if self.mesh_renderer.asset_key not in (None,self.people_scene.asset['key']):
+                if self.mesh_renderer.asset_key not in (None,actors[0][0].asset['key']):
                     for renderer in self.scene_renderers.values():renderer.close()
                     self.scene_renderers={}
-                self.mesh_renderer.load(self.people_scene.asset)
+                self.mesh_renderer.load(actors[0][0].asset)
                 used=set()
                 for slot,(take,frame) in enumerate(actors):
                     if slot==0:renderer=self.mesh_renderer

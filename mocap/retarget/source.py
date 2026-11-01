@@ -42,7 +42,10 @@ def prepare(project,kind,out):
         mesh_info=json.loads(mesh_metadata.read_text(encoding='utf8'))
         paths += [mesh_metadata,resolve_reference(project,mesh_info['asset']),project/mesh_info['frames_file']]
     topology='smplh' if model=='flowhmr' else 'smplx'
-    bodypath=MODELS/('body_models/smplh/neutral/model.npz' if topology=='smplh' else 'body_models/smplx/SMPLX_NEUTRAL.npz')
+    if model=='mamma':
+        from mocap.mamma_body import body_path
+        bodypath=body_path(project)
+    else:bodypath=MODELS/('body_models/smplh/neutral/model.npz' if topology=='smplh' else 'body_models/smplx/SMPLX_NEUTRAL.npz')
     paths.append(bodypath)
     before=stamp(paths)
     frames=np.load(paths[1],mmap_mode='r');asset=np.load(paths[2]);n=len(frames)

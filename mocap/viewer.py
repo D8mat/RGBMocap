@@ -32,6 +32,10 @@ class VideoView(QWidget):
         self.source_size = (1, 1)
         self.generation = 0
         self.logical_size = None
+        self.timeline_fps = None
+        self.native_fps = None
+        self._source_key = None
+        self.timeline_requested_index = 0
         self.show_observations = True
         self.actor_color = None
         self.zoom = 1.0
@@ -112,9 +116,20 @@ class VideoView(QWidget):
         self._end_pan()
         super().hideEvent(event)
 
-    def open(self, path: Path, source_size=None):
+    def open(self, path: Path, source_size=None, timeline_fps=None, timeline_start=0, *, reuse=False):
+        try:
+            stamp=Path(path).stat()
+            key=(str(Path(path).resolve()),stamp.st_size,stamp.st_mtime_ns,
+                 tuple(source_size) if source_size is not None else None,timeline_fps,timeline_start)
+        except OSError:key=None
+        if reuse and key is not None and key==self._source_key and self.decoder is not None and self.native_fps and self.frame is not None:
+            return False
+        self._source_key=key
         self.reset_view()
         self.logical_size = source_size
+        self.timeline_fps = timeline_fps
+        self.timeline_start = timeline_start
+        self.native_fps = None
         self.frame = None
         self.boxes = self.observed = self.keypoints = self.confidence = None
         if self.decoder is None:
@@ -125,18 +140,22 @@ class VideoView(QWidget):
             self.decoder.start()
         self.generation = self.decoder.change_source(path)
         self.seek(0)
+        return True
 
     def _opened(self, generation, metadata):
         if self.decoder is not None and self.sender() is self.decoder and generation == self.generation:
             self.source_size = self.logical_size or (metadata["width"], metadata["height"])
+            self.native_fps = metadata['fps']
             self.metadata_ready.emit(metadata)
 
     def _failed(self, generation, message):
         if self.decoder is not None and self.sender() is self.decoder and generation == self.generation:
+            self._source_key = None
             self.decode_error.emit(message)
 
     def shutdown(self):
         self._end_pan()
+        self._source_key = None
         if self.decoder:
             decoder = self.decoder
             self.decoder = None
@@ -157,9 +176,9 @@ class VideoView(QWidget):
                 self._present(index, image)
 
     def _present(self, index, image):
-        self.index, self.frame = index, image
+        self.index, self.frame = (self.timeline_requested_index if self.timeline_fps else index), image
         self.update()
-        self.frame_presented.emit(index)
+        self.frame_presented.emit(self.index)
 
     def set_observations(self, arrays):
         self.boxes, self.observed = arrays.get("boxes"), arrays.get("observed")
@@ -171,6 +190,10 @@ class VideoView(QWidget):
     def seek(self, index: int):
         if self.decoder is None:
             return
+        self.timeline_requested_index = index
+        if self.timeline_fps and self.native_fps:
+            index = max(0,round((index + self.timeline_start) * self.native_fps / self.timeline_fps))
+            if self.decoder.length:index=min(index,self.decoder.length-1)
         self.requested_index = index
         image = self.decoder.request(index)
         if image is not None:

@@ -9,8 +9,12 @@ class MotionTool:
     label: str
     reconstruction: tuple[str, ...]
     refinement: tuple[str, ...] = ()
+    input_setup_only: bool = False
 
     def stages(self, refine=False, footmr=False, correction=False, handflow=False):
+        if self.input_setup_only:
+            return []
+        if self.key == 'mamma':return list(self.reconstruction)
         if self.key == 'flowhmr':
             return [*self.reconstruction, *(('correct',) if correction else ()), 'flow_export']
         return [*self.reconstruction, *(self.refinement if refine else ()), *(('footmr',) if footmr and self.key == 'gvhmr' else ()),
@@ -20,7 +24,8 @@ class MotionTool:
 
 MOTION_TOOLS = {"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine")),
                 "flowhmr": MotionTool("flowhmr", "FlowHMR", ("track", "flow_camera", "flow_features", "flowhmr")),
-                "exmr": MotionTool("exmr", "ExMR", ("track", "exmr_preprocess", "exmr_features", "exmr"))}
+                "exmr": MotionTool("exmr", "ExMR", ("track", "exmr_preprocess", "exmr_features", "exmr")),
+                "mamma": MotionTool("mamma", "MAMMA", ("mamma_prepare","mamma_masks","mamma_landmarks","mamma_camera","mamma_fit","mamma_publish"))}
 
 
 class UnsupportedMotionTool(ValueError):
@@ -146,7 +151,10 @@ def result_is_current(project, kind, ignore_contacts=False):
                 from .models import BY_KEY
                 # Already-baked previews remain usable without an imported model,
                 # just as uncorrected previews do. Compare it when available.
-                model_path=BY_KEY[report.get('model_key','smplx')].path
+                if state.get('pipeline',{}).get('model')=='mamma':
+                    from .mamma_body import body_path
+                    model_path=body_path(project)
+                else:model_path=BY_KEY[report.get('model_key','smplx')].path
                 if model_path.is_file():
                     model=model_path.stat()
                     if report['model_stat']!=[model.st_size,model.st_mtime_ns]:return False

@@ -12,6 +12,11 @@ def emit(kind,**value):
 
 def main():
     stage=sys.argv[1] if len(sys.argv)>1 else ''
+    if stage in ('mamma_prepare','mamma_publish'):
+        from .compute_policy import configure_worker_cpu
+        configure_worker_cpu(stage)
+        from .mamma_pipeline import main as mamma_main
+        return mamma_main(sys.argv[1:])
     if stage=='character':
         from .retarget.worker import main as character_main
         return character_main(sys.argv[2:])
@@ -29,4 +34,4 @@ def main():
     else:runpy.run_module('mocap.worker',run_name='__main__')
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':raise SystemExit(main())

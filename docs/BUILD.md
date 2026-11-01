@@ -1,7 +1,8 @@
 # Windows development guide
 
 The Git source distribution uses `install.cmd`, `RGBMoCap.cmd`, and `update.cmd`
-for installation, launch and updates. For the native motion-correction module see
+for installation, launch and updates. For current model files and supported
+controls, see [model-specific guides](models/README.md). For the native motion-correction module see
 [developer build instructions](../developer-build/motion-correction/README.md).
 
 ## Prerequisites
@@ -16,8 +17,10 @@ for installation, launch and updates. For the native motion-correction module se
   installed or extracted separately. Keep its Python, libraries and license files.
 - Internet access for dependencies; enough disk space for downloads and builds.
 
-No Ubuntu, WSL, Docker or system CUDA Toolkit is required for the reviewed wheel
-stack. GPU compatibility still depends on the NVIDIA driver and installed wheels.
+No Ubuntu, WSL or Docker is required. The three single-video workflows use the
+reviewed wheel stack without a system CUDA Toolkit. Optional MAMMA native builds
+require CUDA Toolkit 12.8 and the C++ tools described below. GPU compatibility
+still depends on the NVIDIA driver and installed wheels.
 
 ## Environments
 
@@ -148,3 +151,30 @@ Git attributes preserve exact source bytes for the source manifest, hash-pinned
 runtime registry and unpacked wheel contents. Avoid automatic line-ending rewrites
 of those files. When intentionally changing the registry, review and refresh the
 lock's registry hash; the development bootstrap rejects an unreviewed mismatch.
+
+## Optional MAMMA runtime
+
+Follow the [agent installation and native-build runbook](MAMMA_AGENT_SETUP.md)
+for prerequisite checks, staged/manual builds, CUDA tests and recovery. For
+ordinary use, prefer the automated setup over manually assembling packages.
+
+`Setup_MAMMA.cmd` calls `tools/setup_mamma.py` after license acceptance.
+`installer/mamma-runtime-lock.json` pins Python 3.11.17, PyTorch 2.7.1+cu128,
+all package artifacts and the official MAMMA/SAM 2/pytorch_sdf commits by SHA-256.
+The six core runtime profiles stay unchanged. The optional setup needs Visual
+Studio 2022 C++ Build Tools with the Windows SDK and CUDA Toolkit 12.8.
+
+`installer/mamma_adapters.py` applies Windows portability and the validated
+FP32 masked-landmark/quiet-fit adapters to directly downloaded upstream source.
+The original helper code is in `installer/mamma_helpers/`. Restricted upstream
+source and compiled SDF modules must not be added to this repository.
+Both native SAM 2 and SDF are built for the installed GPU architecture, then
+checked by `installer/verify_mamma.py` (real CUDA kernels, SDF gradients and
+installed package file hashes). A GPU architecture change requires setup again.
+
+Verified generations live in ignored `runtime_mamma/<generation>/`; the active
+pointer is `.setup/mamma-runtime.json`. Download/build/verification failure
+preserves the old pointer. Setup stages first and checks again after relocation.
+Changing the optional lock/adapters invalidates this runtime only: the UI requests
+`Setup_MAMMA.cmd`, while other models and saved results stay available. Keep
+private benchmark scripts, logs and derived models outside the source checkout.

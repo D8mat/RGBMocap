@@ -26,6 +26,7 @@ class TimelineSlider(FootLockEditor,QSlider):
         self.fps = 30.0
         self.has_motion = False
         self.person_color = self.person_name = None
+        self.video_track_label = 'Source clip'
         self.view_start = 0.0
         self.view_span = None
         self._cache = None
@@ -207,7 +208,7 @@ class TimelineSlider(FootLockEditor,QSlider):
     def paintEvent(self, _):
         key = (self.size(), self.devicePixelRatioF(), self.minimum(), self.maximum(), self.view_start,
                self.span(), self.fps, self.has_motion, self.clip_in, self.clip_out,self.contact_revision,self.contact_edit_enabled,self.contact_track_enabled,
-               self.person_color,self.person_name,
+               self.person_color,self.person_name,self.video_track_label,
                (self._foot_drag['foot'],self._foot_drag['index']) if self._foot_drag else None,self._selected_contact)
         if key != self._cache_key:
             ratio = self.devicePixelRatioF()
@@ -258,7 +259,7 @@ class TimelineSlider(FootLockEditor,QSlider):
                 p.setPen(QColor("#aaaaaa"))
                 p.drawText(QRectF(8, y, 53, row_height), Qt.AlignVCenter, label)
                 p.setPen(QColor("#b1b9c1" if row == 0 else "#aebeb4"))
-                text = "Source clip" if row == 0 else ((self.person_name or "Body animation") if self.has_motion else "No motion data")
+                text = self.video_track_label if row == 0 else ((self.person_name or "Body animation") if self.has_motion else "No motion data")
                 left, right = self.clip_edges() if row == 0 else (self.LEFT, self.width() - self.RIGHT)
                 left, right = max(self.LEFT, left), min(self.width() - self.RIGHT, right)
                 p.drawText(QRectF(left + 12, y, max(0, right - left - 24), row_height), Qt.AlignVCenter, text)

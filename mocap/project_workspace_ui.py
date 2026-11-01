@@ -11,6 +11,7 @@ from .video import select_preview
 class ModelWorkspace:
     def workspace_settings(self):
         return dict(result=self.active_result,correction=self.selected_correction_options(),
+            mamma_options=self.mamma_options(),
             flow_options={'camera_interval':self.flow_sampling.currentData(),'fast_sam':self.fast_sam.isChecked()},
             exmr_options={'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'})
 
@@ -29,6 +30,7 @@ class ModelWorkspace:
         self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr.get('static_camera',True)))
         self.exmr_smoothing.setChecked(exmr.get('smoothing','global')=='global')
         self.active_result=self.selected_result()
+        self.restore_mamma_options(settings.get('mamma_options',{}))
 
     def workspace_view(self):
         fps=self.info['fps'] if self.info else 30.
@@ -52,6 +54,9 @@ class ModelWorkspace:
             model=self._selected_tool
             saved=workspace.set_active(root,model,view=self.workspace_view())
         saved['models'][model]['settings']=self.workspace_settings()
+        if self.mamma_inputs:
+            saved['mamma_inputs']=self.mamma_inputs
+            saved['mamma_active_camera']=self.mamma_active_camera
         atomic_json(root/'project.json',saved)
 
     def restore_workspace_view(self,view):
@@ -86,6 +91,7 @@ class ModelWorkspace:
             workspace.model_project(root,state['active_model'],state)
             if self.workspace_root is not None and self.workspace_root!=root and not self.busy:
                 self.remember_workspace_model()
+            self.clear_mamma_inputs()
             self.workspace_root=root
             self._workspace_camera=None
             return self.switch_workspace_model(state['active_model'],opening=True)
@@ -115,13 +121,14 @@ class ModelWorkspace:
                     self.model_choice.blockSignals(False)
                     self.select_model()
                     self.restore_workspace_settings(state.get('models',{}).get(model,{}).get('settings',{}))
-                    if opening:self.open_workspace_video(state)
-                    self.status.setText(f'{self.model_choice.currentText()} has no saved motion in this project. Use Reconstruct 3D.')
+                    if opening or (model=='mamma' and state.get('mamma_inputs') and not self.mamma_inputs):self.open_workspace_video(state)
+                    self.status.setText('MAMMA inputs loaded. Prepare its runtime and models in Model Manager, then Reconstruct 3D.' if model=='mamma' else
+                        f'{self.model_choice.currentText()} has no saved motion in this project. Use Reconstruct 3D.')
             finally:self._workspace_loading=False
             workspace.set_active(root,model,target if (target/'project.json').is_file() else None,view)
             self._workspace_pending_view=view
             self.restore_workspace_view(view)
-            self.setWindowTitle('RGB MoCap Alien Studio | '+root.name)
+            self.setWindowTitle('RGB MoCap | '+root.name)
             self.update_readiness()
             return True
         except (OSError,ValueError,KeyError) as error:
@@ -133,6 +140,10 @@ class ModelWorkspace:
     def open_workspace_video(self,state):
         self.video_path=workspace.media_path(self.workspace_root,state)
         self.video_readable=False
+        if self.model_choice.currentData()=='mamma' and state.get('mamma_inputs'):
+            view=state.get('models',{}).get('mamma',{}).get('view',state.get('view',{}))
+            self.restore_mamma_project_inputs(state,self.workspace_root,view)
+            return
         relative=state.get('reference')
         reference=workspace.child(self.workspace_root,relative) if relative else None
         self._workspace_video_reference=bool(reference and (reference/'project.json').is_file() and (reference/'input.mp4').is_file())

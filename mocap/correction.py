@@ -566,7 +566,8 @@ def run(project,emit,result):
     torch.set_num_threads(worker_threads('correct'))
     project=Path(project)
     cleanup_orphans(project)
-    model=MODELS/'body_models/smplx/SMPLX_NEUTRAL.npz'
+    from .mamma_body import body_path
+    model=body_path(project)
     model_stamp=file_stat(model)
     body=smplx.SMPLX(str(model),gender='neutral',num_pca_comps=12,flat_hand_mean=False,batch_size=1).eval()
     manifest=json.loads((project/'project.json').read_text(encoding='utf-8'))

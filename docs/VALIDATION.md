@@ -196,3 +196,18 @@ corresponding source/build requirements before redistributing binaries.
 - No model inference, metric camera translation reconstruction, full 6DoF solve
   or validation across other videos was performed. Test artifacts remain outside
   the source checkout. Existing model and motion files were not regenerated.
+
+
+## Local MAMMA integration (2026-11-01)
+
+The optional upstream MAMMA integration was ported with current camera memory
+routing helpers. Local checks covered model switching, missing-runtime handling,
+calibration parsing/name matching, common frame timing and path guards. Three
+synthetic 25 fps camera videos loaded onto the common 30 fps timeline; thumbnail
+switching and three open/close cycles passed. The largest sampled event-loop gap
+was 71.7 ms in this short offscreen check, not a playback guarantee.
+Custom Blender/BVH/T-pose export controls remain present. Exact compatibility
+hash pairs preserve earlier previews for unchanged non-MAMMA body dispatch.
+No MAMMA inference, native CUDA compilation, model loading or MAMMA result export
+was run: the optional runtime/models were absent. Existing upstream validation
+records elsewhere do not certify this local integration.

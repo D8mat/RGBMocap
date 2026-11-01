@@ -1,5 +1,7 @@
 from __future__ import annotations
 from .tooltips import tooltip_text
+from .ui_refresh import batch_readiness
+from .validation_snapshot import read_only_checks
 
 import json
 import math
@@ -38,6 +40,7 @@ from .workspace_ui import build_workspace
 from .people_ui import PeopleWorkspace
 from .project_save_ui import ProjectSaving
 from .project_workspace_ui import ModelWorkspace
+STAGES.update(mamma_prepare='Prepare Multi-view Videos',mamma_masks='MAMMA Person Masks',mamma_landmarks='MAMMA Surface Landmarks',mamma_camera='MAMMA Cameras',mamma_fit='MAMMA 3D Fit',mamma_publish='MAMMA Motion Correction and Preview')
 STAGES['save_project']='Save Project As'
 STAGES.update(people='Find People',person='Prepare Person Motion')
 STAGES.update(flow_camera='Estimate Scene Camera / VGGT-Omega', flow_features='Extract Body and Hand Features / SAM', flowhmr='Reconstruct Motion / FlowHMR', flow_export='Prepare FlowHMR Preview and FBX', import_model='Import Model')
@@ -123,7 +126,8 @@ class ModelsDialog(QDialog):
         self.window = window
         self.tool = MOTION_TOOLS[tool_key or window.model_choice.currentData()]
         from .models import STAGE_REQUIREMENTS
-        keys = {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())}
+        keys = ({key for key in STAGE_REQUIREMENTS['mamma_assets']} if self.tool.key=='mamma' else
+                {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())})
         # Keep public automatic downloads together, followed by manual-only files.
         # Stable sorting preserves the existing component order within each group.
         self.models = sorted((model for model in MODELS_LIST if model.key in keys),
@@ -134,6 +138,9 @@ class ModelsDialog(QDialog):
         description = QLabel(f"Models for {self.tool.label} and compatible add-ons.\nUse Auto Download for public files, or Manual Download and Import for any model.\nRegistered body model files are not redistributed by this app.")
         description.setWordWrap(True)
         layout.addWidget(description)
+        if self.tool.key=='mamma':
+            from .mamma_manager import runtime_panel
+            layout.addWidget(runtime_panel(self))
         self.table = QTableWidget(len(self.models), 3)
         self.table.setHorizontalHeaderLabels(["Model", "Status", "Action"])
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -187,6 +194,7 @@ class ModelsDialog(QDialog):
                 if item is None:
                     item = QTableWidgetItem(); self.table.setItem(i, column, item)
                 item.setText(text)
+                if column==0:item.setToolTip(str(model.path))
                 item.setForeground(QColor("#d5d5d5" if available else "#ffb45c"))
                 font = item.font(); font.setBold(not available); item.setFont(font)
             cell = self.table.cellWidget(i, 2)
@@ -321,14 +329,16 @@ class ModelsDialog(QDialog):
 
 
 from .character_ui import CharacterWorkspace
+from .mamma_ui import MammaWorkspace
 
-class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
+class MainWindow(MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
-        self.setWindowTitle("RGB MoCap Alien Studio | Motion Workspace")
+        self.setWindowTitle("RGB MoCap | Motion Workspace")
         self.resize(1440, 880)
         self.setMinimumSize(1100, 700)
         self.video_path = None
+        self.init_mamma()
         self.project = None
         self.workspace_root=None
         self._workspace_loading=False
@@ -403,7 +413,11 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         if video:
             self.load_video(video)
 
+    @read_only_checks
     def update_readiness(self):
+        if getattr(self,'_readiness_depth',0):
+            self._readiness_pending=True
+            return
         if hasattr(self,'character_loader'):self.sync_characters()
         self.update_people_readiness()
         tool = MOTION_TOOLS[self.model_choice.currentData()]
@@ -412,6 +426,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         from .models import STAGE_REQUIREMENTS, BY_KEY
         required = {key for stage in stages for key in STAGE_REQUIREMENTS.get(stage, ())}
         if tool.key=='flowhmr' and self.flow_sampling.currentData()==-1:required.discard('flow_vggt')
+        if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.discard('flow_vggt')
         unavailable = [BY_KEY[key] for key in sorted(required) if not ready(BY_KEY[key])]
         count = len(required) - len(unavailable)
         text = f"{tool.label}: {count}/{len(required)} models ready"
@@ -459,6 +474,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         self.analyze_button.setVisible(tool.key=='gvhmr')
         self.sync_correction_floor_preview()
         if hasattr(self,'camera_preview'):self.camera_preview.check()
+        self.sync_mamma_controls()
 
     def sync_correction_floor_preview(self):
         self.motion_view.correction_floor_applicable=self.correction_mode.currentData()=='flat'
@@ -523,6 +539,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         self.slider.update()
         self.correction_description.setText('Only checked contact types are corrected. Uses the selected '+tool.label+' result.')
         self.analyze_button.setToolTip(tooltip_text('Find body points in the video for GVHMR refinement. Reconstruct 3D normally includes this step when needed.'))
+        self.mamma_mode_changed(previous,tool.key)
         self.update_readiness()
 
     def selected_result(self, correction=None):
@@ -537,7 +554,8 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
     def current_export(self):
         info=self.contact_tracks.get(base_result(self.active_result))
         if self.active_result.startswith('corrected_') and (self.contact_saving or (info and info.get('unsaved'))):return None
-        if self.project is not None and result_is_current(self.project, self.active_result):
+        # selected_export checks source, correction and target receipts itself.
+        if self.project is not None:
             return selected_export(self.project, self.active_result)
         return None
 
@@ -600,20 +618,27 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         self.update_readiness()
 
     def choose_video(self):
+        if self.model_choice.currentData()=='mamma':
+            names,_=QFileDialog.getOpenFileNames(self,'Open MAMMA Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
+            if names:self.load_mamma_videos(names)
+            return
         name, _ = QFileDialog.getOpenFileName(self, "Open Video", "", "Videos (*.mp4 *.mov *.avi *.mkv *.webm)")
         if name:
             self.load_video(Path(name))
 
     def load_video(self, path):
+        if self.model_choice.currentData()=='mamma':
+            return self.load_mamma_videos([path])
         try:
             if self.workspace_root is not None:self.remember_workspace_model()
+            self.clear_mamma_inputs()
             self.workspace_root=None;self._workspace_video_reference=False;self._workspace_camera=None
             self.stop_playback()
             self.clear_preview()
             self.reset_people()
             self.motion_view.auto_fit = True
             self.video_path, self.project, self.info = path, None, None
-            self.setWindowTitle('RGB MoCap Alien Studio | Motion Workspace')
+            self.setWindowTitle('RGB MoCap | Motion Workspace')
             self.flow_sampling.setCurrentIndex(self.flow_sampling.findData(0))
             self.fast_sam.setChecked(True)
             self.exmr_camera.setCurrentIndex(0)
@@ -638,6 +663,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             QMessageBox.warning(self, "Video Error", str(error))
 
     def video_ready(self, info):
+        if self.mamma_video_ready(info):return
         self.video_readable = True
         self.slider.set_media(self.info["fps"] if self.info else info["fps"])
         if self.project is None and not self._workspace_video_reference:
@@ -673,6 +699,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
                 self.load_project(project)
             except (OSError,ValueError,KeyError) as error:self.status.setText('Cannot open project: '+str(error))
 
+    @batch_readiness
     def load_project(self, project):
         from .project_workspace import is_workspace
         if is_workspace(project):return self.open_workspace(project)
@@ -687,15 +714,20 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         except UnsupportedMotionTool as error:
             self.status.setText(str(error))
             return False
+        manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
+        if manifest.get('pipeline',{}).get('model')=='mamma':
+            group=(project/manifest.get('people_root','.')).resolve()
+            if (group/'mamma_pending.json').exists():
+                self.status.setText('MAMMA publication is incomplete. Reconstruct again to finish; previous projects were preserved.')
+                return False
         self.stop_playback()
         self.clear_preview()
         self.motion_view.auto_fit = True
-        manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
         self.project = project
         self.workspace_project_loaded(project,manifest)
         from .project_storage import storage_root
         saved_root=storage_root(project,manifest)
-        self.setWindowTitle('RGB MoCap Alien Studio | '+(saved_root.name if saved_root else 'Motion Workspace'))
+        self.setWindowTitle('RGB MoCap | '+(saved_root.name if saved_root else 'Motion Workspace'))
         pipeline = manifest.get("pipeline", {})
         from .flow_camera import saved_interval
         from .flow_sam import saved_fast_sam
@@ -736,7 +768,10 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         self.info = {"fps": fps, "frames": manifest["frames"], "duration": manifest["frames"] / fps}
         self.source_offset, self.source_end = manifest["start"], manifest["end"]
         self.slider.set_media(fps)
-        self.video_view.open(select_preview(project), (manifest["width"], manifest["height"]))
+        # MAMMA restores its selected camera below. Opening the actor's default
+        # clip first discards that decoder and its cache on every row selection.
+        if not (pipeline.get('model')=='mamma' and self.mamma_inputs and self.mamma_thumbnail_buttons):
+            self.video_view.open(select_preview(project), (manifest["width"], manifest["height"]))
         self.slider.setRange(0, manifest["frames"] - 1)
         self.filename.setText(f"{self.video_path.name}  ·  Project loaded  ·  {manifest['frames']} frames")
         self.slider.reset_trim()
@@ -757,6 +792,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             self.slider.setValue(max(0,min(int(workspace.get('frame',0)),manifest['frames']-1)))
             self.seek(self.slider.value())
         self.update_readiness()
+        self.mamma_project_loaded(project,manifest)
         return True
 
     def seek(self, index):
@@ -854,6 +890,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         self.timer.start(max(1, math.ceil(remaining * 1000)))
 
     def shutdown_preview(self):
+        self.shutdown_mamma()
         self.stop_playback()
         if hasattr(self,'camera_preview'):self.camera_preview.close()
         if hasattr(self,'character_loader'):
@@ -880,6 +917,9 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         super().hideEvent(event)
 
     def input_jobs(self, stages, result=None):
+        if MOTION_TOOLS[self.model_choice.currentData()].input_setup_only:
+            self.status.setText('MAMMA camera input setup is available; reconstruction is not integrated yet.')
+            return
         if self.video_path is None:
             self.choose_video()
             return
@@ -924,6 +964,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
 
     def run_full(self):
         tool = MOTION_TOOLS[self.model_choice.currentData()]
+        if tool.key=='mamma':return self.run_mamma()
         if tool.key=='exmr' and self.people_root is not None:
             from .storage import atomic_json
             path=self.people_root/'project.json';state=json.loads(path.read_text(encoding='utf-8'))
@@ -1201,6 +1242,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
                      'flow_camera', 'flow_features', 'flowhmr',
                      'exmr_preprocess', 'exmr_features', 'exmr'}:
             self._batch_has_motion = True
+        if stage.startswith('mamma_'):self._batch_has_motion=True
         self.current_stage = stage
         if arguments is None:
             arguments = ["--project", str(self.project)]
@@ -1291,7 +1333,11 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
         if self.people_event(event):
             self._queued_task_estimates=[self.task_descriptor(s,a) for s,a in self.jobs]
             self.update_task_progress();return
-        if kind == "prepared":
+        if kind=='mamma_ready':
+            self.workspace_root=Path(event['root'])
+            self.load_project(Path(event['project']))
+            self.set_active_result(event['result'])
+        elif kind == "prepared":
             self._task_preparing=False
             self._task_manifests={}
             self.project = Path(event["project"])
@@ -1427,6 +1473,7 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             self.preview_data.close()
             self.preview_data = None
 
+    @batch_readiness
     def preview_ready(self, generation, result):
         if generation != self.data_loader.generation:
             result.close()
@@ -1451,6 +1498,8 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
             self.restore_workspace_camera(consume=True)
             if previous is not None:previous.close()
 
+    @batch_readiness
+    @read_only_checks
     def apply_preview(self):
         data = self.preview_data
         signature=project_signature(data.project)
@@ -1684,7 +1733,8 @@ class MainWindow(CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace
     def dropEvent(self, event):
         urls = event.mimeData().urls()
         if urls and not self.busy:
-            self.load_video(Path(urls[0].toLocalFile()))
+            if self.model_choice.currentData()=='mamma':self.load_mamma_videos([Path(url.toLocalFile()) for url in urls])
+            else:self.load_video(Path(urls[0].toLocalFile()))
 
     def closeEvent(self, event):
         if self.busy and self.process:

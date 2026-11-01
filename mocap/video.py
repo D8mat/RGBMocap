@@ -107,7 +107,9 @@ def ensure_preview(project: Path, cancelled=None) -> Path:
 
 def prepare(source: Path, start: float = 0.0, end: float | None = None, motion_tool='gvhmr', project=None, cancelled=None) -> Path:
     from .motion_tools import require_supported_tool
-    require_supported_tool(motion_tool)
+    tool=require_supported_tool(motion_tool)
+    if tool.input_setup_only:
+        raise ValueError('MAMMA input setup is available, but multi-view reconstruction is not integrated yet.')
     info = probe(source)
     from . import project_workspace as workspace
     if project is None:

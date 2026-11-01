@@ -1,6 +1,7 @@
 """Person selection is separate from extraction checkboxes and model settings."""
 from __future__ import annotations
 from .tooltips import tooltip_text
+from .ui_refresh import batch_readiness
 import json
 from collections import OrderedDict
 from pathlib import Path
@@ -281,6 +282,7 @@ class PeopleWorkspace:
         movie_layout.setContentsMargins(0,0,0,0);movie_layout.setSpacing(0)
         video.setMinimumWidth(260)
         movie_layout.addWidget(video,1)
+        self.build_mamma_thumbnails(movie_layout)
         footer = QWidget();footer.setObjectName('editorHeader')
         bar = QHBoxLayout(footer);bar.setContentsMargins(7,3,7,3)
         self.find_person_button = QPushButton('Find person')
@@ -470,6 +472,7 @@ class PeopleWorkspace:
         save_people(self.people_root,self.people_state)
         self.sync_scene_visibility()
 
+    @batch_readiness
     def person_selected(self,item,previous=None):
         if self._people_syncing or item is None or self.busy or self.contact_saving:return
         if isinstance(item.data(Qt.UserRole),str):
@@ -477,6 +480,7 @@ class PeopleWorkspace:
         self.activate_person(item.data(Qt.UserRole))
         self.update_readiness()
 
+    @batch_readiness
     def activate_person(self,ident,path=None):
         if self.people_state is None:return
         self.active_person_id=ident

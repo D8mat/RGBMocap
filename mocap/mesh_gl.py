@@ -134,14 +134,13 @@ class MeshRenderer:
         self.vertex_count = int(asset["vertex_count"])
         self.index_count = asset["faces"].size
         self.vao.bind()
-        if self.shared and self.shared.asset_key!=asset['key']:
-            raise ValueError('Shared scene meshes must use the same body model')
-        self.model = self.shared.model if self.shared else self.buffer(asset["packed"])
+        owner = self.shared if self.shared and self.shared.asset_key==asset['key'] else None
+        self.model = owner.model if owner else self.buffer(asset["packed"])
         self.vertices = self.buffer(self.vertex_count*32)
-        self.offsets = self.shared.offsets if self.shared else self.buffer(asset["offsets"])
-        self.neighbors = self.shared.neighbors if self.shared else self.buffer(asset["neighbors"])
+        self.offsets = owner.offsets if owner else self.buffer(asset["offsets"])
+        self.neighbors = owner.neighbors if owner else self.buffer(asset["neighbors"])
         self.frame = self.buffer(1389*4)
-        self.indices = self.shared.indices if self.shared else self.buffer(asset["faces"],QOpenGLBuffer.IndexBuffer)
+        self.indices = owner.indices if owner else self.buffer(asset["faces"],QOpenGLBuffer.IndexBuffer)
         self.indices.bind()
         for index,b in enumerate((self.model,self.vertices,self.offsets,self.neighbors,self.frame)):
             self.gl.glBindBufferBase(0x90D2,index,b.bufferId())

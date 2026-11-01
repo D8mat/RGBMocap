@@ -59,6 +59,16 @@ To update, close the app and run `update.cmd` from the same folder. See the
 [installation guide](docs/USER_GUIDE.md#install) for disk space, prerequisites
 and recovery.
 
+### Optional multi-camera mode (MAMMA)
+
+Select **MAMMA** to open two or more synchronized fixed-camera videos of the
+same performance. The views share one trim and timeline. Automatic VGGT camera
+calibration and imported calibration are supported. See the [MAMMA guide](docs/MAMMA.md).
+
+MAMMA requires its separate `Setup_MAMMA.cmd` runtime, Visual Studio 2022 C++
+Build Tools, CUDA Toolkit 12.8 and separately obtained model files. Review the
+provider terms before installation. Existing single-camera runtimes stay separate.
+
 ## Features
 
 - Reconstruct one or several people and preview the body mesh and animation bones.

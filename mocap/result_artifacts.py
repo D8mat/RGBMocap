@@ -63,7 +63,10 @@ def artifacts_current(project,kind):
             if mesh['frames_file'] not in outputs:return False
             if not all(Path(name).name==name and file_stat(project/name)==stamp for name,stamp in outputs.items()):return False
             from .models import BY_KEY
-            model=BY_KEY['smplh' if mesh.get('representation')=='smplh' else 'smplx'].path
+            if state.get('pipeline',{}).get('model')=='mamma':
+                from .mamma_body import body_path
+                model=body_path(project)
+            else:model=BY_KEY['smplh' if mesh.get('representation')=='smplh' else 'smplx'].path
             return not model.is_file() or file_stat(model)==record['model_stat']
         # Existing baked projects remain usable. Their mesh metadata already
         # ties the generation to its source tensor. Version 3 corrections must
@@ -76,7 +79,10 @@ def artifacts_current(project,kind):
             info=json.loads(mesh.read_text(encoding='utf-8'))
             if file_stat(source)!=[info['source_size'],info['source_mtime_ns']]:return False
             from .models import BY_KEY
-            model=BY_KEY['smplh' if info.get('representation')=='smplh' else 'smplx'].path
+            from .mamma_body import body_path
+            state_path=project/'project.json'
+            mamma=state_path.exists() and json.loads(state_path.read_text(encoding='utf-8')).get('pipeline',{}).get('model')=='mamma'
+            model=body_path(project) if mamma else BY_KEY['smplh' if info.get('representation')=='smplh' else 'smplx'].path
             return not model.is_file() or file_stat(model)==[info['model_size'],info['model_mtime_ns']]
         return True  # Legacy joint-only preview projects without motion tensors.
     except (OSError,ValueError,KeyError,TypeError):return False

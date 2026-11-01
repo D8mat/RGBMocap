@@ -18,3 +18,13 @@ Local focused checks used a small Torch module and checkpoint to verify exact
 assigned values, policy-specific caching, Low Memory and generic-depth routing,
 missing-weight rejection and nonpersistent meta-buffer rejection. No real VGGT
 inference or speed benchmark was run locally for this port.
+
+
+## MAMMA multi-camera integration (2026-11-01)
+
+Selectively integrated upstream e530eba9d5 plus current MAMMA camera/pipeline/UI
+code and its memory_mode, gpu_offload and model_session dependencies from
+ab80ced732. No upstream remote was added to this checkout. ExMR API changes,
+PEAR and PromptHMR were not included. Custom source export, camera preview,
+background refinement, application branding and README samples were retained.
+The optional MAMMA engine and weights remain separate, provider-licensed data.
