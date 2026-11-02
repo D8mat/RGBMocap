@@ -15,7 +15,6 @@ class SourceExportDialog(QDialog):
         self.whole_scene.setToolTip('Export checked people, exact animated surfaces, reference skeletons and every calibrated camera/video. Keeps the original timeline. Mesh caches can be large.')
         self.tpose=QCheckBox('Add T-pose before motion');self.tpose.setChecked(False)
         self.tpose.setToolTip('Insert a T-pose at the first motion frame root position. Original frames shift by one; their poses and timing intervals stay unchanged.')
-        self.tpose.setStyleSheet("QCheckBox { background:#35465a; color:#ffffff; border:1px solid #7399bf; border-radius:6px; padding:10px; spacing:10px; font-weight:600; } QCheckBox::indicator { width:22px; height:22px; border:2px solid #d6e6f5; border-radius:3px; background:#18222e; } QCheckBox::indicator:checked { background:#38bdf8; border:2px solid #ffffff; }")
         layout.addWidget(self.tpose)
         self.animate_camera=QCheckBox('Export saved camera tracking');self.animate_camera.setChecked(True);layout.addWidget(self.animate_camera)
         self.background_refine=QCheckBox('Refine Camera Rotation');layout.addWidget(self.background_refine)

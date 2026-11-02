@@ -11,8 +11,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 1959,
-      "sha256": "6d06b03c1ef7f9953803efe66f9782cd48691caa9ad59ae8fc55685e72523101"
+      "bytes": 1927,
+      "sha256": "8ca92bc1dfe6b6bd5ebb3188701d11598dfaa99921ee50e068c192b82e837433"
     },
     {
       "path": "AGENTS.md",
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 11957,
-      "sha256": "083c9922db13ba1ae1824f52b812e4e604a79b7cb3020c1dcbe57d32697f270d"
+      "bytes": 11568,
+      "sha256": "231fed2ace6b009c4d04fd13f1ded21e9e5aa3c78ac6cfab4acb73c9ae89b9ac"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -125,11 +125,6 @@
       "sha256": "faa8145338009ec53f7ccac644e183fb66f24eb748e64d1a0b2eca77b899d197"
     },
     {
-      "path": "docs/UPSTREAM_PORTS.md",
-      "bytes": 2582,
-      "sha256": "120b6877182284e2bae76637052eeec82c3d1952811c02efb6a13a3bd1e66a22"
-    },
-    {
       "path": "docs/USER_GUIDE.md",
       "bytes": 59973,
       "sha256": "ca250fd26156181cd333885dfae50342eb146a72d530d013c173b3dc67d72a39"
@@ -138,11 +133,6 @@
       "path": "docs/VALIDATION.md",
       "bytes": 122164,
       "sha256": "5b1d16981620860e18f471b4477f87ea987aa31989a7f8d04e03520736b6b7b6"
-    },
-    {
-      "path": "docs/images/camera-view-preview.jpg",
-      "bytes": 56808,
-      "sha256": "2dda8c409d4c42d143b8505317a5062940ab942babe9743e800965cc4a83b922"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -193,11 +183,6 @@
       "path": "docs/models/README.md",
       "bytes": 6628,
       "sha256": "1fa42963d3f78e788eb3737aa706d5f25e280d91e1357b486fb37fb553be1272"
-    },
-    {
-      "path": "docs/samples/camera-view.mp4",
-      "bytes": 24571079,
-      "sha256": "7596f58f97d5eacd8093ab47175c184f3c1ddf05e1df364e66264eba910d42b8"
     },
     {
       "path": "docs/samples/character-retargeting.jpg",
@@ -1036,8 +1021,8 @@
     },
     {
       "path": "installer/source-resources.json",
-      "bytes": 4272,
-      "sha256": "a79f9bf618c08aec30f7a65540155d35ac6d52a2a3e9d797bb54a8c73122be68"
+      "bytes": 4100,
+      "sha256": "c9a3bd6e973e7d64ca852f2448cf78abdf4e6a5a899c617f625e0d15372f28fe"
     },
     {
       "path": "installer/verify_mamma.py",
@@ -1151,8 +1136,8 @@
     },
     {
       "path": "mocap/cache_compat.py",
-      "bytes": 3408,
-      "sha256": "6924cde97281a5b6e2c2bdb429ca3e68cff6fc7c783959371f7f40533a52dd6f"
+      "bytes": 2926,
+      "sha256": "5735ce813903ef8af41cf5badec055479d4c788912f7735e2d4d63e2917dd701"
     },
     {
       "path": "mocap/camera_background.py",
@@ -1571,8 +1556,8 @@
     },
     {
       "path": "mocap/pear/alignment_support.py",
-      "bytes": 1166,
-      "sha256": "aef2e9a6e8bbd5781e4f3f92b81c74867582856140a150280eb8b55fdd4bb4d2"
+      "bytes": 1168,
+      "sha256": "c181e2025b6491a80f68f3c954806a63cd280dcf1d9735ac2a5d2d7e4d4b0b09"
     },
     {
       "path": "mocap/pear/batch.py",
@@ -1986,8 +1971,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 6005,
-      "sha256": "ef89894aa25986cf7660caeeeb76f52ac10579cac312375a7e6403e4de260741"
+      "bytes": 5586,
+      "sha256": "94ed6f290981573b37f64282622337dc421fde69c49a6ca15e1f478c67375aae"
     },
     {
       "path": "mocap/source_export_worker.py",

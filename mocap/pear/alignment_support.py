@@ -16,3 +16,4 @@ def configuration():
     return folder
 def activate():
     folder=configuration();sys.dont_write_bytecode=True;sys.path.insert(0,str(folder));return folder
+

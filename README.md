@@ -1,5 +1,3 @@
-Edited for custom use. Original by: [https://github.com/toyxyz/toyxyz_RGBMocap](https://github.com/toyxyz/toyxyz_RGBMocap)
-
 # RGB MoCap
 
 ![RGB MoCap workspace showing video tracking and a 3D motion preview](docs/images/rgbmocap-workspace.png)
@@ -21,15 +19,6 @@ https://github.com/user-attachments/assets/1759f1bf-a0d0-409f-84d8-dde9409cfe6f
 
 [Download original sample](docs/samples/character-retargeting.mp4)
 
-### Camera view
-
-Preview the animated skeleton over the source video using the export camera,
-with optional background rotation refinement.
-
-https://github.com/user-attachments/assets/b93775d2-c63e-441f-8f8a-84391b229154
-
-[Download original sample](docs/samples/camera-view.mp4)
-
 ### Multi Cam MoCap
 
 https://github.com/user-attachments/assets/4c0b290b-4a65-4287-8d22-c63c96b3d080
@@ -42,8 +31,8 @@ https://github.com/user-attachments/assets/4c0b290b-4a65-4287-8d22-c63c96b3d080
    in a writable folder where you want to install RGB MoCap, then clone the repository:
 
    ```cmd
-   git clone https://github.com/D8mat/RGBMocap.git
-   cd RGBMocap
+   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
+   cd toyxyz_RGBMocap
    ```
 
 2. Prepare the runtimes for ExMR, FlowHMR and GVHMR with their supported add-ons,
