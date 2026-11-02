@@ -170,8 +170,8 @@ other PCs; connection speed and storage performance affect the time.
 
 ### Installed size
 
-The current registered model files and active runtimes measured approximately
-**67.8 GB (63.1 GiB)** with the five offline models and supported add-ons installed.
+The measured model/runtime inventory, plus GeoCalib for automatic MAMMA gravity, totals approximately
+**67.9 GB (63.2 GiB)** with the five offline models and supported add-ons installed.
 Blender and FFmpeg are included. The inventory excludes projects, imported
 characters, exports, caches (including Python bytecode), retained download
 archives, obsolete runtime generations and separately installed compiler tools.
@@ -180,18 +180,20 @@ Shared model files and hardlinks are counted once.
 | Configuration | Runtime | Models | Total |
 | --- | ---: | ---: | ---: |
 | ExMR + FlowHMR + GVHMR, including supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
-| MAMMA additional files | 6.11 GiB | 3.42 GiB | 9.54 GiB |
+| MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
 | PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
-| **Five offline models** | **24.68 GiB** | **38.44 GiB** | **63.11 GiB** |
-| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.84 GiB |
+| **Five offline models** | **24.68 GiB** | **38.55 GiB** | **63.22 GiB** |
+| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
 Adding PEAR to all five offline sets gives an estimated combined total of about
-**65.95 GiB (70.8 GB)**. Its original geometry ZIP needs additional download space.
+**66.07 GiB (70.9 GB)**. This includes about **0.11 GiB** of required GeoCalib weights; existing VGGT weights are reused. The approximately
+11.3 MiB support overlay is included in base setup. Its original
+geometry ZIP needs additional download space.
 
 Totals use unrounded bytes; rounded cells may not sum exactly. These are local
 observations, not universal requirements. App source files add space beyond this
 model/runtime inventory. MAMMA's added model size assumes the base installation's
-VGGT-Omega is present; without it, its model set totals about 7.69 GiB. PromptHMR's
+VGGT-Omega is present; without it, its model set totals about 7.80 GiB. GeoCalib adds about 0.108 GiB for automatic gravity, counted once between MAMMA and PEAR. These totals include that addition to the earlier measured inventory. PromptHMR's
 added model size includes SMPL Neutral, while its standard SMPL-X Neutral is
 already counted in the base set. Its specific weights/support files alone total
 about 6.09 GiB. Installed Python packages remain separate; verified identical
@@ -227,7 +229,7 @@ may be outside the installation folder.
 | `<install folder>\.setup\downloads\`, `.setup\uv-cache\` and `.setup\tmp\` | Downloaded wheels and temporary cache can be removed only after installation or update completes. They are reused for repair and updates; deleting them may require downloading files again. Keep the rest of `.setup`, including the private Python and installation state. |
 | `<install folder>\.setup\mamma-downloads\` | Optional MAMMA package/source download cache. Its contents can be removed after MAMMA setup finishes; repair may need to download them again. Keep `runtime_mamma` and `.setup/mamma-runtime.json`. |
 | `<install folder>\.setup\prompthmr-downloads\` | Optional PromptHMR package/source download cache. Remove contents only after setup finishes; repair may need to download them again. Keep `runtime_prompthmr` and `.setup/prompthmr-runtime.json`. |
-| `<install folder>\.setup\pear-downloads\` | PEAR source/support archives. Contents can be removed after installation/update finishes; repair may download them again. Keep `runtime_pear` and `.setup/pear-runtime.json`. |
+| `<install folder>\.setup\pear-downloads\` | PEAR source/support and camera-alignment archives. Contents can be removed after installation/update finishes; repair may download them again. Keep `runtime_pear`, `.setup/pear-runtime.json` and `.setup/pear-alignment.json`. |
 | `<install folder>\temp\` | Local PEAR Torch/kernel temporary cache. Contents can be removed after closing the app and its workers; the next run can recreate them. |
 
 Repeated work mainly grows project data: each model has its own result folder.
@@ -258,7 +260,7 @@ For ExMR, FlowHMR and GVHMR:
    who to reconstruct. MAMMA/PromptHMR track people during reconstruction.
 5. Click **Reconstruct 3D**. Review the video, mesh and **Bone Overlay** together.
 6. Adjust correction settings or contact timings, then click **Apply Correction**.
-7. **File → Export FBX** saves the displayed, applied animation.
+7. **File → Export...** saves the displayed, applied animation.
 
 For synchronized multi-camera capture, select MAMMA before opening videos and
 follow the [MAMMA workflow](MAMMA.md#reconstruct-and-export). It detects people
@@ -318,9 +320,9 @@ opening a project restores its saved model. **Prepare Preview**, below
 | **GVHMR** | Lowest overall quality in our tests, but sometimes better for unusual poses such as backflips. | Optional **HandFlow**; not inferred by GVHMR itself. |
 | **MAMMA** | Multi-view capture of human motion and interactions. Needs separate setup and overlapping synchronized views; outside the quality ranking above. | Included. |
 | **PromptHMR** | Can improve relative placement and interactions between multiple people in one fixed-camera video. Overall motion quality was lower than ExMR in our subjective tests; contacts and depth can still be wrong. Separate setup. | No finger tracking; fixed neutral pose. |
-| **PEAR** | Live single-person bone preview from a webcam or video. No motion recording, correction, retargeting or export in this mode. | Included. |
+| **PEAR** | Live single-person bone preview from a webcam or video. Lightweight live foot lock; no offline correction, recording, retargeting or export. | Included. |
 
-The five offline models support contact correction, a 52-bone overlay and FBX export.
+The five offline models support contact correction, a 52-bone overlay, FBX/BVH export and portable Blender bundles.
 ExMR/FlowHMR/GVHMR use **Find person** for explicit people selection; MAMMA
 and PromptHMR track people during reconstruction. The viewport shows the selected
 source mesh: SMPL-X for ExMR/GVHMR/MAMMA/PromptHMR,
@@ -440,10 +442,11 @@ The app does not need your provider password or access token.
 | ExMR / GVHMR HandFlow | [MANO](https://mano.is.tue.mpg.de/download.php): `MANO_RIGHT.pkl` from `mano_v1_2.zip`. |
 | ExMR / FlowHMR | [SAM 3D Body](https://huggingface.co/facebook/sam-3d-body-dinov3): supported `model.ckpt`, `model_config.yaml` and `assets/mhr_model.pt`, each in its matching row. |
 | FlowHMR moving camera / MAMMA automatic cameras | [VGGT-Omega](https://huggingface.co/facebook/VGGT-Omega): supported `vggt_omega_1b_512.pt`, shared under `models/flowhmr/`. Not needed for FlowHMR Static Camera or MAMMA Manual Camera Data. |
+| MAMMA automatic cameras / PEAR Camera Align | [GeoCalib](https://github.com/cvg/GeoCalib): background vertical direction, shared `models/pear/geocalib-pinhole.tar`. MAMMA manual calibration bypasses it. |
 | MAMMA | [Registered MAMMA downloads](https://mamma.is.tue.mpg.de/): `mamma_mask_full_cvpr.ckpt` and `verts_512.pkl`. Follow the matching Model Manager rows. |
 | MAMMA | [SMPL-X with removed head bun (NPZ, 392 MB)](https://smpl-x.is.tue.mpg.de/download.php): import the neutral, male and female locked-head bodies into `models/mamma/smplx/`. Standard SMPL-X v1.1 is not interchangeable. |
 
-MAMMA's [complete nine-asset checklist](MAMMA.md#prepare-model-files) also covers
+MAMMA's [complete ten-asset checklist](MAMMA.md#prepare-model-files) also covers
 SAM 2.1, YOLO12x and OpenCLIP. Its runtime setup and model imports are separate
 steps; a ready runtime does not mean the models are ready.
 
@@ -481,16 +484,17 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 
 | Setting | Function and when to use it |
 | --- | --- |
+| **FlowHMR / ExMR → Refine Camera Rotation** | Optional background refinement of the saved moving-camera display track. Default off. Validates small rotation corrections; unreliable samples retain the original. No motion re-inference. |
 | **ExMR → Camera** | Static Camera for a camera that stays still without zooming; Moving Camera / SimpleVO when it moves. |
 | **ExMR → Smooth Motion** | Reduce small changes between frames. Off keeps the unsmoothed result. |
 | **FlowHMR → Fast SAM** | Speed up body/hand image processing with the same model files. Small numerical differences can affect motion and automatic contacts. |
-| **FlowHMR → Fast SAM Acceleration** | Two independent, default-on switches: **4-Frame Batching** and **GPU Hand Crops**. Use them only with Fast SAM. Tooltips explain measured speed, VRAM and output differences; see the [FlowHMR guide](models/FLOWHMR.md#controls). Low Memory reduces the batch to one frame. Applies on Reconstruct 3D. |
+| **FlowHMR → Fast SAM Acceleration** | Two independent, default-on switches: **Adaptive Batching** and **GPU Hand Crops**. Automatic selects 1, 2, 4, 8 or 16 frames from memory headroom and image size; Low Memory or disabling batching uses one frame. Used only with Fast SAM, on Reconstruct 3D. Tooltips and the [FlowHMR guide](models/FLOWHMR.md#controls) explain speed, VRAM and output differences. Batch selection and OOM retry messages appear in Console and CMD. |
 | **FlowHMR → Camera / Sampling** | Start with Moving / Unknown - Auto for moving or uncertain cameras. Static Camera skips camera estimation for locked footage. Explicit frame intervals control camera analysis only; denser sampling uses more memory. |
 | **GVHMR → HTD Refine** | Improve body-motion consistency over time. Runs before FootMR when both are enabled. |
 | **GVHMR → FootMR** | Refine ankle angles from foot observations. Separate from foot contact locking. |
 | **GVHMR → HandFlow** | Add finger tracking while preserving the selected body and wrist motion. Requires additional weights and MANO. |
 | **Analyze 2D** | Prepare GVHMR refinement observations separately. Reconstruct 3D includes this step when needed. |
-| **MAMMA → Camera Calibration** | VGGT (Automatic) estimates fixed cameras. Manual Camera Data uses an imported compatible JSON/MAMMA YAML file for the selected videos. |
+| **MAMMA → Camera Calibration** | VGGT-Omega + GeoCalib estimates fixed-camera placement and background vertical direction before 3D fitting. Manual Camera Data uses your compatible JSON/MAMMA YAML calibration without automatic gravity changes. |
 | **MAMMA → Import Camera Data...** | Import calibration with camera names matching video filenames without extensions, original pixel intrinsics and metric translations. See the exact [camera format](MAMMA.md#manual-cameras). |
 | **MAMMA → People** | Default 0 automatically detects people during reconstruction; set 1–8 if someone is missed or background people are included. Count each person once across all cameras. Find person is hidden. |
 | **MAMMA → Reference Height (m)** | Numeric approximate standing height, default 1.70 m. Sets VGGT scene scale, not every actor's height; unused with metric manual calibration. |
@@ -603,16 +607,44 @@ depth and contacts between people are estimates; collision avoidance is not prov
 
 ## FBX and Blender
 
-**File → Export FBX** follows the displayed, applied result. Each checked
+**File → Export...** opens source-motion options: choose **FBX (.fbx)**,
+**BVH (.bvh)** or **Blender project + video (.blend)**. The optional
+**Add T-pose before motion** defaults off.
+For BVH, choose **Generic / Blender** (default) or **3ds Max Biped** in the
+**BVH profile** list.
+The selected, applied result is exported. Each checked
 person/take gets a separate named file and rig; duplicate filenames get suffixes.
 People exports use the viewport's shared placement. Takes retain their own frame
 counts; align their start times when combining different source intervals.
 
 Source-person exports use a 52-bone hierarchy with **Hips** as root and plain
-anatomical names. It retains
+anatomical names by default. The Biped profile renames exported joints as described
+below. It retains
 actor lengths, SMPL-neutral curved limbs/feet, calibrated rest axes and straight
-open fingers. FBX stores rest transforms separately; no T-pose frame is inserted.
-BVH is internal compatibility data only.
+open fingers. FBX stores rest transforms separately. With the T-pose option off,
+no extra frame is inserted. When enabled, one reference animation frame is placed
+before the original motion, at its initial root position; original frames shift
+by one and retain their poses, frame rate and intervals. The option does not
+replace the bind pose or edit project motion/contact timings.
+
+BVH uses the same 52-bone hierarchy, metre units and Y up, including finger bones
+and terminal tips. Import into Blender with **Scale 1 / Forward -Z / Up Y**.
+The **3ds Max Biped** profile follows the PR #18 conversion: it uses Character
+Studio names (for example, Spine becomes Chest and LeftArm becomes LeftShoulder)
+and uniform **ZXY** rotation channels. All 52 joints, fingers, offsets, terminal
+tips and keyed poses are retained, with no unit conversion or source-cache edits.
+Changing Euler order can change interpolation between keys. Use Generic/Blender
+when preserving the existing channel encoding is important. The optional leading
+T-pose works with either profile and retains the first motion frame's root position.
+
+In 3ds Max, create a Biped and load the file through **Motion > Motion Capture**.
+See [Autodesk's BVH import steps](https://download.autodesk.com/global/docs/motionbuilder2014/en_us/files/Importing_Importing_.bvh_files_into_3ds_Max.htm).
+This compatibility profile was checked numerically and imported in Blender;
+3ds Max itself was not available for validation. Biped's own retargeting and limb
+constraints may affect the result.
+
+BVH cannot store FBX Pre/PostRotation or arbitrary rest-bone roll; the rest axes
+can consequently look different. Use FBX when explicit rest transforms are needed.
 
 **Export Character...** preserves the imported target character's own hierarchy
 and original rest pose; it does not replace them with the 52-bone source rig.
@@ -624,6 +656,127 @@ frame rate and axes. **Armature Data → Rest Position** shows the rest pose.
 The first frame in **Pose Position** shows animation, which can differ from rest.
 Use the character workflow above for supported humanoids, or retarget the source
 FBX in your animation software.
+
+### Portable Blender projects
+
+Choose **Blender project + video (.blend)** in **File > Export...**, then choose
+an output filename. The exporter creates a **new subfolder** containing the
+`.blend`, `video.mp4`, `camera_report.json` and instructions. Existing folders are
+retained; a numbered folder is chosen when needed. For several checked people
+or takes, each gets its own portable folder. The selected applied motion and
+shared placement are preserved. Original inference, project files, contacts and
+camera receipts are not rewritten; stale results remain blocked.
+
+Open the `.blend` in Blender 4.5 or newer. **Numpad 0** enters the source-camera
+view and **Space** plays. The skeleton is editable; its object has no animated
+transform. The synchronized source video is a viewport camera background, not
+a render background. Move the **whole folder**, keeping the video beside the
+project. The app uses its existing Blender runtime to build the bundle; no
+additional runtime or AI inference is needed.
+
+**Export saved camera tracking** defaults on. FlowHMR/ExMR can use the saved
+rotation and approximate movement estimate. **Camera movement scale** defaults
+to the current display scale; 0 fixes the center. **Refine Camera Rotation**
+starts with the corresponding sidebar setting and exports only validated
+background corrections. Disabling tracking exports the first saved camera as a
+fixed camera. These choices affect only the exported camera, never body motion.
+Movement scale and reconstruction error can prevent exact video alignment; this
+is not measured camera calibration. The export report records the choices.
+An optional T-pose adds one animation frame and delays the video/camera timeline
+by one to keep the original motion and video paired.
+
+### MAMMA whole-scene Blender projects
+
+When MAMMA is selected, the Blender format also shows **MAMMA whole scene: body
+meshes and all cameras**. Check it to export checked people and their visible
+takes together, all saved calibrated cameras, synchronized video panels, and a
+separate camera-view scene for each camera. The original common timeline is
+retained; the T-pose option is unavailable for this export.
+
+Body surfaces are baked **PC2 mesh caches**, including the selected applied
+correction. Reference armatures are separate editable skeletons; they are **not
+deformation rigs** for the meshes. Keep the `.blend`, `videos/` and `meshes/`
+together. Changing a reference skeleton does not deform its cached body.
+The presentation floor/lights are aids, not reconstructed scene geometry.
+Camera backgrounds are viewport references; the overview's video panels are
+image-textured geometry. Each camera scene excludes those panels.
+
+This mode needs the saved MAMMA inference/calibration, matching undistorted
+working videos and current body-mesh/skeleton previews. Use Apply Correction or
+Prepare Preview if requested; export does not rerun MAMMA. Nonzero distortion
+or unsupported camera skew is rejected rather than silently exported incorrectly.
+PC2 disk usage is about **120 KiB per frame per person** (10,475 vertices),
+in addition to videos, skeleton animation and the Blender file. Copies and
+mesh baking run outside the GUI with visible activity/progress and cancellation.
+
+## Saved cameras and Camera Preview
+
+For reconstructed offline motion, **Overlays** above the left video preview also
+shows the reconstructed skeleton projected through the selected saved camera.
+It defaults on and is independent of the right viewport's **Bone Overlay** and
+**Camera** switches. MAMMA projects all visible people into the selected camera
+thumbnail. No new reconstruction or Camera Preview selection is needed to enable it.
+
+For a separate alignment view, choose **Camera Preview** in the 3D viewport's
+view selector. It shows the current source video with the displayed source
+skeleton projected through the saved camera. **Bone Overlay** controls the bones.
+Playback and seeking share the existing decoded video frame; no second video
+is decoded. For MAMMA, select a camera thumbnail to inspect that view. Middle-drag
+and wheel pan/zoom the preview; **Frame All** restores its image framing. Choosing
+a normal view returns to the 3D scene.
+
+Enable **Camera** below the 3D viewport to show saved cameras as wire frustums
+with an image-top triangle. This switch defaults off and affects display only.
+It does not recalibrate cameras, alter motion/correction or reframe the 3D view.
+Camera motion follows the source timeline; available displacement paths are
+bounded display samples. Saved cameras can be outside the current 3D framing;
+zoom out or orbit to inspect them.
+
+- MAMMA displays all saved fixed camera calibrations in the fitted shared world.
+- FlowHMR displays saved rotation and the estimated VGGT displacement path.
+  Its displacement has no measured metric scale, so the path is approximate.
+- ExMR in Moving Camera mode can estimate camera displacement from the original
+  paired world/camera root positions. This includes inference error and is not a
+  measured camera trajectory. Static Camera mode retains a fixed position.
+- When **Camera** is enabled in the ordinary 3D view, **Motion x** controls the
+  estimated movement display: 1 uses the estimate, 0 keeps the camera center fixed.
+  The default is 1. This affects camera gizmos and their path only; source video
+  overlays keep the calibrated projection and exports/motion remain unchanged.
+  ExMR movement requires a reference take covering the complete video; otherwise
+  the app shows rotation only with a notice.
+- Other offline results display their committed reference camera when available;
+  this does not imply a complete moving-camera reconstruction.
+
+FlowHMR and ExMR offer **Refine Camera Rotation** below their camera setting.
+It defaults off. When enabled, the app optionally post-processes saved moving-camera
+rotation using background features, following PR #18. It excludes known actor boxes,
+validates against held-out matches, accepts corrections up to 2 degrees, and
+interpolates corrections between sampled frames. Rejected samples retain the
+original rotation. This can help small camera errors but may do nothing when
+background texture/matching is poor or camera motion is large. Static-camera
+results are skipped.
+
+The operation runs on the CPU when saved cameras are needed for an enabled video
+overlay, Camera Preview or camera gizmo. Progress and elapsed time are visible;
+the accepted count and processing time appear in Console/CMD. Disabling the option
+restores the original saved camera immediately through the background loader.
+Validated results are reused within the session while input stamps remain current.
+The checkbox is kept in workspace view settings when the workspace is saved.
+No extra models, packages or runtime installation are required.
+
+Refinement affects the video bone overlay, Camera Preview and displayed camera
+orientation only. Camera centers/movement scale, original camera files, source
+poses, contact correction and FBX/BVH animation remain unchanged. With the option
+off, FlowHMR retains its saved VGGT-Omega tracking and ExMR its saved SimpleVO
+tracking without this additional operation. Failures keep the original camera
+and display a notice.
+
+The preview uses the saved calibration (or its optional display-only background
+rotation refinement), without fitting cameras to corrected bodies. Correction can intentionally move bones away from the video. Inference,
+calibration and body-fit errors remain visible. Calibrations with lens distortion
+currently use a pinhole overlay and show a limitation warning. Missing/stale
+camera data shows a notice; prepare the selected preview instead of substituting
+another result. Camera Preview is unavailable in PEAR live mode.
 
 ## Development and license
 
@@ -638,50 +791,55 @@ terms; see [Third-party notices](../THIRD_PARTY_NOTICES.md).
 
 Run `install.cmd` with the app closed; PEAR support is included. PEAR reuses
 the shared runtime and adds only pinned source/utilities; no compiler is required.
-Prepare its checkpoint and registered SMPL-X 2020/FLAME bundle in Model Manager.
-Select **PEAR · Live (Experimental)** and click **Start Live Tracking** to load the models.
+PEAR tracks webcam or video input in real time; it may skip frames to limit delay.
+Prepare its checkpoint, detector and registered SMPL-X 2020/FLAME bundle in Model
+Manager. VGGT and GeoCalib are additional files for Camera Align.
+Select **PEAR · Live (Experimental)** and click **Start Live Tracking**. It attempts
+to align one or more fixed cameras before tracking; keep the person and floor
+visible during alignment. If alignment fails or its support/models are missing,
+tracking continues from the selected camera with a visible warning. It does not
+fuse unaligned views or apply aligned live foot lock. Retry with **Camera Align**.
 **Stop** ends tracking and releases the models and webcam. With **Webcam: None**,
 open a video and seek/play its timeline to infer the current frame. Alternatively,
 select a connected webcam before starting. While tracking is running, input
-changes reuse the loaded models. Rotation and smoothing apply to both sources.
+changes automatically align the new configuration. Ordinary seeks and thumbnail changes reuse the loaded tracking model. Rotation and smoothing apply to both sources. Under **One Euro Filter**, select
+**Bone Rotation** and **World Position** independently (both default on). Its
+World Position checkbox controls position smoothing; the separate top-level
+World Position switch controls whether the pelvis moves at all.
+Selecting a webcam shows an image preview without loading PEAR; Start is needed
+for pose tracking. After Stop, reselect a webcam or Refresh to preview again.
+Webcam capture stays connected during Start, model loading and Camera Align.
+Opened videos can play, pause and seek during loading/alignment; alignment uses
+the sample time selected when Camera Align was clicked.
+All webcam selectors are grouped below the video in a numbered Camera / Device /
+Rotation table, with Count and Refresh together above it. Each webcam has its own
+Rotation field beside its selector. For
+videos, select a thumbnail and use the first Rotation field; other videos retain
+their angles. Changing any angle requires Camera Align again.
 The live view shows fixed-length body and finger bones without per-frame body
 mesh calculation. **Reset Bones** recalibrates their lengths from the displayed
-pose, pauses video playback and retains the loaded models and viewport camera.
+pose, pauses video playback and realigns cameras while preserving the viewport camera.
 **World Position** is on by default. Turn it off to hold the pelvis at its current
 position, including height, while retaining pelvis rotation and joint motion.
-There is no Find person, recording, correction, retargeting or animation export
+**Foot Lock** defaults on, becomes active after successful alignment and applies small causal leg/pelvis corrections with smooth lock/release transitions. Fixed lengths and ankle/toe orientations remain; turning World Position off keeps the pelvis fixed, even if a foot cannot reach. Poor calibration and source jitter can still cause sliding. There is no Find person, recording, offline correction, retargeting or animation export
 in this live mode. Switching models releases the live worker and device.
-See the [PEAR guide](models/PEAR.md) for setup, resources and limitations.
+For multiple fixed views, select several synchronized videos or set the webcam
+**Count** and assign distinct devices to its slots. Thumbnails select the main
+preview. Start attempts **Camera Align** using VGGT/GeoCalib, including one camera;
+alignment errors no longer block selected-camera tracking. Reset Bones also
+triggers an alignment attempt. Synchronization and
+background camera/floor estimates are approximate. See the
+[PEAR guide](models/PEAR.md) for setup, resources and limitations.
 
 
-## Custom export and camera tools
+## International filenames
 
-This fork retains FBX, generic/Biped BVH and portable Blender project export,
-optional T-pose at frame 0, explicit output selection, relative video bundles,
-Camera Preview, tracked Blender cameras and optional background rotation refinement.
-Experimental FlowHMR camera translation remains optional and is not metric calibrated.
-MAMMA preview/export uses the primary calibrated camera and its video.
+Video, project, character and export paths support Unicode filenames, including
+Japanese, Korean, Chinese, Cyrillic and Western European accents. The Windows
+launchers and Python workers use explicit UTF-8, and image file I/O avoids
+OpenCV's Windows filename code-page limitation. The interface remains English.
 
-
-## Blender MAMMA whole-scene export
-
-Select a reconstructed MAMMA person and check the people to include. Choose
-File > Export Motion > Blender MAMMA scene: meshes + all cameras (.blend).
-A new bundle folder contains the .blend file, videos/ and meshes/. Keep them
-together when moving or sharing the scene. The current Original/Corrected
-selection is preserved; stale results require Prepare Preview/Apply Correction.
-
-Overview - all cameras contains baked full-resolution SMPL-X surfaces, separate
-editable reference skeletons, calibrated cameras, synchronized video panels,
-a reference floor and studio lights. Camera - name scenes share the bodies
-and use each video's image dimensions and pixel aspect. Camera backgrounds
-are viewport references; video panels render in Overview only. No T-pose is
-inserted. Actor takes retain their frame offsets and disappear outside their
-recorded intervals. PC2 mesh caches preserve exact body deformation, but are
-not skinned to the reference skeletons. No inference or motion refitting runs.
-
-Requires the MAMMA inference videos and camera-world.json plus current mesh
-previews. Nonzero lens-distortion calibration is rejected; use undistorted
-video/calibration. Automatic camera scale/floor remain estimates. The floor
-is a presentation aid, not reconstructed geometry. Other models keep their
-existing per-person Blender export.
+If a text-encoding error occurs, record the complete error and the operation
+that triggered it. Updating code is preferable to renaming all files or changing
+the Windows system language. VMD retains its format-defined CP932 name fields;
+this restriction is separate from the filename used to save it.

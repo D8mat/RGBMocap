@@ -12,6 +12,27 @@ def emit(kind,**value):
 
 def main():
     stage=sys.argv[1] if len(sys.argv)>1 else ''
+    if stage in ('save_blend','save_blend_scene'):
+        from .blend_export_worker import main as save_main
+        return save_main(emit)
+    if stage=='camera_background':
+        from .camera_background_worker import main as camera_main
+        return camera_main()
+    if stage=='camera_reference':
+        from .camera_reference import main as camera_main
+        return camera_main()
+    if stage=='copy_bvh':
+        from .source_export_worker import main as save_main
+        return save_main(emit)
+    if stage=='flow_mamma_gravity':
+        from .mamma_gravity_worker import main as gravity_main
+        return gravity_main()
+    if stage=='pear_camera_preview':
+        from .pear.camera_preview import main as camera_main
+        return camera_main()
+    if stage=='flow_pear_align':
+        from .pear.align_worker import main as align_main
+        return align_main()
     if stage=='pear_live':
         from .pear.worker import main as live_main
         return live_main()

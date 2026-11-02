@@ -37,3 +37,12 @@ including PromptHMR, experimental PEAR, ExMR public API/toe IK, batch processing
 resource routing and contact improvements. Earlier selective-port exclusions above
 are historical. Custom export, camera, README media and attribution are retained.
 Optional runtime/model readiness is separate from source integration.
+
+
+## Upstream consolidation (2026-11-02)
+
+Updated to 83832a2aa5b32e6db8efd90f1d2823729cc7c245. Upstream now provides
+BVH/T-pose, camera preview/refinement and portable single/MAMMA Blender exports.
+Its consolidated modules replace the earlier custom camera/export helpers.
+Custom README sample/attribution, T-pose visibility and exact compatibility
+aliases are retained. No models or projects are replaced.

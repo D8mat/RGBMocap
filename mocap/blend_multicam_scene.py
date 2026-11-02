@@ -1,11 +1,15 @@
-"""Blender-only portable multi-view scene builder. No playback Python handlers."""
+"""PR #18-derived Blender-only portable multi-view scene builder. No playback Python handlers."""
 import json,sys
 from pathlib import Path
 import bpy
 import numpy as np
 from mathutils import Matrix,Vector,Quaternion
 
-folder=Path(sys.argv[sys.argv.index('--')+1]);job=json.loads((folder/'scene-job.json').read_text())
+def progress(current,total,message):
+    print('@@BLEND@@'+json.dumps(dict(current=current,total=total,message=message)),flush=True)
+
+folder=Path(sys.argv[sys.argv.index('--')+1]);job=json.loads((folder/'scene-job.json').read_text(encoding='utf-8'))
+progress(0,0,'Importing source animation')
 bpy.ops.wm.read_factory_settings(use_empty=True);scene=bpy.context.scene
 scene.frame_start=0;scene.frame_end=job['frames']-1
 scene.render.fps=round(job['fps']);scene.render.fps_base=round(job['fps'])/job['fps']
@@ -24,7 +28,8 @@ def visibility(obj,first,end):
         for curve in obj.animation_data.action.fcurves:
             if curve.data_path in ('hide_viewport','hide_render'):
                 for p in curve.keyframe_points:p.interpolation='CONSTANT'
-for a in job['actors']:
+for actor_index,a in enumerate(job['actors']):
+    progress(actor_index,len(job['actors']),'Building animated body: '+a['name'])
     before=set(scene.objects)
     bpy.ops.import_scene.fbx(filepath=str(folder/a['fbx']),anim_offset=a['first'],automatic_bone_orientation=False,use_prepost_rot=True,ignore_leaf_bones=True)
     for obj in set(scene.objects)-before:
@@ -41,10 +46,13 @@ for a in job['actors']:
     mod=obj.modifiers.new('Exact recorded surface','MESH_CACHE');mod.cache_format='PC2';mod.filepath='//'+a['cache']
     mod.play_mode='SCENE';mod.time_mode='FRAME';mod.frame_start=a['first'];mod.frame_scale=1.;mod.forward_axis='POS_Y';mod.up_axis='POS_Z'
     mod.deform_mode='OVERWRITE';visibility(obj,a['first'],a['end'])
+camera_objects={}
 world=Matrix(((1,0,0,0),(0,0,-1,0),(0,1,0,0),(0,0,0,1)));cv=Matrix.Diagonal((1,-1,-1,1))
-for c in job['cameras']:
+for camera_index,c in enumerate(job['cameras']):
+    progress(camera_index,len(job['cameras']),'Building calibrated camera: '+c['name'])
     data=bpy.data.cameras.new(c['name']);obj=bpy.data.objects.new(c['name'],data);cameras.objects.link(obj)
     obj.matrix_world=world@Matrix(c['world_to_camera']).inverted()@cv
+    camera_objects[c['name']]=obj
     k=c['K'];w=c['width'];h=c['height'];aspect=k[0][0]/k[1][1]
     obj['video_width']=w;obj['video_height']=h;obj['pixel_aspect_y']=aspect
     data.sensor_fit='HORIZONTAL';data.sensor_width=36;data.lens=k[0][0]*36/w
@@ -84,7 +92,7 @@ scene['RGBMoCap scene']='MAMMA shared world; baked surfaces and separate referen
 for c in job['cameras']:
     view=bpy.data.scenes.new('Camera - '+c['name'])
     for coll in (bodies,rigs,cameras,stage):view.collection.children.link(coll)
-    view.camera=cameras.objects[c['name']];view.world=scene.world
+    view.camera=camera_objects[c['name']];view.world=scene.world
     view.frame_start=0;view.frame_end=job['frames']-1
     view.render.fps=scene.render.fps;view.render.fps_base=scene.render.fps_base
     view.render.resolution_percentage=100;view.render.resolution_x=c['width'];view.render.resolution_y=c['height']
@@ -93,4 +101,5 @@ for c in job['cameras']:
     view.unit_settings.system='METRIC';view.unit_settings.scale_length=1
 scene.name='Overview - all cameras'
 scene.frame_set(0);bpy.context.view_layer.update()
+progress(0,0,'Saving portable Blender project')
 bpy.ops.wm.save_as_mainfile(filepath=str(folder/job['target']),check_existing=False)

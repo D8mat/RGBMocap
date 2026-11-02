@@ -1,11 +1,15 @@
-"""Blender-only builder for a portable camera/video/skeleton scene."""
+"""PR #18-derived Blender-only builder for a portable camera/video/skeleton scene."""
 import json,sys
 from pathlib import Path
 import bpy
 from mathutils import Matrix
 
+def progress(current,total,message):
+    print('@@BLEND@@'+json.dumps(dict(current=current,total=total,message=message)),flush=True)
+
 folder=Path(sys.argv[sys.argv.index('--')+1])
 job=json.loads((folder/'blend-job.json').read_text(encoding='utf-8'))
+progress(0,0,'Importing source animation')
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=str(folder/'animation.fbx'),anim_offset=0,
                          automatic_bone_orientation=False,use_prepost_rot=True,ignore_leaf_bones=True)
@@ -29,6 +33,7 @@ if job.get('camera_track'):
     if track.shape!=(job['frames'],4,4):raise ValueError('Invalid camera track length')
     obj.rotation_mode='QUATERNION';previous=None
     for frame in range(job['frames']):
+        if frame%100==0:progress(frame,job['frames'],'Baking camera animation')
         matrix=world@Matrix(track[frame].tolist()).inverted()@cv
         location,rotation,scale=matrix.decompose()
         if previous is not None and rotation.dot(previous)<0:rotation.negate()
@@ -38,14 +43,16 @@ if job.get('camera_track'):
         if frame==0 and start:
             obj.keyframe_insert(data_path='location',frame=0)
             obj.keyframe_insert(data_path='rotation_quaternion',frame=0)
+    track._mmap.close()
     for curve in obj.animation_data.action.fcurves:
         for key in curve.keyframe_points:key.interpolation='LINEAR'
 k=job['K'];width=job['width'];height=job['height']
 camera.type='PERSP';camera.sensor_fit='HORIZONTAL';camera.sensor_width=36
 camera.lens=k[0][0]*36/width
-scene.render.pixel_aspect_x=1;scene.render.pixel_aspect_y=k[0][0]/k[1][1]
+ratio=k[0][0]/k[1][1]
+scene.render.pixel_aspect_x=max(1.,1./ratio);scene.render.pixel_aspect_y=max(1.,ratio)
 camera.shift_x=(width/2-k[0][2])/width
-camera.shift_y=(k[1][2]-height/2)*scene.render.pixel_aspect_y/width
+camera.shift_y=(k[1][2]-height/2)*ratio/width
 camera.clip_start=.01;camera.clip_end=10000
 camera.show_background_images=True
 background=camera.background_images.new();background.source='IMAGE'
@@ -67,4 +74,5 @@ for screen in bpy.data.screens:
 for item in bpy.context.selected_objects:item.select_set(False)
 arm.select_set(True);bpy.context.view_layer.objects.active=arm
 scene.frame_set(start)
+progress(0,0,'Saving portable Blender project')
 bpy.ops.wm.save_as_mainfile(filepath=str(folder/job['target']),check_existing=False)

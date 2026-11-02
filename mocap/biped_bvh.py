@@ -1,4 +1,7 @@
-"""Stream the source BVH into Character Studio names and uniform ZXY channels."""
+"""PR #18-derived Character Studio naming and uniform ZXY export encoding.
+
+Converts only the exported copy; source hierarchy offsets and keyed poses remain.
+"""
 import warnings
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -25,12 +28,22 @@ def convert(inp,out,progress=lambda:None):
         if not line or len(line)>65536:raise ValueError('Invalid BVH hierarchy')
         tokens=line.split()
         if tokens[:1] in ([b'ROOT'],[b'JOINT']):
+            if len(tokens)!=2:raise ValueError('Invalid BVH joint declaration')
             name=tokens[1].decode('ascii')
             if name not in mapping:raise ValueError('Unsupported Biped bone: '+name)
+            if name in seen or (not seen and tokens[0]!=b'ROOT') or (seen and tokens[0]==b'ROOT'):
+                raise ValueError('Invalid BVH hierarchy root or duplicate joint')
+            if not seen and name!='Hips':raise ValueError('Expected Hips as BVH root')
             seen.append(name)
             line=line.replace(tokens[1],mapping[name].encode('ascii'),1)
+        elif tokens[:1]==[b'OFFSET']:
+            offset=np.asarray(tokens[1:],dtype=float)
+            if offset.shape!=(3,) or not np.isfinite(offset).all():raise ValueError('Invalid BVH offset')
         elif tokens[:1]==[b'CHANNELS']:
+            if len(tokens)<2:raise ValueError('Invalid BVH channels')
             count=int(tokens[1]);rot=tokens[5:] if not orders else tokens[2:]
+            if not orders and tokens[2:5]!=[b'Xposition',b'Yposition',b'Zposition']:
+                raise ValueError('Unsupported BVH root translation channels')
             if count!=(6 if not orders else 3) or sorted(rot)!=[b'Xrotation',b'Yrotation',b'Zrotation']:
                 raise ValueError('Unsupported BVH channels')
             orders.append(''.join(x[:1].decode('ascii') for x in rot))
@@ -39,7 +52,7 @@ def convert(inp,out,progress=lambda:None):
         out.write(line)
         if line.strip()==b'MOTION':break
     else:raise ValueError('BVH hierarchy too large')
-    if len(orders)!=52 or set(seen)!=set(mapping):raise ValueError('Expected complete source skeleton')
+    if len(orders)!=52 or len(seen)!=52 or set(seen)!=set(mapping):raise ValueError('Expected complete source skeleton')
     count_line=inp.readline(256);time_line=inp.readline(256)
     if not count_line.startswith(b'Frames:') or not time_line.startswith(b'Frame Time:'):raise ValueError('Invalid BVH header')
     count=int(count_line.split(b':')[1]);step=float(time_line.split(b':')[1])

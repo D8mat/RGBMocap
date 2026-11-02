@@ -1,13 +1,10 @@
 """Transactional MAMMA scene export; no inference and no project writes."""
-import json, os, shutil, struct, subprocess
+import json, struct
 from pathlib import Path
 import numpy as np
 from .result_artifacts import file_stat, artifacts_current
 from .motion_tools import selected_export, result_is_current
-
-
-def read(path):
-    return json.loads(Path(path).read_text(encoding='utf-8'))
+from .blend_support import Bundle,read,copy_video,build,disk_check
 
 
 def run(request, emit=lambda *a, **k: None):
@@ -17,12 +14,11 @@ def run(request, emit=lambda *a, **k: None):
     from .mamma_body import WORLD_ROTATION
     from .mesh_data import reference_vertices
     from .fbx_export import run as export_fbx
-    from .retarget.runtime import blender
     from .video import probe
-    request=Path(request);temporary=None
+    request=Path(request);temporary=None;bundle=None
     if request.stat().st_size>4*1024**2:raise ValueError('Export request is too large')
     spec=read(request);root=Path(spec['root']).resolve();target=Path(spec['target']).resolve()
-    if target.suffix.lower()!='.blend' or target.parent.exists():
+    if target.suffix.lower()!='.blend' or target.parent.exists() or not target.parent.parent.is_dir():
         raise ValueError('Choose a new Blender bundle folder')
     tracked={};checks=[]
     def track(path):
@@ -38,10 +34,11 @@ def run(request, emit=lambda *a, **k: None):
         if len(entries)<2 or set(cameras)!={e['id'] for e in entries}:raise ValueError('Camera calibration and videos differ')
         people=load_people(root);track(root/'people.json');track(root/'people_scene.json')
         ids=spec['people'];kind=spec['kind']
-        if not ids or len(set(ids))!=len(ids):raise ValueError('Select at least one person')
+        if not isinstance(ids,list) or not 1<=len(ids)<=8 or len(set(ids))!=len(ids):raise ValueError('Select at least one person')
         selected=[p for p in people['people'] if p['id'] in ids]
         if len(selected)!=len(ids):raise ValueError('Selected people changed')
         n=int(state['frames']);fps=float(state['fps']);actors=[]
+        if not 1<=n<=1800 or not np.isfinite(fps) or fps<=0:raise ValueError('Invalid MAMMA scene timing')
         for person in selected:
             if not person['takes']:raise ValueError('Selected person has no animation')
             for take in person['takes']:
@@ -77,18 +74,20 @@ def run(request, emit=lambda *a, **k: None):
             camera=read_camera(p)
             if camera is None or not np.allclose(camera['world_to_camera'],camera_jobs[0]['world_to_camera'],atol=1e-6):raise ValueError('Primary camera changed. Prepare Preview first.')
         required=sum(file_stat(c['source'])[0] for c in camera_jobs)+sum((a['end']-a['first'])*10475*12 for a in actors)+512*1024**2
-        if shutil.disk_usage(target.parent.parent).free<required:raise ValueError('Insufficient free space for mesh caches and videos')
-        temporary=target.parent.with_name('.'+target.parent.name+'.rgbmocap-'+request.stem+'.partial');temporary.mkdir()
-        (temporary/'videos').mkdir();(temporary/'meshes').mkdir();job_actors=[];bounds=[]
-        for c in camera_jobs:shutil.copy2(c['source'],temporary/c['video'])
+        disk_check(target.parent.parent,required)
+        bundle=Bundle(target,request);temporary=bundle.work
+        (temporary/'videos').mkdir();(temporary/'meshes').mkdir();job_actors=[];bounds=None
+        for c in camera_jobs:copy_video(c['source'],temporary/c['video'],emit,'save_blend_scene')
         for index,a in enumerate(actors):
             emit('progress',stage='save_blend_scene',current=index,total=len(actors),message='Baking exact body mesh: '+a['name'])
             stem=f'actor_{index+1:03}';cache='meshes/'+stem+'.pc2'
             with np.load(a['asset'],allow_pickle=False) as asset:
                 packed=asset['packed'];faces=asset['faces'];count=int(asset['vertex_count'])
+                if count!=10475 or packed.size!=count*(3*507+55) or not np.isfinite(packed).all():raise ValueError('Invalid SMPL-X mesh asset')
+                if faces.ndim!=2 or faces.shape[1]!=3 or not np.issubdtype(faces.dtype,np.integer) or faces.min()<0 or faces.max()>=count:raise ValueError('Invalid mesh topology')
             frames=np.load(a['frames'],mmap_mode='r',allow_pickle=False)
             try:
-                if frames.shape!=(a['end']-a['first'],1389):raise ValueError('Unexpected SMPL-X frame layout')
+                if frames.shape!=(a['end']-a['first'],1389) or frames.dtype!=np.float32:raise ValueError('Unexpected SMPL-X frame layout')
                 with (temporary/cache).open('wb') as out:
                     out.write(struct.pack('<12siiffi',b'POINTCACHE2\0',1,count,0.,1.,len(frames)))
                     for f,frame in enumerate(frames):
@@ -96,33 +95,30 @@ def run(request, emit=lambda *a, **k: None):
                         if not np.isfinite(vertices).all():raise ValueError('Non-finite mesh vertices')
                         if f==0:
                             np.savez(temporary/(stem+'.npz'),vertices=vertices,faces=faces)
-                        bounds.extend([vertices.min(0).tolist(),vertices.max(0).tolist()])
+                        lo=vertices.min(0);hi=vertices.max(0)
+                        bounds=[lo,hi] if bounds is None else [np.minimum(bounds[0],lo),np.maximum(bounds[1],hi)]
                         out.write(vertices.astype('<f4').tobytes())
                         if f%30==0:emit('progress',stage='save_blend_scene',current=f,total=len(frames),message='Mesh '+a['name'])
             finally:frames._mmap.close()
             nested=temporary/'fbx-request.json';nested.write_text(json.dumps([dict(project=str(a['project']),kind=kind,source=str(a['source']),target=str(temporary/(stem+'.fbx')),rig_name=a['name'],scene=a['scene'])]),encoding='utf8')
             export_fbx(nested)
             job_actors.append(dict(name=a['name'],color=a['color'],first=a['first'],end=a['end'],cache=cache,geometry=stem+'.npz',fbx=stem+'.fbx'))
-        job=dict(target=target.name,frames=n,fps=fps,actors=job_actors,cameras=[{k:v for k,v in c.items() if k!='source'} for c in camera_jobs],bounds=bounds)
+        job=dict(target=target.name,frames=n,fps=fps,actors=job_actors,cameras=[{k:v for k,v in c.items() if k!='source'} for c in camera_jobs],bounds=np.asarray(bounds).tolist())
         (temporary/'scene-job.json').write_text(json.dumps(job),encoding='utf8')
-        command=[str(blender()),'-b','--factory-startup','--disable-autoexec','--threads','3','--python-exit-code','1','--python',str(Path(__file__).with_name('blend_multicam_scene.py')),'--',str(temporary)]
-        with (temporary/'blender.log').open('wb') as log:result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
-        if result.returncode or not (temporary/target.name).is_file():raise RuntimeError('Blender scene export failed: '+(temporary/'blender.log').read_text(errors='replace')[-2500:])
+        emit('progress',stage='save_blend_scene',current=0,total=0,message='Building MAMMA Blender scene')
+        build(temporary,'blend_multicam_scene.py',emit,'save_blend_scene')
         for path,stamp in tracked.items():
             if file_stat(path)!=stamp:raise ValueError('Scene inputs changed during export. Retry.')
         for p,source,scene in checks:
             if selected_export(p,kind)!=source or not result_is_current(p,kind) or context(root,p)!=scene:raise ValueError('Selected motion changed during export')
-        report=dict(model='mamma',result=kind,frames=n,fps=fps,cameras=job['cameras'],actors=job_actors,geometry='Exact baked SMPL-X surface, separate editable source skeletons',calibration='Saved MAMMA calibration; automatic scale/floor remain estimates')
+        report=dict(model='mamma',result=kind,frames=n,fps=fps,cameras=job['cameras'],actors=[{k:v for k,v in a.items() if k not in ('geometry','fbx')} for a in job_actors],geometry='Exact baked SMPL-X surface, separate editable source skeletons',calibration='Saved MAMMA calibration; automatic scale/floor remain estimates')
         (temporary/'scene_report.json').write_text(json.dumps(report,indent=2),encoding='utf8')
         (temporary/'README.txt').write_text('Open the .blend file in Blender 4.5+. Keep videos/ and meshes/ beside it.\nBodies use exact baked PC2 animation; armatures are separate editable reference skeletons, not mesh deformation rigs.\nAll cameras use the common MAMMA world. Video panels and camera backgrounds share the timeline.\nUse the scene selector: Overview shows all cameras; Camera - name scenes use matching image dimensions. Numpad 0 enters camera view.\nEach camera scene has its own output resolution and excludes video panels; camera backgrounds are viewport references.\nThe floor and lighting are presentation aids, not reconstructed scene geometry.\nNo T-pose is inserted in this synchronized scene export.\n',encoding='utf8')
         for a in job_actors:
             (temporary/a['geometry']).unlink();(temporary/a['fbx']).unlink()
         for name in ('scene-job.json','blender.log'):(temporary/name).unlink()
-        temporary.rename(target.parent);temporary=None
+        bundle.publish();temporary=None
         return 1
     finally:
-        if temporary is not None and temporary.exists():
-            expected=target.parent.with_name('.'+target.parent.name+'.rgbmocap-'+request.stem+'.partial')
-            if temporary.resolve()!=expected.resolve() or temporary.parent.resolve()!=target.parent.parent.resolve():raise ValueError('Invalid export cleanup path')
-            shutil.rmtree(temporary)
+        if bundle is not None:bundle.close()
         request.unlink(missing_ok=True)

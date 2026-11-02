@@ -130,10 +130,12 @@ do not put passwords or account tokens in the agent chat.
 - Reconstruct one or several people and preview the body mesh and animation bones.
 - Reduce sliding with foot/palm contact correction and editable contact timings.
 - Retarget motion to Mixamo FBX, VRM and PMX humanoid characters.
-- Export source animation as FBX; export characters as FBX with or without meshes,
+- Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with an optional leading T-pose; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
+- Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
+- Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
 - Save projects with separate results for each AI model.
-- Preview one person's live body/finger bones from a webcam or video with PEAR.
+- Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
 
 ## How it works
 
@@ -142,14 +144,17 @@ do not put passwords or account tokens in the agent chat.
    videos; thumbnails switch the preview and one timeline trim applies to all views.
 2. For ExMR, FlowHMR or GVHMR, optionally use **Find person** to select people.
    PromptHMR tracks people together during reconstruction.
-   MAMMA detects people during reconstruction; keep **VGGT (Automatic)** and
+   MAMMA detects people during reconstruction; keep **VGGT-Omega + GeoCalib (Automatic)** and
    enter an approximate **Reference Height (m)**, or import camera calibration.
    Click **Reconstruct 3D**.
 3. Review the motion, edit contacts if needed and **Apply Correction**.
-4. Export FBX, or import a character, retarget the motion and export it.
+4. Use **File > Export...** to choose FBX, BVH or a portable Blender project, or import a character, retarget the motion and export it.
 
-For **PEAR · Live (Experimental)**, choose a webcam or open a video, then click **Start Live
-Tracking**. It provides a bone preview without recording, correction or export.
+**PEAR · Live (Experimental)** tracks webcam or video input in real time. Tracking
+and pose estimates may be unstable. Click **Start Live Tracking** to attempt camera
+alignment and begin the bone preview. If alignment fails, tracking continues from
+the selected camera with a warning; camera fusion and aligned foot lock are unavailable.
+Recording, offline correction and export are unavailable in this live mode.
 See the [PEAR guide](docs/models/PEAR.md) for its controls.
 
 ## Supported AI models
@@ -170,20 +175,21 @@ motion quality was lower than **ExMR**. It does not support finger tracking.
 Requires 64-bit Windows, a compatible NVIDIA GPU/driver and OpenGL 4.3.
 Model files are acquired separately; some require registration and license acceptance.
 
-**Installed models and runtimes:** approximately **67.8 GB (63.1 GiB)** for the
-five offline models, including supported add-ons, Blender and FFmpeg. Measured without
+**Installed models and runtimes:** approximately **67.9 GB (63.2 GiB)** for the
+five offline models, including supported add-ons, Blender and FFmpeg. Based on the measured inventory plus GeoCalib for automatic MAMMA gravity, excluding
 projects, caches or retained downloads; shared files are counted once.
 
 | Configuration | Runtime | Models | Total |
 | --- | ---: | ---: | ---: |
 | ExMR + FlowHMR + GVHMR and supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
-| MAMMA additional files | 6.11 GiB | 3.42 GiB | 9.54 GiB |
+| MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
 | PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
-| **Five offline models** | **24.68 GiB** | **38.44 GiB** | **63.11 GiB** |
-| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.84 GiB |
+| **Five offline models** | **24.68 GiB** | **38.55 GiB** | **63.22 GiB** |
+| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
 Including PEAR, the estimated combined model/runtime total is about
-**65.95 GiB (70.8 GB)**, before the additional space listed below.
+**66.07 GiB (70.9 GB)**, before the additional space listed below. GeoCalib weights (about **0.11 GiB**) are shared by MAMMA and PEAR and counted once; both also reuse VGGT. See the
+[PEAR camera guide](docs/models/PEAR.md#multiple-fixed-cameras-and-camera-align).
 
 **MAMMA and PromptHMR require separate runtime installation:** run
 `Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` after `install.cmd`, as described
@@ -211,6 +217,11 @@ with unchanged measured peak VRAM. These are different tests, not full-job
 speed guarantees. See [resource modes, measured savings and acceleration](docs/PERFORMANCE.md)
 for conditions, per-model results and output differences.
 
+FlowHMR's **Adaptive Batching** selects 1–16 Fast SAM frames from available memory;
+Low Memory uses one. Warm feature tests took 16–23% less time at batch 16 than at
+batch 4, with peak allocated VRAM rising from 3.84 to 5.43 GiB. Whole-job gains can
+be smaller. Batch selection and OOM retry messages appear in Console and CMD.
+
 ## Documentation
 
 - [User guide: installation, controls and settings](docs/USER_GUIDE.md)
@@ -227,12 +238,3 @@ for conditions, per-model results and output differences.
 
 Original RGB MoCap code and documentation use the [MIT License](LICENSE).
 Third-party components and model files retain their own licenses.
-
-
-## Custom export and camera tools
-
-This fork retains FBX, generic/Biped BVH and portable Blender project export,
-optional T-pose at frame 0, explicit output selection, relative video bundles,
-Camera Preview, tracked Blender cameras and optional background rotation refinement.
-Experimental FlowHMR camera translation remains optional and is not metric calibrated.
-MAMMA preview/export uses the primary calibrated camera and its video.

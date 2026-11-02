@@ -9,6 +9,7 @@ import sys
 import numpy as np
 from scipy.spatial.transform import Rotation
 from .storage import atomic_json
+from .image_io import read_image, write_image
 
 
 def infer(work,job,emit):
@@ -39,12 +40,12 @@ def infer(work,job,emit):
             im=frame(entry,f);h,w=im.shape[:2]
             if not .5<=h/w<=2:raise ValueError('VGGT camera calibration currently requires image aspect ratios between 1:2 and 2:1.')
             for mask in (work/'clean-masks/motion'/entry['id']/'masks').glob(f'mask_{f:04}_*.png'):
-                m=cv2.imread(str(mask),0)
+                m=read_image(str(mask),0)
                 if m is None:raise ValueError('Unreadable camera exclusion mask.')
                 y,x=np.where(m>127)
                 if len(x):im[max(0,y.min()-18):min(h,y.max()+19),max(0,x.min()-18):min(w,x.max()+19)]=0
             path=images_dir/f'{f:06}-{c}.png'
-            if not cv2.imwrite(str(path),im):raise OSError('Cannot prepare a VGGT input image.')
+            if not write_image(str(path),im):raise OSError('Cannot prepare a VGGT input image.')
             paths.append(str(path));sizes.append((w,h,_balanced_target_shape(h/w,512,16)));camera_ids.append(c)
     emit('progress',current=0,total=0,message=f'VGGT: estimate {len(entries)} fixed cameras from {len(paths)} background images')
     from .memory_mode import run as memory_run
@@ -69,6 +70,8 @@ def infer(work,job,emit):
         centres=-np.einsum('nij,nj->ni',es[:,:,:3].transpose(0,2,1),es[:,:,3])
         RR.append(r);tt.append(-r@np.median(centres,0));KK.append(np.median(K[ci==c],0))
     RR,tt,KK=np.array(RR),np.array(tt),np.array(KK)
+    from .mamma_gravity import infer as background_gravity
+    up=background_gravity(work,entries,selected,RR,KK,emit)
     uv=[];vis=[]
     for entry in entries:
         with np.load(work/'landmarks/motion'/(entry['id']+'.npz'),allow_pickle=False) as z:
@@ -94,10 +97,11 @@ def infer(work,job,emit):
     lens=np.linalg.norm(vectors,axis=-1)
     valid=(lens>max(1e-6,np.percentile(lens,10)*.5))&(lens<np.percentile(lens,90)*2)
     if not valid.any():raise ValueError('Cannot estimate camera scale from visible standing subjects.')
-    up=np.median((vectors/np.maximum(lens[...,None],1e-9))[valid],axis=0);up/=np.linalg.norm(up)
-    forward=RR[0].T@np.array([0.,0.,1.]);forward-=up*np.dot(forward,up);forward/=np.linalg.norm(forward)
-    right=np.cross(forward,up);right/=np.linalg.norm(right);Q=np.stack([right,forward,up])
-    heights=heads@up-feet@up;height=float(np.median(heights[valid]))
+    from .mamma_gravity import world_basis
+    Q=world_basis(up,RR[0])
+    # Reference size remains a human-height assumption, independent of gravity.
+    # Do not use body lean to rotate the camera world or shrink projected height.
+    height=float(np.median(lens[valid]))
     ratio=(np.median(neutral[head,1])-np.median(neutral[sole,1]))/np.ptp(neutral[:,1])
     scale=float(job['options'].get('height_m',1.7))*ratio/height
     if not np.isfinite(scale) or scale<=0:raise ValueError('Invalid estimated metric camera scale.')
@@ -107,7 +111,8 @@ def infer(work,job,emit):
         r=RR[c]@Q.T;t=scale*tt[c]+r@origin
         cameras[entry['id']]=dict(intrinsic_matrix=KK[c].tolist(),extrinsics_matrix=np.column_stack((r,t)).tolist(),image_size=entry['size'],distortion_coeffs=[0.]*4)
     atomic_json(work/'camera-estimation.json',dict(assumed_height_m=job['options'].get('height_m',1.7),scale=scale,
-        initial_frames=train.tolist(),floor_is_measured=False,warning='VGGT metric scale/up/floor assume visible, initially standing people. They are not measured camera calibration or ground truth.'))
+        initial_frames=train.tolist(),gravity_source='GeoCalib background consensus',gravity_applied_before_3d_fit=True,
+        floor_is_measured=False,warning='VGGT-Omega camera geometry and GeoCalib background gravity are estimates. Metric scale assumes the reference person height; the initial sole datum is not measured ground.'))
     return cameras
 
 

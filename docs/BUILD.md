@@ -70,7 +70,9 @@ checking existing models.
 | Contact correction | `mocap/correction.py`, `contact_trajectory.py`, `contact_pose_plan.py`, `contact_arm_plan.py` |
 | Skeleton and surface fitting | `mocap/source_animation.py`, `source_surface.py`, `surface_roll.py` |
 | Preview and playback | `mocap/viewport.py`, `preview_data.py`, `playback.py`, `video_preview.py` |
-| FBX | `mocap/fbx_export.py`, `fbx_bind.py`, `fbx_writer.py`, `scene_export.py` |
+| Source export | `mocap/source_export_dialog.py`, `fbx_export.py`, `fbx_writer.py`, `scene_export.py`, `export_copy.py`, `biped_bvh.py` |
+| Blender bundles | `mocap/blend_export.py`, `blend_multicam_export.py`, `blend_export_worker.py`, `blend_support.py`, `blend_export_scene.py`, `blend_multicam_scene.py` |
+| Camera preview/overlay | `mocap/camera_tracks.py`, `camera_ui.py`, `camera_reference.py`, `camera_background.py`, `camera_background_worker.py` |
 | Git setup/update | `install.cmd`, `update.cmd`, `tools/git_bootstrap.ps1`, `tools/git_managed_install.py`, `tools/git_update.py`, `installer/runtime-lock.json` |
 
 Run `app.py` from `.venv` while editing. Worker changes are loaded by their own
@@ -201,6 +203,21 @@ Matching verified support is retained without downloading or extracting it again
 a source/base change or damaged support stages and CUDA-verifies a new generation
 before replacing the pointer. Failure leaves prior support and the install retry
 marker intact. No weights or registered geometry are acquired by this step.
+
+`tools/setup_pear_alignment.py` additionally stages the pinned GeoCalib/Kornia
+support from `installer/pear-alignment.json`, over the existing Flow runtime,
+without upgrading shared packages. It verifies imports/CUDA availability and
+writes a separate `.setup/pear-alignment.json` inventory. VGGT/GeoCalib model
+weights are obtained in Model Manager. This support enables camera alignment;
+if it is unavailable, PEAR can still track the selected camera with a warning,
+provided its base support and model files are ready.
+
+MAMMA automatic cameras reuse this overlay through the `flow_mamma_gravity`
+child worker. Its numeric gravity result is passed back to MAMMA before 3D
+fitting; cp310 GeoCalib/Kornia packages must not enter MAMMA's Python 3.11
+environment. Missing or unreliable gravity is an actionable failure for MAMMA
+automatic cameras. Manual camera data bypasses this support and both camera
+checkpoints. A separate GeoCalib package installation into MAMMA is not needed.
 
 Changed upstream files receive an adaptation notice. Each support generation
 also records pinned source URLs/hashes and the adapter hash in

@@ -4,6 +4,7 @@ from .ui_refresh import batch_readiness
 from .validation_snapshot import read_only_checks
 
 import json
+import codecs
 import math
 import os
 from collections import deque
@@ -132,6 +133,8 @@ class ModelsDialog(QDialog):
         from .models import STAGE_REQUIREMENTS
         keys = ({key for key in STAGE_REQUIREMENTS[self.tool.key+'_assets']} if self.tool.key in ('mamma','prompthmr','pear') else
                 {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())})
+        if self.tool.key=='pear':keys.update(STAGE_REQUIREMENTS['pear_align'])
+        if self.tool.key=='flowhmr':keys.add('flow_metadata')
         # Keep public automatic downloads together, followed by manual-only files.
         # Stable sorting preserves the existing component order within each group.
         self.models = sorted((model for model in MODELS_LIST if model.key in keys),
@@ -150,7 +153,7 @@ class ModelsDialog(QDialog):
             layout.addWidget(runtime_panel(self))
         elif self.tool.key=='pear':
             from .pear_runtime import status
-            note=QLabel(status()[1]+'\nPEAR support is included in install.cmd and update.cmd. Uses the existing shared runtime; no CUDA compiler is needed. Model files are prepared separately below.')
+            note=QLabel(status()[1]+'\nPEAR support is included in install.cmd and update.cmd. Uses the existing shared runtime; Camera Align uses a small Flow-runtime support overlay. No CUDA compiler is needed. VGGT and GeoCalib are optional for multiple fixed views; model files are prepared separately below.')
             note.setWordWrap(True);layout.addWidget(note)
         self.table = QTableWidget(len(self.models), 3)
         self.table.setHorizontalHeaderLabels(["Model", "Status", "Action"])
@@ -197,8 +200,10 @@ class ModelsDialog(QDialog):
         self.refresh()
 
     def refresh(self):
+        from .models import STAGE_REQUIREMENTS
         for i, model in enumerate(self.models):
             name = model.name + (" (Optional: HTD / 2D)" if self.tool.key == "gvhmr" and model.key == "pva" else "")
+            if self.tool.key=='pear' and model.key in STAGE_REQUIREMENTS['pear_align']:name+=' (Optional: Camera Align)'
             available = ready(model)
             for column, text in ((0, name), (1, "Ready" if available else "Missing")):
                 item = self.table.item(i, column)
@@ -430,6 +435,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
     @read_only_checks
     def update_readiness(self):
         if self._pear_active:
+            if hasattr(self,'camera_tools'):self.camera_tools.sync()
             self.pear_sync_controls();return
         if getattr(self,'_readiness_depth',0):
             self._readiness_pending=True
@@ -442,7 +448,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         from .models import STAGE_REQUIREMENTS, BY_KEY
         required = {key for stage in stages for key in STAGE_REQUIREMENTS.get(stage, ())}
         if tool.key=='flowhmr' and self.flow_sampling.currentData()==-1:required.discard('flow_vggt')
-        if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.discard('flow_vggt')
+        if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.difference_update(('flow_vggt','pear_geocalib'))
         unavailable = [BY_KEY[key] for key in sorted(required) if not ready(BY_KEY[key])]
         count = len(required) - len(unavailable)
         text = f"{tool.label}: {count}/{len(required)} models ready"
@@ -474,9 +480,9 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.reset_footlocks_button.setEnabled(self.slider.contact_edit_enabled)
         self.reset_trim_button.setEnabled(self.slider.trim_enabled)
         character=self.selected_character()
-        self.export_action.setText('Export Character...' if character else 'Export Motion...')
-        self.export_action.setEnabled(not self.busy and (bool(character.get('takes')) and not character.get('needs_retarget') if character else self.project is not None))
-        self.export_action.setToolTip(tooltip_text("Choose a character export format and whether to include its mesh. PMX characters also support VMD motion." if character else "Save the displayed skeleton animation as FBX or BVH, optionally with a T-pose first frame. For multiple people, each checked person gets a separate named file and rig."))
+        self.export_action.setText('Export Character...' if character else 'Export...')
+        self.export_action.setEnabled(not self.busy and (bool(character.get('takes')) and not character.get('needs_retarget') if character else self.project is not None and self.current_export() is not None))
+        self.export_action.setToolTip(tooltip_text("Choose a character export format and whether to include its mesh. PMX characters also support VMD motion." if character else "Export the displayed motion as FBX, BVH or a portable Blender project. Multiple people export separately; MAMMA also offers a whole-scene Blender bundle."))
         self.play_button.setEnabled(self.info is not None and self.video_readable)
         for action in self.open_actions:
             action.setEnabled(not self.busy)
@@ -489,11 +495,13 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.flow_acceleration.setEnabled(not self.busy)
         self.exmr_camera.setEnabled(not self.busy)
         self.exmr_smoothing.setEnabled(not self.busy)
+        self.flowhmr_background.setEnabled(not self.busy)
+        self.exmr_background.setEnabled(not self.busy)
         self.analyze_button.setVisible(tool.key=='gvhmr')
         self.sync_correction_floor_preview()
-        if hasattr(self,'camera_preview'):self.camera_preview.check()
         self.sync_mamma_controls()
         self.sync_prompthmr_controls()
+        if hasattr(self,'camera_tools'):self.camera_tools.sync()
 
     def sync_correction_floor_preview(self):
         self.motion_view.correction_floor_applicable=self.correction_mode.currentData()=='flat'
@@ -583,6 +591,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
     def render_changed(self):
         self.motion_view.show_bones=self.bone_overlay.isChecked()
         self.motion_view.update()
+        if hasattr(self,'camera_tools'):self.camera_tools.canvas.update()
 
     def preview_preparation_available(self):
         if self.project is None or self.busy or self.contact_saving:return False
@@ -639,6 +648,10 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.update_readiness()
 
     def choose_video(self):
+        if self._pear_active:
+            names,_=QFileDialog.getOpenFileNames(self,'Open PEAR Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
+            if names:self.load_pear_videos(names)
+            return
         if self.model_choice.currentData()=='mamma':
             names,_=QFileDialog.getOpenFileNames(self,'Open MAMMA Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
             if names:self.load_mamma_videos(names)
@@ -648,13 +661,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             self.load_video(Path(name))
 
     def load_video(self, path):
-        if self._pear_active:
-            self.stop_playback()
-            self.pear_camera.blockSignals(True)
-            self.pear_camera.setCurrentIndex(0)
-            self.pear_camera.blockSignals(False)
-            self.video_readable=False
-            self.pear_source_changed()
+        if self._pear_active:return self.load_pear_videos([path])
         if self.model_choice.currentData()=='mamma':
             return self.load_mamma_videos([path])
         try:
@@ -673,6 +680,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             self.flow_gpu_crop.setChecked(True)
             self.exmr_camera.setCurrentIndex(0)
             self.exmr_smoothing.setChecked(True)
+            self.camera_tools.restore_background({})
             self.handflow_refine.blockSignals(True)
             self.handflow_refine.setChecked(self.model_choice.currentData()=='gvhmr')
             self.handflow_refine.blockSignals(False)
@@ -693,6 +701,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             QMessageBox.warning(self, "Video Error", str(error))
 
     def video_ready(self, info):
+        if self.pear_restore_media_ready():return
+        if self.pear_video_ready(info):return
         if self.mamma_video_ready(info):return
         self.video_readable = True
         self.slider.set_media(self.info["fps"] if self.info else info["fps"])
@@ -762,6 +772,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.clear_preview()
         self.motion_view.auto_fit = True
         self.project = project
+        self.camera_tools.restore_background({})
         self.workspace_project_loaded(project,manifest)
         from .project_storage import storage_root
         saved_root=storage_root(project,manifest)
@@ -872,7 +883,6 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         # 3D and overlays advance only when the corresponding decoded image is ready.
         self.motion_view.index = index
         self.motion_view.scene_time=self.source_offset+index/(self.info['fps'] if self.info else 30)
-        if hasattr(self,'camera_preview'):self.camera_preview.seek()
         self.motion_view.update()
         if self.timer.isActive():
             now = time.perf_counter()
@@ -903,12 +913,12 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.play_button.setAccessibleName(label)
 
     def step_frames(self, amount):
-        if self._pear_active and self.pear_camera.currentData() is not None:return
+        if self._pear_active and self.pear_using_webcams():return
         self.stop_playback()
         self.slider.setValue(max(0, min(self.slider.maximum(), self.slider.value() + amount)))
 
     def toggle_play(self):
-        if self._pear_active and self.pear_camera.currentData() is not None:return
+        if self._pear_active and self.pear_using_webcams():return
         if self.timer.isActive():
             self.stop_playback()
         elif self.video_path and self.info and self.video_readable:
@@ -937,9 +947,9 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.timer.start(max(1, math.ceil(remaining * 1000)))
 
     def shutdown_preview(self):
+        if hasattr(self,'camera_tools'):self.camera_tools.close()
         self.shutdown_mamma()
         self.stop_playback()
-        if hasattr(self,'camera_preview'):self.camera_preview.close()
         if hasattr(self,'character_loader'):
             self.character_loader.close();self.character_assets.clear()
         self.scene_loader.stop()
@@ -1255,10 +1265,9 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
                 # Saving a derived file does not replace scene/preview data.
                 # Reloading the people scene here moves a following camera.
                 if not self.failed and not self.cancelled:
-                    targets=getattr(self,'_motion_export_targets',[])
-                    destination=targets[0] if len(targets)==1 else str(Path(targets[0]).parent) if targets else ''
-                    self.status.setText('Exported '+str(len(targets))+' file(s) to: '+destination)
-                    QMessageBox.information(self,'Motion export complete','Saved to:\n'+'\n'.join(targets))
+                    paths=getattr(self,'_motion_export_targets',[])
+                    self.status.setText('Motion export complete.'+(' '+paths[0] if len(paths)==1 else f' {len(paths)} files.' if paths else ''))
+                    for path in paths:self.log.append('Exported: '+path)
                 self.update_readiness()
                 return
             if self.current_stage=='save_project':
@@ -1327,6 +1336,9 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.task_timer.start();self.update_task_progress()
         self.progress.setRange(0, 0)
         self.buffer = ""
+        self._stdout_decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        self._stderr_decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        self._stderr_buffer = ""
         if stage in ('flow_batch','exmr_batch','gvhmr_batch'):
             from .queue_groups import write_request
             try:
@@ -1381,9 +1393,10 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
                     atomic_json(path,state)
                 except (OSError,ValueError) as error:self.log.append('Could not save stopped stage: '+str(error))
 
-    def read_stdout(self):
+    def read_stdout(self, final=False):
         if self.processing_guard:self.processing_guard.output()
-        self.buffer += bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
+        self.buffer += self._stdout_decoder.decode(bytes(self.process.readAllStandardOutput()), final=final)
+        if final and self.buffer and not self.buffer.endswith("\n"):self.buffer += "\n"
         if len(self.buffer) > 65536 and "\n" not in self.buffer:
             self.buffer = self.buffer[-65536:]
         while "\n" in self.buffer:
@@ -1396,9 +1409,14 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             elif line.strip():
                 self.log.append(line.rstrip())
 
-    def read_stderr(self):
+    def read_stderr(self, final=False):
         if self.processing_guard:self.processing_guard.output()
-        self.log.append(bytes(self.process.readAllStandardError()).decode("utf-8", errors="replace").strip()[-8192:])
+        text = self._stderr_decoder.decode(bytes(self.process.readAllStandardError()), final=final)
+        self._stderr_buffer = (self._stderr_buffer + text.replace("\r", "\n"))[-65536:]
+        lines = self._stderr_buffer.split("\n");self._stderr_buffer = lines.pop()
+        if final and self._stderr_buffer:lines.append(self._stderr_buffer);self._stderr_buffer = ""
+        for line in lines:
+            if line.strip():self.log.append(line[-8192:])
 
     def handle_event(self, event):
         kind = event["type"]
@@ -1433,7 +1451,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         elif kind == 'save_cancelled':
             self.cancelled=True
             self.status.setText(event['message'])
-        elif kind == 'resource_mode':
+        elif kind in ('resource_mode', 'info'):
             self.log.append(event['message'])
         elif kind == "progress":
             message=event.get('message','Processing...')
@@ -1457,8 +1475,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.log.ensureCursorVisible()
 
     def process_finished(self, code, _):
-        self.read_stdout()
-        self.read_stderr()
+        self.read_stdout(final=True)
+        self.read_stderr(final=True)
         if code != 0 and not self.cancelled:
             self.failed = True
             if "failed" not in self.status.text():
@@ -1715,72 +1733,45 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
     def save_fbx(self):
         if self.selected_character() is not None:
             self.export_character(self.selected_character());return
+        if self.busy or self.current_export() is None:
+            self.status.setText('Selected motion is unavailable or has pending correction edits. Apply Correction / Prepare Preview before exporting.');return
         from .source_export_dialog import SourceExportDialog
         dialog=SourceExportDialog(self)
-        self.camera_preview.apply_export(dialog)
         if dialog.exec()!=QDialog.Accepted:return
+        if self.current_export() is None:
+            self.status.setText('Motion changed while choosing export options. Apply Correction / Prepare Preview first.');return
         self._source_export_options=dialog.options()
         if self._source_export_options['format']=='blend_scene':
-            from .blend_multicam_ui import export_scene
+            from .blend_export_ui import export_scene
             export_scene(self);return
         if self.export_checked_people():return
         source = self.current_export()
-        if source is None:
-            info=self.contact_tracks.get(base_result(self.active_result),{})
-            if self.contact_saving:
-                message='Contact edits are still being saved. Wait a moment and export again.'
-            elif self.active_result.startswith('corrected_') and (info.get('unsaved') or not result_is_current(self.project,self.active_result)):
-                message='The selected corrected motion is not ready. Click Apply Correction, wait for it to finish, then export again.'
-            elif not (self.project/RESULTS[base_result(self.active_result)][0]).is_file():
-                message='Select a reconstructed person/take in the People list. If it has no motion yet, run Reconstruct 3D first.'
-            else:
-                message='The export skeleton is missing or out of date. Click Prepare Preview, wait for it to finish, then export again.'
-            self.status.setText(message)
-            QMessageBox.information(self,'Motion export unavailable',message)
-            return
         if source:
             from .person_names import export_stem
             fmt=self._source_export_options['format']
             default=export_stem(self.export_person_name(self.project))+'.'+fmt
-            folder=getattr(self,'_motion_export_folder',None) or self.workspace_root or self.project
-            picker=QFileDialog(self,'Choose output file — '+fmt.upper(),str(Path(folder)/default))
-            picker.setOption(QFileDialog.DontUseNativeDialog,True)
-            picker.setAcceptMode(QFileDialog.AcceptSave)
-            picker.setFileMode(QFileDialog.AnyFile)
-            picker.setNameFilter(fmt.upper()+' (*.'+fmt+')')
-            picker.setDefaultSuffix(fmt)
-            picker.setLabelText(QFileDialog.Accept,'Export')
-            name=picker.selectedFiles()[0] if picker.exec()==QDialog.Accepted else ''
-            if name:self._motion_export_folder=str(Path(name).parent)
-            if name and not name.lower().endswith('.'+fmt):name+='.'+fmt
+            name, _ = QFileDialog.getSaveFileName(self, "Export", default, fmt.upper()+" (*."+fmt+")",options=QFileDialog.DontConfirmOverwrite if fmt=='blend' else QFileDialog.Option(0))
             if name:
+                if not Path(name).suffix:name+='.'+fmt
                 self.submit_fbx_exports([(self.project,self.active_result,source,Path(name))])
 
     def submit_fbx_exports(self,files):
-        if self.busy:return
+        if self.busy or not files or self.current_export() is None:return
         import uuid
         from .storage import atomic_json
         request=self.project/('.fbx-export-'+uuid.uuid4().hex+'.json')
         rows=[]
-        if files and files[0][3].suffix.lower()=='.blend':
-            bundles=[];used=set()
-            for project,kind,source,target in files:
-                folder=target.with_suffix('');number=2
-                while folder.exists() or str(folder).casefold() in used:
-                    folder=target.parent/(target.stem+'_'+str(number));number+=1
-                used.add(str(folder).casefold())
-                bundles.append((project,kind,source,folder/target.name))
-            files=bundles
+        if getattr(self,'_source_export_options',{}).get('format')=='blend':
+            from .blend_export_ui import targets
+            files=targets(files)
         try:
             for project,kind,source,target in files:
                 row=dict(project=str(project),kind=kind,source=str(source),target=str(target))
                 row['rig_name']=self.export_person_name(project)
                 row['prepend_tpose']=getattr(self,'_source_export_options',{}).get('prepend_tpose',False)
                 row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
-                row['animate_camera']=getattr(self,'_source_export_options',{}).get('animate_camera',True)
-                row['camera_translation']=getattr(self,'_source_export_options',{}).get('camera_translation',False)
-                row['background_refine']=getattr(self,'_source_export_options',{}).get('background_refine',False)
-                row['camera_translation_scale']=getattr(self,'_source_export_options',{}).get('camera_translation_scale',1.0)
+                for key,default in (('animate_camera',True),('background_refine',False),('camera_translation_scale',1.)):
+                    row[key]=getattr(self,'_source_export_options',{}).get(key,default)
                 if self.people_root is not None:
                     from .scene_export import context
                     row['scene']=context(self.people_root,project)
@@ -1790,9 +1781,10 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         atomic_json(request,rows)
         self._motion_export_targets=[str(target) for _,_,_,target in files]
         self._fbx_export_cleanup=(request,[target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial') for _,_,_,target in files])
-        stage={'.blend':'save_blend','.bvh':'copy_bvh'}.get(files[0][3].suffix.lower(),'save_fbx')
-        if stage=='save_blend':
-            self._fbx_export_cleanup=(request,[target.parent.with_name('.'+target.parent.name+'.rgbmocap-'+request.stem+'.partial') for _,_,_,target in files])
+        stage='copy_bvh' if getattr(self,'_source_export_options',{}).get('format','fbx')=='bvh' else 'save_fbx'
+        if getattr(self,'_source_export_options',{}).get('format')=='blend':
+            from .blend_support import partial
+            stage='save_blend';self._fbx_export_cleanup=(request,[partial(target.parent,request) for _,_,_,target in files])
         self.start_jobs([(stage,['--project',str(self.project),'--output',str(request)])])
 
     def cleanup_fbx_export(self):
@@ -1801,11 +1793,11 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             request,paths=pending
             for path in [request,*paths]:
                 try:
-                    if path.is_dir() and path.resolve().parent==path.parent.resolve() and path.name.startswith('.') and path.name.endswith('.rgbmocap-'+request.stem+'.partial'):
-                        import shutil
-                        shutil.rmtree(path)
+                    if path.is_dir():
+                        from .blend_support import cleanup
+                        cleanup(path,request)
                     else:path.unlink(missing_ok=True)
-                except OSError:pass
+                except (OSError,ValueError):pass
             self._fbx_export_cleanup=None
 
     def open_folder(self):
@@ -1821,7 +1813,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
     def dropEvent(self, event):
         urls = event.mimeData().urls()
         if urls and not self.busy:
-            if self.model_choice.currentData()=='mamma':self.load_mamma_videos([Path(url.toLocalFile()) for url in urls])
+            if self._pear_active:self.load_pear_videos([Path(url.toLocalFile()) for url in urls])
+            elif self.model_choice.currentData()=='mamma':self.load_mamma_videos([Path(url.toLocalFile()) for url in urls])
             else:self.load_video(Path(urls[0].toLocalFile()))
 
     def closeEvent(self, event):

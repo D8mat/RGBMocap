@@ -15,6 +15,7 @@ import time
 import traceback
 import uuid
 from .storage import atomic_json
+from .image_io import read_image, write_image, unicode_image_paths
 from .result_artifacts import file_stat
 
 STAGES = ('mamma_prepare', 'mamma_masks', 'mamma_landmarks', 'mamma_camera', 'mamma_fit', 'mamma_publish')
@@ -80,7 +81,7 @@ def prepare(path, job):
     n = round((job['end']-job['start'])*30)
     if not 4 <= n <= 1800:
         raise ValueError('Use 4–1,800 frames for the MAMMA integration; no frames were dropped.')
-    if any(m.key!='flow_vggt' or job['options']['camera_mode']!='manual' for m in missing('mamma_assets')):
+    if any(m.key not in {'flow_vggt','pear_geocalib'} or job['options']['camera_mode']!='manual' for m in missing('mamma_assets')):
         raise ValueError('Prepare the missing MAMMA models in Model Manager first.')
     options = job['options']
     if options['camera_mode'] == 'manual':
@@ -94,12 +95,17 @@ def prepare(path, job):
     from .models import BY_KEY, STAGE_REQUIREMENTS
     identity = dict(version=1, inputs=[dict(path=str(Path(v['path']).resolve()),stat=file_stat(v['path']),id=v['id']) for v in job['inputs']],
                     start=job['start'], end=job['end'], frames=n, options=options,
-                    engine=runtime['engine_files'], models={k:file_stat(BY_KEY[k].path) for k in STAGE_REQUIREMENTS['mamma_assets'] if options['camera_mode']!='manual' or k!='flow_vggt'})
+                    engine=runtime['engine_files'], models={k:file_stat(BY_KEY[k].path) for k in STAGE_REQUIREMENTS['mamma_assets'] if options['camera_mode']!='manual' or k not in {'flow_vggt','pear_geocalib'}})
+    if options['camera_mode']!='manual':
+        from .mamma_gravity import support_identity
+        try:identity['gravity_support']=support_identity()
+        except (OSError,ValueError,KeyError,TypeError) as error:
+            raise RuntimeError('MAMMA background gravity support is unavailable. Close RGB MoCap and run install.cmd, then prepare Scene Gravity / GeoCalib in Model Manager.') from error
     identity['runtime']=dict(packages=runtime['packages'],managed_id=runtime.get('managed_id'))
     # All connector code contributes, not just the model prediction script.
     from .paths import ROOT
     from .storage import sha256
-    identity['code']={name:sha256(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_camera.py','mamma_inputs.py','memory_mode.py','gpu_offload.py')}
+    identity['code']={name:sha256(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     slot=job['root']/'mamma'/'inference'/token
     cached=False
@@ -148,7 +154,8 @@ def run_script(engine, section, filename, args):
     sys.path[:0]=[str(directory),str(engine)]
     os.chdir(directory)
     sys.argv=[str(directory/filename),*map(str,args)]
-    runpy.run_path(sys.argv[0],run_name='__main__')
+    with unicode_image_paths():
+        runpy.run_path(sys.argv[0],run_name='__main__')
 
 
 def masks(engine, work, job):
@@ -173,7 +180,7 @@ def masks(engine, work, job):
         dest.mkdir(parents=True,exist_ok=True)
         for i in range(len(frames)):
             if i%30==0:emit('progress',current=i,total=len(frames),message='Prepare SAM frames: '+frames.cam_name)
-            if not cv2.imwrite(str(dest/f'{i:06}.png'),frames.reader.read_bgr(i)):
+            if not write_image(str(dest/f'{i:06}.png'),frames.reader.read_bgr(i)):
                 raise OSError('Cannot write a lossless SAM input frame.')
         return str(dest)
     SegmentMultipleFrames._resolve_sam_video_source=resolve
@@ -201,14 +208,14 @@ def masks(engine, work, job):
     count=0
     import numpy as np
     for path in raw.glob('*/masks/*.png'):
-        im=cv2.imread(str(path),0)
+        im=read_image(str(path),0)
         if im is None:raise ValueError('MAMMA produced an unreadable mask.')
         _,labels,stats,_=cv2.connectedComponentsWithStats((im>127).astype('uint8'),connectivity=8)
         sizes=stats[1:,cv2.CC_STAT_AREA]
         if len(sizes) and sizes.max()>=128:
             im[np.isin(labels,np.flatnonzero(sizes<8)+1)]=0
         out=cleaned/path.relative_to(raw);out.parent.mkdir(parents=True,exist_ok=True)
-        if not cv2.imwrite(str(out),im):raise OSError('Cannot write cleaned MAMMA mask.')
+        if not write_image(str(out),im):raise OSError('Cannot write cleaned MAMMA mask.')
         count+=1
     if not count:raise ValueError('MAMMA produced no person masks. Check visibility and the initial camera.')
 

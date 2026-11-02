@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import math
 import os
+import time
 import zipfile
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import Qt, QPointF, QRectF, QLineF, Signal
+from PySide6.QtCore import Qt, QPointF, QRectF, QLineF, Signal, QTimer
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF, QRadialGradient, QSurfaceFormat
 from PySide6.QtWidgets import QWidget,QLabel
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
@@ -68,6 +69,11 @@ class MotionView(ViewportBase):
         self.body_height = 1.7
         self.scene_center = np.zeros(3)
         self.drag_point = None
+        self._camera_paint_at = 0.
+        self._camera_update_timer = QTimer(self)
+        self._camera_update_timer.setSingleShot(True)
+        self._camera_update_timer.setTimerType(Qt.PreciseTimer)
+        self._camera_update_timer.timeout.connect(self.update)
         self.auto_fit = True
         self.view_name = "Perspective"
         self.show_grid = True
@@ -79,6 +85,7 @@ class MotionView(ViewportBase):
         self.show_trajectory = True
         self.show_foot_locks = True
         self.show_names = True
+        self.show_cameras=False;self.camera_records=[];self.camera_message='';self.camera_translation_scale=0.
         self.actor_name = 'Person 1'
         self.scene_names = {}
         self.name_labels_presented = []
@@ -404,6 +411,22 @@ class MotionView(ViewportBase):
 
     def mouseReleaseEvent(self, event):
         self.drag_point = None
+        if self._camera_update_timer.isActive():
+            self._camera_update_timer.stop()
+            self.update()
+
+    def request_camera_update(self):
+        # Keep every input delta, but submit only the latest camera per display
+        # interval. A single timer bounds work without an idle render loop.
+        screen = self.screen()
+        rate = screen.refreshRate() if screen is not None else 60.
+        rate = min(240., max(30., rate if math.isfinite(rate) and rate > 0 else 60.))
+        remaining = 1. / rate - (time.monotonic() - self._camera_paint_at)
+        if remaining <= 0:
+            self._camera_update_timer.stop()
+            self.update()
+        elif not self._camera_update_timer.isActive():
+            self._camera_update_timer.start(max(1, math.ceil(remaining * 1000)))
 
     def mouseMoveEvent(self, event):
         if self.drag_point is None:
@@ -424,12 +447,12 @@ class MotionView(ViewportBase):
             self.pan += (-basis[0] * delta.x() + basis[1] * delta.y()) * scale
         self.auto_fit = False
         self.drag_point = event.position()
-        self.update()
+        self.request_camera_update()
 
     def wheelEvent(self, event):
         self.distance = np.clip(self.distance * math.exp(-event.angleDelta().y() / 120 * 0.12), 0.4, 80)
         self.auto_fit = False
-        self.update()
+        self.request_camera_update()
         event.accept()
 
     def mouseDoubleClickEvent(self, event):
@@ -441,6 +464,7 @@ class MotionView(ViewportBase):
         super().resizeEvent(event)
 
     def closeEvent(self, event):
+        self._camera_update_timer.stop()
         self.set_motion(None)
         self.cleanup_gl()
         super().closeEvent(event)
@@ -502,6 +526,7 @@ class MotionView(ViewportBase):
         return drawn
 
     def paintEvent(self,event):
+        self._camera_paint_at = time.monotonic()
         if OPENGL_VIEW:
             super().paintEvent(event)
         else:
@@ -892,6 +917,19 @@ class MotionView(ViewportBase):
             painter.drawText(QRectF(18, 39, self.width() - 36, 20), Qt.AlignLeft, f"Frame {index + 1} / {len(self.joints)}")
             painter.drawText(QRectF(18, 60, self.width() - 36, 20), Qt.AlignLeft,
                              f"X {joints[0, 0]:+.2f}   Z {joints[0, 2]:+.2f} m")
+        if self.show_cameras:
+            from .camera_tracks import at,geometry
+            for camera,trail in self.camera_records:
+                matrix=at(camera,self.scene_time,self.camera_translation_scale)
+                if matrix is None:continue
+                edges,origin=geometry(camera,matrix)
+                lines3d(edges,'#ffae42',1.4)
+                if len(trail)>1:lines3d(np.stack((trail[:-1],trail[1:]),axis=1),'#a48250',1.)
+                xy,z,_=self.project(origin)
+                if z>.08:
+                    painter.setPen(QColor('#ffcc82'));painter.drawText(QPointF(xy[0]+5,xy[1]-5),camera['name'])
+            if self.camera_message:
+                painter.setPen(QColor('#e8c38d'));painter.drawText(self.rect().adjusted(18,125,-18,-18),Qt.AlignTop|Qt.TextWordWrap,self.camera_message)
         characters_drawn=self.draw_characters(painter)
         # Final independent depth layer: exported bones stay above characters,
         # with the same ordering whether Bone Overlay was on or off previously.

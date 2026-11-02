@@ -7,9 +7,10 @@ This guide is for agents helping users operate or modify RGB MoCap. It describes
 - Windows 64-bit, compatible NVIDIA GPU/driver and OpenGL 4.3 are required for the documented inference workflow. Other systems and GPUs were not comprehensively verified; see [validation](VALIDATION.md).
 - In a writable checkout, run `install.cmd` once. It sets up separate pinned profiles for ExMR, FlowHMR and GVHMR and their supported add-ons, PEAR support over the shared runtime, Blender 4.5, FFmpeg and the prebuilt native motion-correction module. It does not install only the selected model's runtime or obtain AI weights/body data. Downloading and disk space are required. Models are obtained separately; optional MAMMA uses Setup_MAMMA.cmd and PromptHMR uses Setup_PromptHMR.cmd.
 - Run `RGBMoCap.cmd`. Keep its command window open; launch errors, processing messages and app Console output are also sent there, but long messages can be truncated and a saturated output queue can drop messages. Within the GUI, **Help > Check System** checks the system.
+- Base worker commands use explicit `-X utf8`, including isolated `-I` launches. Isolated mode ignores `PYTHONIOENCODING`/`PYTHONUTF8` from the parent environment. Any redirected/discarded text log stream must also specify UTF-8. Keep byte-oriented PEAR IPC unchanged.
 - Close the app before `update.cmd`. The updater requires a clean tracked worktree and the `main` branch, uses `git pull --ff-only`, then verifies/repairs runtime configuration. It refuses tracked local edits. A plain `git pull` does not perform runtime repair; use `install.cmd` after dependency changes when needed. Do not discard local edits or force an update.
 - For setup failure, read the message, check connectivity and free space, then retry `install.cmd`. Preserve models, projects and `.setup` state. Do not repeatedly reinstall or redownload models without evidence.
-- Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA and PromptHMR add separate runtimes and model files; see [MAMMA](MAMMA.md) and [PromptHMR](models/PROMPTHMR.md). The five offline model/runtime sets total about **63.11 GiB (67.8 GB)** excluding caches, projects, downloads and compiler tools, counting shared files once. See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
+- Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA and PromptHMR add separate runtimes and model files; see [MAMMA](MAMMA.md) and [PromptHMR](models/PROMPTHMR.md). The five offline model/runtime sets total about **63.22 GiB (67.9 GB)** excluding caches, projects, downloads and compiler tools, counting shared files once. See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
 
 Multi-person reconstruction groups supported ExMR, FlowHMR and GVHMR phases
 into sequential, bounded worker requests. `mocap/queue_groups.py` builds the queue;
@@ -57,14 +58,20 @@ revision as the weights, with SHA-256 validation and a separate import row.
 It is checkpoint metadata, not app settings. Existing weight and runtime pins
 are unchanged. See [validation](VALIDATION.md#exmr-public-api-and-bounded-toe-ik-2026-10-31).
 
+FlowHMR Model Manager also exposes `models/flowhmr/config.json` (25 bytes),
+downloaded with the checkpoint from the same pinned Hugging Face revision and
+SHA-256 checked. It is download-accounting metadata, separate from the inference
+`config.yml`; it is not a new weight, runtime dependency or inference receipt
+input. Do not replace the YAML or invalidate motion to add this metadata.
+
 | Model | Practical use | Hands / options |
 | --- | --- | --- |
 | ExMR | Default; generally fast, good quality in the project's subjective tests. SMPL-X. | Fingers included; static/moving camera and smoothing options. |
 | FlowHMR | Slower; best overall quality in those tests, not a universal ranking. SMPL-H. | Fingers included; Fast SAM and camera/sampling choices. Moving camera needs VGGT-Omega. |
 | GVHMR | Lower overall quality in those tests but sometimes better for unusual poses such as backflips. SMPL-X. | Fingers via optional HandFlow. HTD refines body motion; FootMR refines ankles. Both are separate from contact correction. |
-| MAMMA | Optional multi-view SMPL-X capture from two or more synchronized fixed cameras, without a fixed camera-count maximum. Practical capacity depends on RAM/VRAM. Not part of the single-video quality ranking. | Fingers included; separate setup and locked-head body assets. VGGT or compatible manual calibration. |
+| MAMMA | Optional multi-view SMPL-X capture from two or more synchronized fixed cameras, without a fixed camera-count maximum. Practical capacity depends on RAM/VRAM. Not part of the single-video quality ranking. | Fingers included; separate setup and locked-head body assets. VGGT-Omega + GeoCalib or compatible manual calibration. |
 | PromptHMR | Multiple people reconstructed jointly from one video; can improve relative placement and interactions. Overall motion quality was lower than ExMR in our subjective tests. Fixed-camera Windows path, up to eight people; placement can still be wrong. | No finger tracking; fixed neutral fingers. Setup_PromptHMR.cmd; People defaults to 2, Interaction Prompt on. |
-| PEAR | Live single-person bone preview from a webcam or the video timeline; transient, with no recording/export or contact correction. | Fingers included; Start/Stop, fixed lengths/Reset Bones, One Euro filter, Rotation and default-on World Position. Shared support is installed by install.cmd. |
+| PEAR | Live single-person bone preview from a webcam or the video timeline; transient, with lightweight live foot lock and no recording/export or offline correction. | Fingers included; Start/Stop, fixed lengths/Reset Bones, One Euro filter, Rotation and default-on World Position. Shared support is installed by install.cmd. |
 
 Start with the [model guide index](models/README.md), then [ExMR](models/EXMR.md), [FlowHMR](models/FLOWHMR.md), [GVHMR](models/GVHMR.md), [MAMMA](MAMMA.md) or [PromptHMR](models/PROMPTHMR.md) for exact setup and controls. The [user guide](USER_GUIDE.md#recorded-processing-time-and-vram) includes observed timings, conditions and VRAM; these are historical measurements, not minimum specifications. FlowHMR has a 5,000-frame per-take limit and available memory may require less. MAMMA retains its 4–1,800-frame common trim and eight-person limits; there is no fixed camera-count maximum. Four-column thumbnails are a layout, not admission control. Do not change numerical precision, temporal context or model settings merely to improve a benchmark.
 
@@ -148,7 +155,16 @@ trim and thumbnail preview switching. There is no fixed camera-count maximum;
 retain existing RAM/Windows allocation-headroom monitoring, CUDA allocator
 budgets and OOM failure handling. Do not replace the removed camera-count cap
 with another arbitrary count limit. See [MAMMA scope](MAMMA.md).
-VGGT is the default; compatible manual calibration is optional. Original and
+VGGT-Omega plus GeoCalib is the automatic default; compatible manual calibration is optional.
+GeoCalib supplies background gravity before MAMMA 3D fitting, replacing the
+initial person's head-to-sole vertical axis. Run it in the pinned Flow/Python 3.10
+alignment overlay from `install.cmd`, never inside MAMMA's Python 3.11 process.
+Model Manager exposes its shared `pear_geocalib` checkpoint. Manual camera data
+bypasses both VGGT-Omega and GeoCalib; do not rotate supplied calibration.
+Unreliable gravity must fail clearly rather than silently reverting to a person's
+pose. The initial reference-height scale and sole height are still estimates.
+Keep support/model/code identities in inference receipts and preserve old results
+until the user explicitly reconstructs. Original and
 corrected native actors feed the usual contact editing and FBX paths. See
 [MAMMA.md](MAMMA.md) for the exact environment, registered assets, scale/world
 assumptions and adapter limits. The optional setup downloads official restricted source and builds native
@@ -169,7 +185,7 @@ test a new native module, or use cached inference as evidence of a new build.
 3. Choose camera and processing settings, then **Reconstruct 3D**. Processing runs on a 30 fps working clip, without changing the original video. Progress and cancellation are in the app. **Prepare Preview** rebuilds previews from existing motion without rerunning inference.
 4. Review motion and contacts. **Enable Correction** selects corrected output; Foot defaults on and Hand off for new work. Flat Ground uses a common floor; Multi Level retains inferred contact heights and does not reconstruct terrain. Inspect automatic contacts; hand contacts represent support, not hanging/object tracking.
 5. Edit L/R foot and hand intervals on the timeline, then **Apply Correction**. Pending changes are not applied until then; stale corrected export is blocked. Applying also refreshes linked retargeted characters. Correction and preview do not require fresh AI inference.
-6. **File > Export FBX** exports displayed applied source-person motion. Multiple checked people/takes produce separate named files. Source FBX uses a 52-bone Hips-root hierarchy; BVH files may exist internally but are not the public export option.
+6. **File > Export...** opens FBX/BVH/Blender format selection, the BVH-only Generic/Blender (default) or 3ds Max Biped profile, and the default-off **Add T-pose before motion** option. Multiple checked people/takes produce separate named files. Source skeleton exports use the committed 52-bone Hips hierarchy; the Biped profile renames joints in the exported copy. Optional T-pose export adds one reference frame without editing the cached motion or contacts; original motion shifts by one frame. Blender creates portable video/camera bundles; MAMMA additionally offers whole-scene PC2 bodies and every calibrated camera without a T-pose. Character exports keep their separate FBX/VMD dialog.
 
 See [the full workflow and controls](USER_GUIDE.md#start-here). Do not confuse viewport toggles, automatic detection and applied motion corrections. No general scene geometry or collision reconstruction is implied.
 
@@ -181,6 +197,123 @@ the only publisher of leg rotations. Planning-limit warnings are real residual
 notices. Existing saved previews are not automatically replaced; use Apply
 Correction to recompute without inference. See the v9 measurements and limits
 in [validation](VALIDATION.md#contact-correction-v9-coherent-root-and-swing-transitions-2026-10-30).
+
+### Saved camera display and source export implementation
+
+`mocap/camera_tracks.py` adapts committed camera receipts without inference or
+body-based camera refitting. Single-person FlowHMR may have no
+`scene_camera.json`; use its validated `flow_world.json` basis/height and native
+`flow_camera.npz` without creating a scene receipt or fitting the corrected pose. MAMMA native Z-up calibration is transported to the
+app's Y-up world. FlowHMR/ExMR use saved rotation tracks. Flow gizmos additionally display
+unscaled VGGT displacement; moving-camera ExMR gizmos use estimated displacement
+from ORIGINAL paired world/camera root positions, never corrected poses.
+Motion x defaults to 1, with 0 retaining a fixed center. Video overlay projection
+remains unchanged when this display scale changes. MAMMA/GVHMR remain fixed. Other models expose their saved reference camera only. Do not interpret
+an extrinsic translation vector as the camera center: use `-R.T @ t`.
+
+Single-person ExMR/GVHMR may also have no shared-scene camera receipt.
+`mocap/camera_reference.py` reads the original paired global/camera parameters
+in a cancellable shared-runtime CPU subprocess, with weights-only memory-mapped
+tensor loading. It derives the shape-dependent pelvis pivot from the committed
+original joint cache and never fits to corrected bodies. Camera references are
+kept in a maximum-eight-entry in-memory loader cache, validated against original
+source stamps. Do not import Torch into the editor, write scene/floor receipts,
+run inference or change motion to display a missing camera.
+
+`mocap/camera_ui.py` owns one coalescing camera loader and a Camera Preview canvas
+sharing the existing source QImage. Its video paint callback also projects the
+reconstructed skeleton into the left video view when **Overlays** is on,
+independently of the right Bone Overlay/Camera switches. Keep image, camera and actor skeletons paired
+at frame delivery, including camera switches and rapid seeks. Do not load camera
+files in painting, add a decoder, run Torch in the GUI or alter source camera
+receipts, floor or poses when a display checkbox changes. Camera gizmos/path samples are bounded;
+missing/stale inputs must be visible. Camera Preview is disabled for PEAR.
+
+FlowHMR/ExMR's default-off **Refine Camera Rotation** is an explicit exception
+for derived camera display matrices, not source processing. `camera_background.py`
+adapts PR #18's masked first-frame feature tracking, held-out validation, 2-degree
+limit and sampled interpolation. Failed/rejected observations retain the saved
+rotation, and static-camera results skip the operation. Preserve its acceptance
+thresholds rather than forcing a correction when texture or parallax is unsuitable.
+
+`camera_background_worker.py` uses the existing shared runtime in an isolated
+CPU-only process; `worker_progress.py` routes the stage before inference/cache
+fingerprinting. One coalescing camera loader owns it, cancels/reaps it on toggle,
+replacement or close, and never imports Torch into the GUI. Windows progress is
+read from a bounded, atomically replaced transient file at no more than 5 Hz plus
+phase/final updates. Opaque startup remains active with elapsed time. Temporary
+input/output files live under `cache/camera_background/job-*` and are cleaned
+when the request ends; stale directories after an abrupt application termination
+are disposable with the app closed.
+
+The session refinement cache is limited to four entries and 32 MiB of changed
+matrices, validated against input stamps and the camera/core/worker code digest.
+Unchanged results do not store another matrix copy. Matrix payloads are limited
+to 32 MiB, reports to 1 MiB, captured logs to 512 KiB, fitting samples to 600 and
+worker runtime to 180 seconds. Known actors must have usable tracking boxes.
+Temporary preparation can use additional bounded memory beyond the cache limit.
+No new model/runtime packages, inference signatures, source camera receipts,
+source poses, contacts or FBX/BVH animation may change. Checkbox state belongs
+only in workspace view metadata (`camera_background`). Test accepted and rejected
+cases, exact off restoration, cache invalidation, cancellation, source preservation
+and frame/image/camera pairing separately.
+
+`mocap/source_export_dialog.py` supplies source export options.
+`biped_bvh.py` adapts PR #18's Character Studio naming and uniform ZXY
+conversion for all 52 joints, including fingers. `bvh_profile` propagates through
+every person/take export request; reject unknown profiles. Generic output remains
+a byte copy when no placement/T-pose preparation is needed. Biped uses bounded
+128-frame batches; only placement/T-pose preparation needs a temporary intermediate
+file, which is closed on success/error/cancellation. Preserve original offsets,
+units, timing, physical keyed rotations and source caches. Uniform Euler order can
+change fractional interpolation; do not claim identical between-key motion or
+verified 3ds Max behavior from the Blender/numerical checks alone.
+
+`source_export_worker.py` routes BVH saves through the cancellable worker without
+changing AI worker/cache fingerprints. Keep selected-result, pending contact and
+shared-scene guards, generation checks and atomic destination replacement in
+`fbx_export.py`/`export_copy.py`. Unchecked FBX output must remain identical.
+The optional leading pose is animation, not a replacement bind pose; validate
+both original-frame and fractional-frame suffix poses in Blender after changes.
+
+### Portable Blender export implementation
+
+`blend_export_ui.py` constructs requests and selects new, collision-free bundle
+folders. `blend_export_worker.py` routes `save_blend`/`save_blend_scene` through
+`worker_progress.py` before inference fingerprinting. Keep the existing runtime
+registry and inference worker untouched. General bundles in `blend_export.py`
+reuse `camera_tracks.load` and the isolated original-reference loader; never
+re-estimate the camera from a corrected body. Export only the requested take
+interval, transport the skeleton once through its existing shared placement, and
+use cameras already in that common world without applying the placement twice.
+Optional camera tracking, movement scale and background refinement affect only
+exported cameras. T-pose shifts both motion and video by one frame.
+
+`blend_multicam_export.py` adapts PR #18's full-scene pipeline: current checked
+MAMMA people/takes, full selected SMPL-X LBS surfaces streamed one frame at a
+time into PC2, source skeleton FBX, saved fixed calibration and working videos.
+`blend_multicam_scene.py` builds an overview plus per-camera linked scenes.
+Preserve half-open take visibility and the original shared timeline. Body meshes
+use caches, not armature deformation. Keep model-derived asset inputs private;
+do not distribute body files or model assets with application source. Only the
+user-requested animated scene is exported. Registered assets retain their terms.
+
+The builders `blend_export_scene.py`/`blend_multicam_scene.py` run only in the
+existing Blender 4.5 runtime, with autoexec disabled and bounded CPU threads.
+They install no frame handlers/scripts. Movies and PC2 use relative paths; test
+relocation including Unicode folders. Verify imported bone matrices, actual
+PC2 evaluated vertices, camera projection (including unequal fx/fy and shifted
+principal point), frame timing and object-transform key exclusion.
+
+`blend_support.py` owns exclusive sibling staging directories, bounded video
+copying and log reads, free-space checks, progress forwarding, and native-process
+termination on errors/cancellation. Remove only exact owned staging paths with
+the matching request marker; never remove completed bundles or existing user
+folders. GUI cancellation terminates the worker tree and cleans its known staging
+directory. Revalidate source/stat/generation/scene receipts before publishing.
+MAMMA currently bounds the common trim to 1800 frames/eight people; geometry
+baking must not accumulate whole mesh sequences in RAM. No new inference,
+runtime dependency, source motion or contact change is part of export.
 
 ## Character retargeting and export
 
@@ -240,9 +373,31 @@ The mode checks predate the latest acceleration. Low Memory saves GPU memory,
 not necessarily RAM; individual CPU-loaded models can add several GiB of host
 working set. Automatic selects a path per operation, not from a guaranteed
 whole-job capacity prediction. FlowHMR's Low Memory SAM batch is one even when
-the saved 4-Frame Batching box is on; its GPU Hand Crops selection is retained.
+the saved Adaptive Batching box is on; its GPU Hand Crops selection is retained.
 The two Fast SAM switches default on for new work, preserve saved off settings,
 and only apply with Fast SAM. See [their separate measurements and output differences](PERFORMANCE.md#flowhmr-fast-sam-switches).
+
+FlowHMR's `flow_sam_batch.py` selects 1/2/4/8/16 frames from current allocation
+headroom, free RAM and resolution after loading. Preserve the legacy
+`sam_batch4` boolean key so saved off values stay off. The 16-frame ceiling is
+a measured efficiency choice, not an upstream model limit. Recheck memory
+between prepared batches; retry an unpublished chunk at a smaller batch only
+after releasing its OOM traceback. Keep one-frame failures connected to the
+existing scoped Low Memory retry. Do not grow queues, change precision, drop
+frames or lose the first 30 placement anchors. Include the helper in feature
+cache identities; metadata downloads must not invalidate other AI stages.
+The 2026-11-02 tests found 16–23% less warm feature time than batch 4, allocated
+VRAM 3.84 → 5.43 GiB and about 0.20 GiB more warm RAM. Fresh short app jobs
+benefited much less because loading dominated. Official Lite SAM and the combined
+GPU body/hand-crop trial were slower here and remain experimental; body-only
+cropping was not isolated. Do not silently replace the active
+Fast SAM package. See [the full scope](PERFORMANCE.md#flowhmr-adaptive-batches-2026-11-02).
+
+The selected Fast SAM batch upper bound, GPU Hand Crops state, Low Memory
+single-frame choice and OOM batch-retry messages are shown in Console and CMD.
+Available-memory checks and a final partial batch can lower the effective size;
+cached features do not select a new batch. Keep worker `info` events routed through
+the console mirror without replacing processing progress or changing inference.
 
 When reporting new tests, keep inputs, model files, settings and timing scope
 fixed. Separate cold worker startup from warm inference, allocated from reserved
@@ -272,7 +427,8 @@ Inspect [BUILD.md](BUILD.md), [VALIDATION.md](VALIDATION.md) and relevant code b
 
 ## PEAR live mode
 
-PEAR support is **experimental**. Tracking and pose estimates may be unstable;
+PEAR tracks webcam or video input in real time. Support is **experimental**;
+tracking and pose estimates may be unstable;
 describe it as an experimental preview, not a production-ready capture workflow.
 
 Close the app and run `install.cmd`. The base installer also downloads
@@ -289,7 +445,7 @@ Manager downloads. MAMMA and PromptHMR still use their separate setup commands.
 
 This is a transient single-person preview, not a saved offline project model.
 `None` in the webcam selector uses video timeline frames; a named camera selects
-the webcam input. Neither loads models until Start Live Tracking is pressed. No recording, Find person, contact correction, retargeting or
+the webcam input. Neither loads models until Start Live Tracking is pressed. No recording, Find person, offline contact correction, retargeting or
 export is available. Preserve offline projects and camera views when switching.
 Keep requests and output mailboxes bounded/latest-only, run native imports and
 warmup before the Windows blocking stdin reader, and release only the worker
@@ -312,7 +468,7 @@ stopped. Start Live Tracking explicitly enables loading/warmup and tracking;
 the same button becomes Stop immediately, including during loading. Stop
 invalidates pending output, stops playback and closes only this session's worker,
 capture and GPU data off the GUI thread. Disable Start until the old worker exits;
-never overlap workers or automatically restart after Stop/error/leave/reselect.
+never overlap model workers or automatically restart them after Stop/error/leave/reselect.
 A new Start loads a fresh worker. While running, input changes reuse its model.
 PEAR alone uses the pinned YOLOv8s asset (`pear_yolo`, `models/yolo/yolov8s.pt`).
 Keep its size/hash-checked Model Manager download/import and trusted loader.
@@ -320,6 +476,28 @@ Do not replace the shared YOLOv8x asset used by offline models. Detector boxes
 can alter pose predictions; detection success is not an accuracy measurement.
 Idle acknowledgement keeps a deliberately waiting started worker from appearing
 stalled. Keep RAM/VRAM monitoring and bounded mailboxes while it is running.
+
+Selecting a webcam may create the separate `pear_camera_preview` capture worker.
+It imports OpenCV/NumPy, not PEAR or Torch, and uses bounded latest-frame buffers
+with a bounded 1280x720 displayed image.
+Partial slot assignment is previewable; tracking still requires distinct devices
+in every slot. Keep per-device rotation and thumbnail selection active. This
+worker alone owns the physical devices and remains connected during Start and
+Camera Align. `pear/camera_stream.py` publishes one fixed-size Windows shared
+frame per device under a named mutex; model workers use independent RemoteCamera
+readers and never reopen those devices. Validate descriptors/device identities,
+retain bounded copy/age checks and release reader handles on worker replacement.
+Shared raw frames have a 64 MiB per-frame / 512 MiB aggregate allocation limit;
+these are not whole-process RAM limits or silent downsampling. No per-frame file
+writes are introduced. Keep PEAR and calibration GPU models sequential while
+capture and image preview continue. Stop suspends automatic camera
+preview until device/rotation/resolution changes or Refresh. None/leave/app close
+release preview capture too. Failure stays visible without an automatic restart
+loop. Preview does not need model weights or an installed PEAR support overlay.
+Video decoding/playback remains available while models load or cameras align.
+Freeze alignment sample frame/generation at the click, separately from later
+seek epochs. Raw preview rotation is painting-only; completed rotated image/pose
+pairs must not be rotated twice. Reset the raw-preview rotation on leaving PEAR.
 
 During PEAR video playback, present each completed image/pose pair together,
 accepting monotonically newer results within the current source/seek epoch.
@@ -367,7 +545,16 @@ paused output immediately. Reset Bones keeps the anchor; a new input or Stop
 clears it and releases the cached pose. On restores the raw estimated position,
 so a position change is expected. This is pelvis locking, not foot locking.
 
-PEAR's **One Euro Filter** and **Rotation** apply to webcam and video inputs. Rotate
+PEAR's **One Euro Filter** and **Rotation** apply to webcam and video inputs.
+All webcam slots belong in one numbered Camera / Device / Rotation table below
+the video, with Count/Refresh in that panel and a bounded vertical scroll area.
+Do not split camera 1 into the video header. Rotation is independent for each
+device; do not restore a shared right-sidebar rotation. In video mode,
+the first field edits the selected thumbnail's video, retaining other inputs'
+values. Pass ordered per-input `rotations` through ordinary tracking and Camera
+Align sampling, invalidate alignment after any angle change, and preserve values
+on thumbnail/device refresh. The worker accepts the older scalar `rotation` only
+as a compatibility fallback when the ordered list is absent. Rotate
 pixels before detection/inference, then display the matching rotated image even
 when paused. Source files are never rewritten. Smoothing is a causal adaptive
 parameter filter on rotations/shape/face plus a vector-speed root filter; it changes
@@ -386,16 +573,85 @@ Reset temporal state on missing people, input/rotation/enable changes, reverse t
 long gaps; preserve the existing placement origin during same-source seeks.
 Retain the last matched image/pose while a seek, pause or smoothing toggle computes
 its replacement; clear it for a real missing-person result, error or changed input.
+Under One Euro Filter, Bone Rotation and World Position are separate default-on
+component switches. Requests carry `smooth_rotations` and `smooth_position`;
+absent fields retain the previous both-on behavior. The parent `smoothing` flag
+gates both. The position-filter switch does not disable world movement or Foot
+Lock. Reset only the disabled component; retain the other filter history and
+strength. Repeated timestamps from paused control refreshes retain the unaffected
+filtered value instead of reseeding it. Actual seeks/gaps still reset normally.
 A smoothing-only toggle must not reopen capture, reacquire identity, reframe the
 camera or reset the placement origin. It is not an offline full-sequence smoother
 or a guarantee of identical live/seek history.
 Keep the one resident model, latest-only controls and fixed memory bounds.
 
 
-## Custom export and camera tools
+### PEAR multiview fixed-camera preview
 
-This fork retains FBX, generic/Biped BVH and portable Blender project export,
-optional T-pose at frame 0, explicit output selection, relative video bundles,
-Camera Preview, tracked Blender cameras and optional background rotation refinement.
-Experimental FlowHMR camera translation remains optional and is not metric calibrated.
-MAMMA preview/export uses the primary calibrated camera and its video.
+PEAR now accepts multiple video files through File > Open Video using the MAMMA
+input inspector/thumbnail style. The common 30 fps timeline trims every view;
+inputs must already be synchronized. Webcam camera-count slots require distinct
+devices, with thumbnails selecting the main preview. Start/Stop remains explicit.
+Start Live Tracking attempts Camera Align first for one or more cameras. A failure
+continues tracking in the selected camera without fusion or aligned foot lock,
+with a persistent visible warning and a console message. Missing alignment-only
+support/models must not block otherwise-ready PEAR tracking. After alignment,
+`pear/multiview.py` fuses rotations on one fixed rig and solves root position from
+reprojection. Default-on lightweight Foot Lock uses pre-correction contact evidence, smooth activation/release and fixed-length two-bone leg adjustments. Preserve ankle/toe world rotations and the inferred bend side; cap pelvis shift at 4 cm and allow residual reach error. World Position off prohibits pelvis movement. Reset lock state on missing input, discontinuity or calibration changes; never feed corrected positions into contact detection. No offline correction, recording, retargeting or export is run.
+
+`pear_multi_ui.py` manages transient inputs and calibration. `pear/multi_worker.py`
+uses a four-thread CPU pool, bounded capture buffers and GPU batches of at most
+four. YOLOv8s stays FP32; PEAR retains its validated FP16 encoder/FP32 decoder.
+The graph path has no TensorRT dependency. Camera Align uses a separate
+`flow_pear_align` worker over the pinned Flow runtime, sequential VGGT and GeoCalib
+GPU stages, and a small GeoCalib/Kornia support overlay from install.cmd/update.cmd.
+Model Manager reuses `flow_vggt` and separately obtains SHA-256 checked
+`pear_geocalib`. Both weights are required for automatic alignment, including single-view alignment. Missing weights must show an actionable warning while allowing selected-camera tracking. Unaligned placement is approximate; do not claim fused/calibrated output.
+
+Preserve shared runtime packages. `installer/pear-alignment.json` pins the source
+and wheels; `tools/setup_pear_alignment.py` installs them under runtime_pear with a
+separate inventory receipt. Re-run install.cmd after support changes; never forge
+receipts. Initial pose is not an upright constraint. Background geometry supplies
+camera orientation/floor; metric scale is inferred from fixed bone lengths.
+Changed inputs/rotation/resolution and successful Reset Bones trigger another alignment attempt; failure continues with the selected camera and a warning. Physical camera movement needs an explicit Camera Align. Single-view scale uses inferred metric limb geometry and predicted person depth, so it remains an estimate.
+Webcam host-arrival pairing is approximate (80 ms skew bound), not hardware sync.
+
+Keep samples/benchmarks under an ignored/private experiment directory, not Git.
+Alignment samples live only in cache/pear/alignment; successful jobs remove images.
+Cancel stale alignments and reject mismatched receipts. Preserve offline media,
+selection, trims and camera on leaving PEAR. Test paired playback, seeks, thumbnail
+switches, cancellation, Stop/reopen and source replacement; actual multiple-webcam
+performance requires physical devices and must not be claimed from video simulation.
+
+
+## International Windows filenames and text output
+
+Use UTF-8 explicitly for application JSON, text logs and subprocess text pipes.
+Launch every isolated/development Python worker and setup verifier with
+`-X utf8`; `-I` ignores the parent's `PYTHONUTF8` and `PYTHONIOENCODING` settings.
+The GUI uses separate incremental UTF-8 decoders for each worker channel and
+character job. Preserve decoder state between pipe chunks and flush at EOF;
+never decode each arbitrary chunk independently. Keep existing buffer limits.
+PEAR's binary IPC remains binary and must not pass through these decoders.
+
+Use `mocap.image_io.read_image` / `write_image` for filesystem-backed OpenCV
+images on Windows. They retain the existing codec and pixels, while Python
+handles Unicode filenames. MAMMA's upstream-script calls and PromptHMR's isolated
+worker use the temporary `unicode_image_paths` scope. It restores OpenCV entry
+points even on errors. Do not apply this process-wide scope in the GUI or in a
+process running concurrent unrelated jobs. Include this helper in affected
+inference receipts; never bypass generation validation.
+
+Pass filesystem paths as argument-list elements rather than shell fragments.
+Keep delayed expansion disabled in entry-point CMD files so exclamation marks
+in installation paths survive. Generated UTF-8 native-build CMD files must
+select code page 65001 before reading non-ASCII command lines. Do not change
+model versions, regional Windows settings or source motion to repair text.
+VMD's specified CP932 fields remain CP932; an international file path does not
+make that legacy file format capable of storing every Unicode label.
+
+The 2026-11-02 checks covered English, Western European accents, Japanese,
+Cyrillic, Korean, Chinese, combining accents and emoji paths on one Windows PC.
+Hostile parent encodings were simulated; different OS languages, clean installs
+and fresh CUDA compilation in every such path were not independently tested.
+See the [validation record](VALIDATION.md#international-windows-paths-and-output-2026-11-02).
