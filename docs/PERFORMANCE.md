@@ -18,10 +18,38 @@ views and fitting iterations. Existing native mixed precision remains in use;
 this is not a claim that every model layer is FP32.
 
 **Low Memory is primarily a VRAM-saving mode, not a system-RAM-saving mode.**
-Actual RAM and Windows allocation headroom are monitored in both modes. Work
-stops with an error when memory becomes insufficient; close other applications
-or shorten the clip if necessary. Decisions and memory advice appear in both
-the app Console and CMD window.
+With **Resource Safety** enabled (the default), actual RAM and Windows allocation
+headroom are monitored in both modes. Work stops with an error when the measured
+headroom becomes low. Decisions and memory advice appear in both the app Console
+and CMD window. See the independent safety control below.
+
+### Resource Safety
+
+The **Resource Safety** checkbox sits below Resource Mode and defaults **on**.
+
+- **On:** retain the existing low-RAM/Windows commit-headroom stop and PyTorch
+  VRAM allocation budget. RAM reserve stays 1–4 GiB according to system size;
+  Windows commit headroom below 1 GiB also triggers the monitor. Ordinary low
+  samples must repeat; critical headroom below 256 MiB stops immediately.
+  The desktop checks every 0.5 seconds. The VRAM budget subtracts the existing
+  600 MiB Windows external-use margin, or 700 MiB for GPUs over 15 GiB, from
+  currently free VRAM. These thresholds have not been increased.
+- **Off:** skip that RAM/commit stop and remove the app's PyTorch allocator cap.
+  This does not create additional memory. Actual allocation failures or system
+  slowdowns can still occur; other applications and non-PyTorch allocations are
+  outside the allocator cap in either setting.
+
+In both settings, Automatic still measures resources to select batches and
+supported Low Memory paths. Actual CUDA OOM backoff/recovery, model limits,
+cancellation, incomplete-result protection and the separate 180-second
+no-output/no-CPU stall check remain. Disabling safety does not change inference
+precision or intentionally force larger batches. It is not a model speed preset.
+
+The preference is local to this installation, saved in ignored
+`config/local.json`, independently of projects and model selections. Console
+and CMD show the setting for queued work. Changing it does not rerun inference;
+running jobs retain their starting setting. PEAR inherits the same preference
+for its live and alignment workers; its offline resource controls remain hidden.
 
 ### What changes for each model
 
@@ -35,8 +63,8 @@ the app Console and CMD window.
 
 PEAR is a separate live tool: the offline Resource Mode control is hidden. Its
 fixed-length bone path uses FP16 encoding/FP32 decoding, one requested frame per
-prediction and bounded latest-frame presentation. It retains RAM monitoring and
-a CUDA allocation budget but has no automatic offload/retry path. See the
+prediction and bounded latest-frame presentation. Its RAM monitor and CUDA
+allocation budget follow Resource Safety; it has no automatic offload/retry path. See the
 [PEAR timings and limitations](models/PEAR.md#placement-and-performance).
 
 ## Measured memory savings
@@ -255,7 +283,110 @@ Compilation, TensorRT, model weights and installed dependencies are
 unchanged. The upstream A100 report compares against an unaccelerated original
 baseline, so its 5–10× claim must not be applied to this app's previous Fast path.
 
-### MAMMA
+### FlowHMR query batches and four-frame hands (2026-11-03)
+
+The app now uses the validated official 256-query attention implementation for
+all FlowHMR motion lengths. FP32, full key visibility, RoPE, temporal context,
+checkpoint and 20 ODE steps are retained. The before/after measurements below
+use identical features on the test PC (RTX 5090 32 GB, Ryzen 9 9950X, 96 GB RAM):
+
+| Motion length (30 fps) | Original time | Query-256 time | Original / query peak allocated VRAM | Original / query worker RAM (RSS) |
+| --- | ---: | ---: | ---: | ---: |
+| 60 frames / 2.0 s | 0.47 s | 0.55 s | 1.83 / 1.83 GiB | 4.97 / 4.97 GiB |
+| 474 frames / 15.8 s | 0.77 s | 0.90 s | 2.04 / 1.93 GiB | 4.48 / 4.99 GiB |
+| 999 frames / 33.3 s | 2.16 s | 1.82 s | 2.64 / 2.07 GiB | 5.03 / 5.01 GiB |
+| 4,806 frames / 160.2 s | 25.45 s | 7.97 s | 17.41 / 3.06 GiB | 4.37 / 5.04 GiB |
+
+At 4,806 frames, this is **3.19× throughput (68.7% less time)** and
+**82.4% less allocated VRAM**, while worker RSS increases about **0.67 GiB**.
+Short sequences can be slightly slower. These are warm motion-generator timings
+reported as medians of three runs per case, excluding model load, warmup, SAM extraction,
+camera estimation, correction and export. Allocated VRAM is the PyTorch allocation
+peak, not total GPU/desktop usage; RSS is the worker working set, not all processes.
+These are measured differences, not minimum requirements or whole-job speedups.
+The source-motion comparison found joint differences below **0.001 mm**; a
+separate downstream correction comparison reached **0.674 mm / 0.202°** maximum
+disagreement with unchanged contact timing. Floating-point results are not
+guaranteed bit-identical.
+
+**4-Frame Hand Sampling** is a separate, default-on Fast SAM option. Body
+features and output motion still use every frame. Hand features are sampled
+every four frames plus the final endpoint, then interpolated on CPU. It works
+with one-frame Low Memory batches and CPU or GPU hand crops. It is independent
+of the number of spatial frames processed together. Disable it to retain
+every-frame hand evidence. This option does not itself run HaMeR or add a runtime dependency.
+
+On the test PC, a 327-frame 1080×1920 clip's fresh app feature jobs took
+**54.05 s off / 43.21 s on**, including model loading and decoding. Allocated
+VRAM peaks were **5.43 / 4.21 GiB**. Earlier warm extraction measurements were
+**20.55 / 11.33 s**; these are different timing scopes. Neither is a universal
+whole-job speedup. The app integration comparison retained all 327 frames.
+Query versus original attention, using identical features, differed by at most
+**0.00034 mm** across source joints. Sparse versus every-frame hands differed
+by **22.26 mm mean / 85.24 mm maximum** across body/wrist joints in this
+upper-body clip; the all-joint maximum was **167.85 mm**. These are disagreements,
+not measured accuracy losses against ground truth. The hands condition the
+whole motion model, so changes are not confined to fingers or contact timing.
+
+See [FlowHMR controls and limits](models/FLOWHMR.md#controls) and the
+[integration checks](VALIDATION.md#flowhmr-query-and-hand-sampling-integration-2026-11-03).
+
+### Optional FlowHMR HaMeR fingers (2026-11-03)
+
+The separate default-off HaMeR option uses the existing ExMR runtime and shared
+HaMeR/MANO weights. It infers every frame with ExMR crop preparation, FP16 network
+execution and Gaussian rotation smoothing. It is not ExMR's learned HandMR
+temporal inference. It forces four-frame SAM hand conditioning on, but does not
+reduce HaMeR's own temporal sampling. It replaces fingers only and may still
+produce jitter or inaccurate poses. FlowHMR body/wrists/root/shape/native contacts
+remain exact before downstream correction.
+
+A 327-frame app check measured **26.67 s** for the fresh HaMeR child pass,
+including its startup/model load and video read. Peak child allocated VRAM was
+**5.14 GiB**, with peak child RAM working set **1.75 GiB**. These are child-worker
+figures, not combined parent/desktop RAM peaks or universal requirements. The
+parent releases its GPU model before the child starts. Warm timings from earlier
+standalone FP32 crop experiments have a different scope and precision.
+
+### MAMMA direct SAM video input (2026-11-03)
+
+MAMMA now skips the intermediate lossless RGB PNG write/read before SAM 2.1.
+It uses the existing video reader and the same PIL resize, FP32 tensor and
+normalization. YOLO/CLIP matching, mask prompts, propagation, tiny-component
+cleanup, landmark inference, cameras, fitting and correction are unchanged.
+Final person masks remain available for downstream stages. This optimization
+is used in both resource modes and needs no new runtime or weights.
+
+Independent paired measurements on the RTX 5090 / 96 GB RAM test PC used four
+1920×1080 videos, two people, 30 fps, and the same source prefix at both lengths.
+Each variant ran in a fresh process, once per duration, with CPU frame/state
+offload unchanged. Time covers mask-model setup, input preparation, matching,
+propagation, mask saving and cleanup; camera/landmark/3D fitting are excluded.
+
+| Duration | Time: PNG / direct | Peak RAM working set: PNG / direct | Peak allocated VRAM: PNG / direct |
+| --- | ---: | ---: | ---: |
+| 7 s / 210 frames | 221.79 / 184.40 s | 6.569 / 6.592 GiB | 2.536 / 2.536 GiB |
+| 14.2 s / 426 frames | 398.88 / 314.52 s | 10.053 / 10.050 GiB | 2.536 / 2.536 GiB |
+
+Mask-stage time fell **16.9% / 21.2%** (1.20× / 1.27× throughput).
+RAM changed **+23 / −3 MiB**, with identical allocated/reserved CUDA peaks
+within each pair. Windows private-commit peaks were 10.661 / 10.670 GiB for
+7 seconds and 13.989 / 13.981 GiB for 14.2 seconds. Private commit is not
+physical RAM; working set is the OS process peak, including short transients.
+
+All **5,088 paired person-mask images** were pixel-identical. PNG input payloads
+of 2.57 / 5.23 GiB were avoided; final masks and other necessary outputs still
+write to disk. Process logical writes fell 3.89→1.32 / 7.88→2.65 GiB; these are
+Windows process I/O counters, not physical SSD writes. The SAM CPU tensor alone
+uses about 12 MiB per frame at its 1024-square setting in either path, so long
+clips can still need substantial RAM. These tests do not establish minute-scale
+memory use, universal speedups or less RAM for every input.
+
+An earlier separate four-view, three-second comparison also retained identical
+masks, landmarks, final mesh and joints. The app-path regression and remaining
+scope are recorded in [validation](VALIDATION.md#mamma-direct-sam-input-2026-11-03).
+
+### Other MAMMA optimizations
 
 The current MAMMA adapter uses exact-coordinate ROI preprocessing, CPU checkpoint
 loading, a mask-based landmark path without an unnecessary detector, fewer

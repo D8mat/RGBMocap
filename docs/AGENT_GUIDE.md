@@ -10,7 +10,7 @@ This guide is for agents helping users operate or modify RGB MoCap. It describes
 - Base worker commands use explicit `-X utf8`, including isolated `-I` launches. Isolated mode ignores `PYTHONIOENCODING`/`PYTHONUTF8` from the parent environment. Any redirected/discarded text log stream must also specify UTF-8. Keep byte-oriented PEAR IPC unchanged.
 - Close the app before `update.cmd`. The updater requires a clean tracked worktree and the `main` branch, uses `git pull --ff-only`, then verifies/repairs runtime configuration. It refuses tracked local edits. A plain `git pull` does not perform runtime repair; use `install.cmd` after dependency changes when needed. Do not discard local edits or force an update.
 - For setup failure, read the message, check connectivity and free space, then retry `install.cmd`. Preserve models, projects and `.setup` state. Do not repeatedly reinstall or redownload models without evidence.
-- Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA and PromptHMR add separate runtimes and model files; see [MAMMA](MAMMA.md) and [PromptHMR](models/PROMPTHMR.md). The five offline model/runtime sets total about **63.22 GiB (67.9 GB)** excluding caches, projects, downloads and compiler tools, counting shared files once. See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
+- Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA and PromptHMR add separate runtimes and model files; see [MAMMA](MAMMA.md) and [PromptHMR](models/PROMPTHMR.md). The five offline model/runtime sets total about **63.22 GiB (67.9 GB)** before optional PromptHMR moving-camera support, excluding caches, projects, downloads and compiler tools, counting shared files once. Camera support adds about **1.57 GiB** (18.6 MiB modules and 1.55 GiB weights). See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
 
 Multi-person reconstruction groups supported ExMR, FlowHMR and GVHMR phases
 into sequential, bounded worker requests. `mocap/queue_groups.py` builds the queue;
@@ -41,6 +41,12 @@ cache. The two prepared batches are in addition to the batch being consumed.
 The 256 MiB prepared-storage estimate is not a hard cap on whole-process RAM;
 retain actual memory monitoring and deterministic producer cleanup.
 
+For FlowHMR query-batch before/after time, allocated VRAM, worker RAM and
+precision limits, use the [measured comparison table](PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
+Keep warm generator measurements separate from fresh feature jobs and the
+additional HaMeR child pass. HaMeR is an optional finger-accuracy refinement,
+not a guarantee of better results for every video.
+
 ## Models and model files
 
 ExMR's integrated v0.1.5 uses public `pipeline.hand_boxes`, `model_inputs` and
@@ -70,7 +76,7 @@ input. Do not replace the YAML or invalidate motion to add this metadata.
 | FlowHMR | Slower; best overall quality in those tests, not a universal ranking. SMPL-H. | Fingers included; Fast SAM and camera/sampling choices. Moving camera needs VGGT-Omega. |
 | GVHMR | Lower overall quality in those tests but sometimes better for unusual poses such as backflips. SMPL-X. | Fingers via optional HandFlow. HTD refines body motion; FootMR refines ankles. Both are separate from contact correction. |
 | MAMMA | Optional multi-view SMPL-X capture from two or more synchronized fixed cameras, without a fixed camera-count maximum. Practical capacity depends on RAM/VRAM. Not part of the single-video quality ranking. | Fingers included; separate setup and locked-head body assets. VGGT-Omega + GeoCalib or compatible manual calibration. |
-| PromptHMR | Multiple people reconstructed jointly from one video; can improve relative placement and interactions. Overall motion quality was lower than ExMR in our subjective tests. Fixed-camera Windows path, up to eight people; placement can still be wrong. | No finger tracking; fixed neutral fingers. Setup_PromptHMR.cmd; People defaults to 2, Interaction Prompt on. |
+| PromptHMR | Multiple people reconstructed jointly from one video; can improve relative placement and interactions. Overall motion quality was lower than ExMR in our subjective tests. Fixed/moving-camera Windows paths, up to eight people; placement can still be wrong. | No finger tracking; fixed neutral fingers. Setup_PromptHMR.cmd; People defaults to 2, Interaction Prompt on. |
 | PEAR | Live single-person bone preview from a webcam or the video timeline; transient, with lightweight live foot lock and no recording/export or offline correction. | Fingers included; Start/Stop, fixed lengths/Reset Bones, One Euro filter, Rotation and default-on World Position. Shared support is installed by install.cmd. |
 
 Start with the [model guide index](models/README.md), then [ExMR](models/EXMR.md), [FlowHMR](models/FLOWHMR.md), [GVHMR](models/GVHMR.md), [MAMMA](MAMMA.md) or [PromptHMR](models/PROMPTHMR.md) for exact setup and controls. The [user guide](USER_GUIDE.md#recorded-processing-time-and-vram) includes observed timings, conditions and VRAM; these are historical measurements, not minimum specifications. FlowHMR has a 5,000-frame per-take limit and available memory may require less. MAMMA retains its 4–5,000-frame common trim and eight-person limits; there is no fixed camera-count maximum. Four-column thumbnails are a layout, not admission control. Do not change numerical precision, temporal context or model settings merely to improve a benchmark.
@@ -91,6 +97,16 @@ install inside the running app. After updates, rerun the relevant optional setup
 when requested by its dependency/runtime notice. Keep verified installed packages
 isolated even when Torch versions match. Models are obtained separately.
 
+PromptHMR supporting downloads use `cache/prompthmr/torch/hub/` and
+`cache/prompthmr/hf/`, independently of video/result generations. The first empty
+cache may need internet access. `prompthmr_cache.py` checks known old project
+locations with bounded directory/hash work and imports only the exact verified
+DeepLab weights; it preserves old files and does not copy executable Hub code.
+Use the printed shared-cache location to diagnose repeated downloads. The 14 base files and two optional Moving Camera files are scoped separately. The Model Manager count excludes supplementary download caches. A reviewed exact
+pipeline-hash pair preserves valid existing inference receipts for this cache-only
+fix; do not extend that exception to numerical/weight changes. No optional-runtime
+rebuild is required. See [supporting downloads](models/PROMPTHMR.md#shared-supporting-model-download-cache).
+
 Model files are in `<installation>/models/` by default. To reuse a legitimate installation, close both apps, copy the complete models folder and its receipt/license files beside `RGBMoCap.cmd`, and check readiness in Model Manager. Do not copy old `runtime*` folders. SMPL Neutral is required by PromptHMR, although it is not required for ExMR/FlowHMR/GVHMR. Standard SMPL-X Neutral is shared by ExMR/GVHMR/PromptHMR; MAMMA uses its separate locked-head bodies. Exact requirements are defined by `mocap/models.py` and the chosen stages, not by guessed filenames.
 
 ## Standard GUI workflow
@@ -102,7 +118,7 @@ separate pinned Python 3.11 runtime, not a MAMMA overlay or part of install.cmd.
 Setup_PromptHMR.cmd downloads restricted upstream source, builds SAM2 with
 Visual Studio 2022/CUDA Toolkit 12.8 and verifies actual CUDA operations. It
 reuses standard registered SMPL-X/SMPL bodies, not MAMMA's locked-head body.
-Only fixed-camera video is integrated. Find person is hidden; actors retain one
+Fixed Camera is the default. Optional Moving Camera uses DroidCalib + Metric3D after a separately verified camera build. Find person is hidden; actors retain one
 shared inferred world. The adapter accepts 4–1,800 working frames at 30 fps and
 up to eight people. Both resource modes keep one-image batches and full temporal
 context; extra offloading is not implemented. Preserve actual memory monitoring.
@@ -146,14 +162,42 @@ motion and the native raw result. Older published finger poses need Reconstruct
 3D with a verified inference cache; Prepare Preview alone does not republish them. Optional contact
 correction is a subsequent intentional pose change. Preserve other runtimes.
 
+### PromptHMR moving-camera extension
+
+`Setup_PromptHMR.cmd` asks separately whether to prepare camera support. Keep
+the base runtime usable when that optional build fails. The camera setup reuses
+the verified base Python/Torch; `tools/setup_prompthmr_camera.py` stages pinned
+Eigen/LieTorch sources and torch-scatter, restores build-only Torch/Python link
+libraries from the verified archives/bootstrap, builds for the actual GPU,
+and exercises LieTorch forward/backward, scatter and DroidCalib CUDA operations.
+Only then atomically register `.setup/prompthmr-camera-runtime.json`. Preserve
+previous registrations, packages, projects and weights on any failure.
+
+`installer/prompthmr_camera_adapters.py` prefixes CUDA kernel names to avoid
+MSVC merging CPU templates with GPU launch stubs, uses int64 tensor indices,
+and relative compilation source paths to avoid duplicated long object paths.
+Do not revert these compatibility fixes or mark imports alone as validation.
+Compiler tools and temporary build data are not installed runtime size.
+
+`mocap/prompthmr_camera.py` loads the two SHA-256 checked camera weights,
+invokes the pinned masked DroidCalib/Metric3D equations, uses Torch SDPA for
+Metric3D attention and one-image depth batches. Keep full temporal context and
+the Resource Safety-controlled limits and actual OOM handling. Invalid tracking must fail, not silently switch modes.
+The camera module identity/weights are included only for moving inference.
+`prompthmr_publish.py` preserves the common world, derives each frame's incam
+body transform with the registered pelvis pivot, and commits the native camera
+track for overlays/gizmos/Blender export. The common scene/floor anchor remains
+constant; never independently rotate/space actors or derive camera motion from
+the corrected pose. Older projects without a camera option stay fixed.
+
 ### MAMMA setup and verification
 
 MAMMA runs an optional complete multi-view pipeline using a separate pinned
 Python 3.11 Windows runtime installed with Setup_MAMMA.cmd. The current app
 adapter accepts two or more synchronized fixed-camera views, with one common
 trim and thumbnail preview switching. There is no fixed camera-count maximum;
-retain existing RAM/Windows allocation-headroom monitoring, CUDA allocator
-budgets and OOM failure handling. Do not replace the removed camera-count cap
+retain Resource Safety control over RAM/Windows allocation-headroom stops and
+CUDA allocator budgets, plus actual OOM failure handling in either setting. Do not replace the removed camera-count cap
 with another arbitrary count limit. See [MAMMA scope](MAMMA.md).
 VGGT-Omega plus GeoCalib is the automatic default; compatible manual calibration is optional.
 GeoCalib supplies background gravity before MAMMA 3D fitting, replacing the
@@ -178,6 +222,20 @@ verification, registration and rollback, use the
 validate actual native CUDA operations. Do not overwrite a working runtime to
 test a new native module, or use cached inference as evidence of a new build.
 
+MAMMA's SAM 2.1 input uses `mocap/mamma_sam_frames.py` to decode the already
+prepared video directly, without intermediate RGB PNGs or empty index files.
+Keep the same PIL resize, float64 pixel division into FP32 frame storage,
+in-place normalization and CPU frame/state offload. Final masks and existing
+matching/fitting settings remain unchanged. The adapter is worker-scoped,
+restores upstream hooks even on exceptions, and holds only the current camera's
+frame-source reference; it owns no new captures or background queues. Other
+frame-source types keep the upstream path. Include the helper in the MAMMA code
+identity; never reuse a mixed/incomplete generation. Existing completed results
+remain readable and are not automatically reprocessed on open. No runtime setup
+change is needed. Paired 7/14.2-second mask tests cut time 17–21%, changed RAM by
++23/−3 MiB and retained all masks; these are stage-only results. See
+[performance and measurement limits](PERFORMANCE.md#mamma-direct-sam-video-input-2026-11-03).
+
 ### Capture, correction and export
 
 1. Select an AI Motion Model and prepare its models, then **File > Open Video** and optionally trim the Video track. Select MAMMA before opening multiple videos. New work defaults to ExMR.
@@ -198,6 +256,24 @@ notices. Existing saved previews are not automatically replaced; use Apply
 Correction to recompute without inference. See the v9 measurements and limits
 in [validation](VALIDATION.md#contact-correction-v9-coherent-root-and-swing-transitions-2026-10-30).
 
+### Preview-video export
+
+**File > Export Preview...** saves one MP4 pairing the selected input-camera
+video with the actual current 3D viewport over the timeline trim. Preserve the
+user's camera/framing, visibility, overlays and Follow Actor choice. PEAR is
+excluded. The output uses timeline FPS and selected-source audio when present;
+it does not run inference, correction or skeleton export. See
+[Preview video](USER_GUIDE.md#preview-video).
+
+`preview_export_ui.py` waits for matching decoded video/3D frame indices and
+character matrices, captures the existing framebuffer on the GUI thread and
+restores frame/camera/playback afterward. `preview_export.py` composes and encodes
+off the GUI thread with a one-frame handoff, bounded FFmpeg logs and existing
+FFmpeg. Keep the window/viewport geometry fixed during capture, reject changing
+input generations and atomically replace only a finished destination. Cancel
+and window close must reap the encoder before destroying its QThread. Keep test
+projects, input media and output videos outside the public source package.
+
 ### Saved camera display and source export implementation
 
 `mocap/camera_tracks.py` adapts committed camera receipts without inference or
@@ -208,7 +284,10 @@ app's Y-up world. FlowHMR/ExMR use saved rotation tracks. Flow gizmos additional
 unscaled VGGT displacement; moving-camera ExMR gizmos use estimated displacement
 from ORIGINAL paired world/camera root positions, never corrected poses.
 Motion x defaults to 1, with 0 retaining a fixed center. Video overlay projection
-remains unchanged when this display scale changes. MAMMA/GVHMR remain fixed. Other models expose their saved reference camera only. Do not interpret
+remains unchanged when this display scale changes. PromptHMR Moving Camera uses
+its native saved per-frame DroidCalib/Metric3D trajectory for world fitting,
+overlays and Blender camera animation, without a gizmo-only translation scale.
+MAMMA/GVHMR and PromptHMR Fixed Camera remain fixed. Do not interpret
 an extrinsic translation vector as the camera center: use `-R.T @ t`.
 
 Single-person ExMR/GVHMR may also have no shared-scene camera receipt.
@@ -333,16 +412,38 @@ runtime dependency, source motion or contact change is part of export.
 
 ## Resources and performance
 
-Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. The desktop still checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
+`sidebar_scroll.py` routes ordinary wheel events over closed combo boxes and
+number inputs into the right settings scroll area. Do not let scrolling mutate
+inference/correction options and trigger model checks or viewport repainting.
+Preserve native high-resolution deltas, open popup scrolling, keyboard/text/button
+edits and deliberate focused Ctrl+wheel. This is scoped UI input routing, not a
+model/cache/precision change or an application-wide wheel filter.
+
+**Resource Safety** defaults on below Resource Mode. Off skips the measured
+RAM/commit-headroom stop and sets the PyTorch allocator fraction to 1 (no app
+VRAM cap). Keep adaptive batch/path selection, actual OOM backoff/recovery,
+the independent stall check, cancellation and generation protection in both
+settings. Do not describe this option as disabling every memory check or as a
+guarantee that a workload fits. See [behavior and thresholds](PERFORMANCE.md#resource-safety).
+
+It is an installation preference in ignored `config/local.json`, not a project
+or inference option. Preserve other local settings when writing it. GUI jobs
+snapshot the preference and pass `RGB_MOCAP_RESOURCE_SAFETY=1` or `0` into all
+worker runtimes, including isolated launches; only explicit `0` disables it.
+PEAR workers inherit the same preference. Never remove actual OOM handling or
+change model equations/precision when extending this control. Model result
+identity must not include this local checkbox value.
+
+Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. With Resource Safety enabled, the desktop checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
 
 PromptHMR retains the same one-image batch/full temporal context in Automatic
 and Low Memory; extra block offloading is not implemented. Do not promise a
 mode-dependent VRAM saving or an unsupported offload retry for this path. Actual
-memory guards still apply. Its 422-frame/two-person run took 236.2 s, with peak
+allocation failures are still reported; proactive limits follow Resource Safety. Its 422-frame/two-person run took 236.2 s, with peak
 allocated VRAM 4.61 GiB (7.83 GiB reserved) and worker working set 8.74 GiB; see
 [scope and stage times](models/PROMPTHMR.md#recorded-validation).
 
-GPU allocator limits share ComfyUI's external-use margin: 600 MiB on Windows, 700 MiB above 15 GiB GPU capacity (400 MiB on other systems). Subtract it from actual free VRAM without an additional percentage cap or fixed FlowHMR/ExMR 3/2 GiB reserve. This margin is separate from inference working space. Keep offloading in the app's validated `memory_mode.py` / `gpu_offload.py` adapters, without importing ComfyUI or changing model precision. Offload is inference-only, synchronous and unpinned; close hooks/models on success and failure. Actual RAM pressure remains a stop condition because offloading can increase host memory.
+With Resource Safety enabled, GPU allocator limits share ComfyUI's external-use margin: 600 MiB on Windows, 700 MiB above 15 GiB GPU capacity (400 MiB on other systems). Subtract it from actual free VRAM without an additional percentage cap or fixed FlowHMR/ExMR 3/2 GiB reserve. This margin is separate from inference working space. Keep offloading in the app's validated `memory_mode.py` / `gpu_offload.py` adapters, without importing ComfyUI or changing model precision. Offload is inference-only, synchronous and unpinned; close hooks/models on success and failure. Actual RAM pressure remains a stop condition when Resource Safety is enabled because offloading can increase host memory.
 
 ### Measured savings and acceleration
 
@@ -374,8 +475,49 @@ not necessarily RAM; individual CPU-loaded models can add several GiB of host
 working set. Automatic selects a path per operation, not from a guaranteed
 whole-job capacity prediction. FlowHMR's Low Memory SAM batch is one even when
 the saved Adaptive Batching box is on; its GPU Hand Crops selection is retained.
-The two Fast SAM switches default on for new work, preserve saved off settings,
+The three Fast SAM switches default on for new work, preserve saved off settings,
 and only apply with Fast SAM. See [their separate measurements and output differences](PERFORMANCE.md#flowhmr-fast-sam-switches).
+
+FlowHMR additionally uses the reviewed 256-query attention implementation for
+every clip length, with FP32, unchanged visibility/RoPE and full sequence context.
+Do not substitute temporal chunking or change steps/precision. Network sources
+are recorded in `third_party/FlowHMR/RGB_MOCAP_PROVENANCE.json` and motion receipts.
+No runtime package changes or additional compilation are needed.
+
+The default-on `sam_hand_stride4` setting controls **4-Frame Hand Sampling**.
+It is distinct from the spatial `sam_batch4` key: body features stay per frame,
+hands use indices 0,4,8,... plus the last frame, and bounded CPU linear feature
+interpolation fills all output frames. Keep the same indices across OOM splits,
+one-frame Low Memory batches and people/take jobs. `flow_hand_sampling.py` holds
+the schedule/interpolation; `flow_fast_sam.py` also supports body-only sub-batches.
+The body decoder provides the first placement hips without requiring hand fusion.
+Saved off is respected; an absent setting defaults on for future reconstruction,
+without automatically replacing cached motion. Include the option and sampling
+code in feature identities; never alias this numerical change to an older cache.
+Publish no partially interpolated tokens.
+Tests measured 41–49% less warm SAM feature time and 5.43→4.21 GiB allocated VRAM
+at batch 16, but body/wrist positions and contacts can change too. See
+[the model guide](models/FLOWHMR.md#query-batched-motion-attention-and-sparse-hands).
+
+FlowHMR's optional `hamer` flag defaults **false** and forces `fast_sam` and
+`sam_hand_stride4` true. The UI locks those dependent switches while enabled.
+SAM publishes per-frame body-derived hand boxes with its feature receipt.
+`flow_hamer.py` runs `flow_hamer_entry.py` in the existing **ExMR** runtime, never
+imports its incompatible packages into FlowHMR, and reuses shared HaMeR/MANO
+assets. It applies ExMR crops/mirroring and Gaussian rotation smoothing to
+direct HaMeR finger predictions; this is not ExMR's learned HandMR inference.
+HaMeR itself uses every frame, eight hand crops per batch (one with CPU-first
+loading in Low Memory), without another detector. Keep invalid-hand fallback,
+bounded capture/prefetch, child cancellation and atomic cache receipts intact.
+Release the parent GPU model before launching the child. Preserve
+`flow_prediction.pt` as the untouched FlowHMR output; optional fingers go to
+`flow_hamer_prediction.pt`. `flow_placement.py` selects the source recorded by
+the committed generation, not a draft checkbox value. Preserve root/body/wrist,
+shape, camera and native contact tensors exactly before subsequent correction.
+HaMeR's local matrix predictions map directly to SMPL-H's 15 joints per side;
+mirror the left local matrices but do not add/subtract a MANO/SMPL hand mean.
+Do not promise better accuracy for every video or ExMR-equivalent temporal stability. See
+[HaMeR details and requirements](models/FLOWHMR.md#optional-hamer-fingers).
 
 FlowHMR's `flow_sam_batch.py` selects 1/2/4/8/16 frames from current allocation
 headroom, free RAM and resolution after loading. Preserve the legacy
@@ -417,7 +559,7 @@ The app uses separate runtime profiles to maintain compatibility, with bounded b
 - GUI, people, controls and logging: `mocap/gui.py`, `workspace_ui.py`, `people_ui.py`, `character_ui.py`, `console_log.py`, `tooltips.py`.
 - Model selection and loading: `mocap/motion_tools.py`, `models.py`, `model_guide.py`; worker routing and runtimes: `worker.py`, `worker_progress.py`, `runtime_registry.py`, `compute_policy.py`.
 - MAMMA inputs/UI: `mocap/mamma_inputs.py`, `mamma_ui.py`; processing: `mamma_pipeline.py`, `mamma_camera.py`, `mamma_publish.py`, `mamma_body.py`; runtime/assets: `mamma_runtime.py`, `mamma_manager.py`, `mamma_models.py`, `installer/mamma-runtime-lock.json`, `tools/setup_mamma.py`. Follow [the native-build runbook](MAMMA_AGENT_SETUP.md) instead of guessing module build commands.
-- PromptHMR UI/pipeline: `mocap/prompthmr_ui.py`, `prompthmr_pipeline.py`, `prompthmr_publish.py`, `prompthmr_scene.py`; runtime/assets: `prompthmr_runtime.py`, `prompthmr_manager.py`, `prompthmr_models.py`, `prompthmr_worker_boot.py`, `installer/prompthmr-runtime-lock.json`, `installer/prompthmr_adapters.py`, `installer/verify_prompthmr.py`, `tools/setup_prompthmr.py`. Follow the separate setup/verification steps above.
+- PromptHMR UI/pipeline: `mocap/prompthmr_ui.py`, `prompthmr_pipeline.py`, `prompthmr_cache.py`, `prompthmr_publish.py`, `prompthmr_scene.py`; runtime/assets: `prompthmr_runtime.py`, `prompthmr_manager.py`, `prompthmr_models.py`, `prompthmr_worker_boot.py`, `installer/prompthmr-runtime-lock.json`, `installer/prompthmr_adapters.py`, `installer/verify_prompthmr.py`, `tools/setup_prompthmr.py`. Follow the separate setup/verification steps above.
 - Project storage: `project_storage.py`, `project_workspace.py`, `project_save.py`; contact correction: `correction.py`, `contact_trajectory.py`, `contact_pose_plan.py`, `contact_arm_plan.py`.
 - Source mesh / bone fit and preview: `source_animation.py`, `source_surface.py`, `surface_roll.py`, `preview_data.py`, `viewer.py`, `viewport.py`; source export: `fbx_export.py`, `fbx_writer.py`, `scene_export.py`.
 - Character pipeline: `mocap/retarget/` plus `character_data.py` and `character_ui.py`; Blender backend and model-specific constraints must be considered separately from source-person export.
@@ -475,7 +617,7 @@ Keep its size/hash-checked Model Manager download/import and trusted loader.
 Do not replace the shared YOLOv8x asset used by offline models. Detector boxes
 can alter pose predictions; detection success is not an accuracy measurement.
 Idle acknowledgement keeps a deliberately waiting started worker from appearing
-stalled. Keep RAM/VRAM monitoring and bounded mailboxes while it is running.
+stalled. Keep Resource Safety-controlled RAM/VRAM limits and bounded mailboxes while it is running.
 
 Selecting a webcam may create the separate `pear_camera_preview` capture worker.
 It imports OpenCV/NumPy, not PEAR or Torch, and uses bounded latest-frame buffers

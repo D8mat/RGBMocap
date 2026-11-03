@@ -1,5 +1,101 @@
 # Source package validation
 
+## Resource Safety control (2026-11-03)
+
+The default-on checkbox below Resource Mode controls the existing desktop
+low-RAM/Windows commit-headroom stop and the PyTorch VRAM allocator cap. Off
+retains adaptive batching/path selection, supported actual-OOM recovery,
+cancellation, generation protection and the independent no-output/no-CPU stall
+check. No runtime dependencies, model equations or precision were changed.
+
+Six private policy tests covered default and corrupt preferences, preserving
+unrelated local settings, unchanged enabled thresholds/routing, disabled RAM
+queries, low/critical memory, injected OOM exception backoff, PID identity and
+stall handling. Offscreen GUI checks covered default-on layout, visible
+unchecked state, persistence after reopening, six model selections, disabled
+controls during work and both flag values reaching isolated workers and their
+desktop guards. PEAR session checks covered inherited flags and process closure.
+These are control/lifecycle checks, not playback throughput measurements.
+
+A small real CUDA allocation probe passed in the installed shared, FlowHMR,
+ExMR, MAMMA and PromptHMR profiles: a synthetic 4 MiB allocator allowance
+rejected a 16 MiB allocation with safety on; safety off allowed it. This did not
+exhaust physical RAM/VRAM. Both installed Torch 2.7.1 and 2.8.0 builds were used.
+An actual legacy fixed-camera PromptHMR receipt remained reusable without new
+video preparation or inference after the logging-only pipeline change.
+
+A subsequent manual ExMR run completed with Resource Safety off and Automatic
+fast paths: 2,586 working frames at 30 fps (about 86.2 seconds), total 299.22
+seconds including tracking, correction and preview/export preparation. No OOM,
+Low Memory fallback or safety stop appeared in that log. The keypoint receipt
+recorded 5.68 GiB peak allocated VRAM; a whole-run peak RAM measurement was not
+recorded. This is not a paired on/off performance or output-accuracy benchmark.
+FlowHMR in the same log reused cached results, so its time is not comparable.
+
+Checks used the existing Windows test PC. No clean-Windows or other-GPU test
+was performed, and disabling safety does not guarantee success under real
+memory exhaustion. Test inputs, scripts, logs and local preferences stay
+outside the public source package. See [behavior and thresholds](PERFORMANCE.md#resource-safety).
+
+## PromptHMR shared download cache (2026-11-02)
+
+Torch Hub/Hugging Face download locations now belong to the app's shared
+`cache/prompthmr/` tree instead of each inference generation. Known older
+DeepLab checkpoints are imported only after full SHA-256 verification; directory
+enumeration and legacy hashing are bounded. Old project files are preserved.
+The runtime, model versions, batch size and numerical processing are unchanged.
+An exact reviewed pipeline hash pair retains existing valid inference-cache
+identities, while future source edits invalidate normally.
+
+Private tests covered two different eight-frame clips, including one and two
+people. Original and updated tracking, pose and world/post-optimization stages
+completed with network/download attempts blocked after priming the upstream Hub
+repository source cache. Both updated clips used one shared checkpoint, with no
+per-generation weight downloads. A separate empty-cache test exercised real
+torchvision/Torch Hub weight loading through a local copy of the official
+checkpoint bytes: first use requested one download, the second video requested
+none. This was not a live external-server availability test.
+
+Tracking outputs, camera-space motion, body rotations and shape were exact in
+the two independent comparisons. Fresh 2D keypoints varied by at most 0.000184
+pixels and final world translations by at most 4.64 mm; these end-to-end runs
+are not bitwise identical. Replaying identical camera-motion inputs with matched
+NumPy/Python/OpenCV RNG in the test produced exact world/post-optimization output
+before and after the fix. Production random behavior was not changed. Peak
+allocated VRAM was unchanged per corresponding stage; the two updated worker
+runs took about 42–43 seconds each. These short runs establish neither a quality
+ranking nor a general speed improvement.
+
+Additional checks passed for cross-volume copy fallback, Unicode cache paths,
+invalid-cache rejection, preserving original files, and reusing an actual old
+complete inference receipt without FFmpeg preparation or AI inference. Models,
+input videos and test artifacts remain outside the public source package.
+
+## Side-by-side preview video export (2026-11-02)
+
+File > Export Preview was checked using private copies of an ExMR project with
+an animated PMX character and a two-person MAMMA project with a non-primary
+camera selected. Twelve repeated 30-frame exports per case retained the chosen
+view and restored the original frame/camera. Saved H.264 MP4s decoded to exactly
+30 frames at 30 fps (one second); the selected source's audio was included when
+available. First/last encoded frames matched the submitted video/framebuffer
+pair within normal lossy encoding differences (mean channel error below 3/255).
+The test panels were 1404 × 684 and 1954 × 684; this is not a universal speed or
+resolution guarantee. Rendering still requires GUI-thread framebuffer capture.
+
+Cancellation preserved an existing destination and removed partial output.
+Playback resumed after export when previously running. Closing the app during
+export cancelled and reaped FFmpeg before the window/workers closed. Additional
+checks covered one frame at 30000/1001 fps, an externally changed destination,
+incomplete frame delivery, Unicode output names, input-file overwrite rejection
+and PEAR exclusion. Repeated-export testing caught Python 3.10 DummyThread
+registration through joining a Python log reader from a Qt thread; completion
+now uses an event instead. Handles and thread counts stabilized in the bounded
+repeat test; it does not establish leak freedom for hours of use or other PCs.
+No source inference/contact math or installed dependencies were changed. Test
+scripts, source media, copied projects and rendered videos remain outside the
+public source package.
+
 ## MAMMA background gravity before fitting (2026-11-02)
 
 Automatic calibration now uses VGGT-Omega camera placement with GeoCalib
@@ -1857,3 +1953,171 @@ leak guarantee or a universal frame-rate claim. The known-rotation background
 fixture, original PR equivalence, off restoration, cache invalidation and
 worker cancellation checks also passed. Runtime locks, installer scripts,
 AI worker and source-correction implementation stayed unchanged.
+
+### Optional PromptHMR moving-camera support (2026-11-02)
+
+- Built the pinned LieTorch/DroidCalib Windows CUDA extensions over the existing
+  PromptHMR Python 3.11 / Torch 2.7.1 CUDA 12.8 runtime. Real LieTorch
+  forward/backward, scatter and DroidCalib CUDA operations passed on RTX 5090
+  (compute capability 12.0). Setup also retained the verified extension on retry.
+  Base runtime pins and installed packages did not change. The installed
+  extension measured 19,547,213 bytes; its two managed weights total
+  1,664,022,188 bytes. Compiler/download/build caches are excluded.
+- The 80-frame, 30 fps, single-person moving-camera test completed all five
+  normal worker stages, including fresh tracking and correction/export
+  preparation, in 130.3 seconds of wall time. Phase times were 1.4s preparation,
+  33.2s tracking, 57.2s camera/keypoints/motion, 31.0s world optimization and 7.4s
+  publication/correction. Peak allocated/reserved Torch VRAM was 6.73/6.93 GiB;
+  sampled worker-tree RSS peaked at 7.42 GiB. These are one-PC short-clip
+  observations, not minimum memory or long-clip guarantees.
+- The complete 80-frame camera trajectory loaded both with and without a shared
+  scene context. Published incam translations and rotation matrices matched
+  direct per-frame world-to-camera conversion within 1.2e-7 m and 1.9e-7
+  respectively, including the registered shape-dependent pelvis pivot.
+  Original and corrected sources remained exportable. Blender 4.5 reopened
+  the portable bundle with relative synchronized video and 52 body/finger bones;
+  sampled camera matrix errors stayed below 1.2e-7. Armature objects had no
+  animation keys. These are serialization/coordinate checks, not ground-truth
+  camera-accuracy measurements.
+- A separate eight-frame, two-person fixed-camera regression reran image/video
+  inference and world fitting before/after. Body/root camera-space motion stayed
+  exact; independent GPU runs differed by at most 0.000123 px in saved 2D
+  keypoints and about 3.0 mm in native final world translation. Replaying
+  identical camera-motion intermediates produced exact world outputs across
+  121 compared arrays in the overall regression. No new physical correction
+  or precision reduction was introduced. An older fixed-camera inference
+  receipt was reused without FFmpeg or inference; moving identities retain
+  their actual camera code/module/model fingerprints.
+- App controls restored Moving Camera, loaded its 80-frame saved track and
+  showed 16/16 ready models. Switching to Fixed Camera showed 14/14 and a
+  reconstruction notice without processing or replacing the current motion.
+  Legacy options restored Fixed Camera. Corrupted extension files, stale or
+  escaped camera paths and a simulated failed repair were rejected; prior
+  registrations and the base runtime remained intact.
+
+No clean Windows installation, other-GPU verification, long-video stability or
+absolute SLAM scale/accuracy claim follows from these checks. Tracking loss,
+zoom/cuts, poor texture and scale drift remain possible.
+
+## FlowHMR query and hand-sampling integration (2026-11-03)
+
+Validation used the installed Windows runtime on the test PC, with private
+projects outside the source checkout. No user project, video or model weight
+was published or replaced. This initial sampling/query check preceded the
+optional HaMeR integration described below.
+
+- A 327-frame app-backend comparison completed with sparse hands on and off,
+  including camera receipt handling, SAM features, query-batched generation and
+  native world placement. Every stage reused its verified cache on the second
+  call. Changing only hand sampling invalidated feature identity while leaving
+  the camera identity unchanged.
+- A 117-case CPU FP32 attention check covered local/global masks, padding and
+  fully masked rows. Maximum difference from original math attention was
+  4.77e-7. Actual app features generated a 327-frame motion with a maximum
+  source-joint difference of 0.00034 mm against original attention.
+- Sampling/interpolation checks covered 98 frame-length/batch combinations,
+  including one frame, final endpoints, maximum context and simulated batch
+  allocation backoff. Body slots and sampled anchors were preserved. Actual
+  SAM calls checked CPU/GPU crops, batches without a hand sample and body-pelvis
+  placement before/after hand fusion; placement differences stayed below
+  0.0004 mm. Every-frame output was within repeated baseline GPU variation,
+  rather than bitwise identical across separate feature calls.
+- App controls defaulted on, restored saved off values and supplied the on
+  default for missing legacy settings. Switching tools/toggles did not start
+  inference. The three controls and explanations were inspected using the
+  application's theme in an offscreen Qt widget render.
+- A separate nine-frame app project completed CPU hand crops with one-frame
+  batches, explicit Low Memory block offloading, query generation, native
+  correction, preview generation and FBX saving. Cancelling feature extraction
+  left the previous tokens intact and marked the stage pending; a retry committed
+  a complete generation and removed the marker. This was a controlled
+  cancellation/backoff check, not a physically exhausted-GPU test.
+
+Timing and quality differences are in [performance measurements](PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
+These checks do not establish other-GPU performance, universal motion accuracy
+or absence of long-session resource leaks.
+
+## Optional FlowHMR HaMeR integration (2026-11-03)
+
+Private nine- and 327-frame app-backend projects completed per-frame SAM hand
+box capture, four-frame SAM conditioning, query motion generation and the
+independent ExMR-runtime HaMeR pass. The direct HaMeR finger output uses ExMR
+crops/rotation smoothing, not its learned temporal HandMR network. Body/root,
+wrist rotations, shape and native foot contacts were bit-exact to the same
+FlowHMR prediction before hand replacement. The original FlowHMR tensor remained
+separate. A nine-frame run completed correction, preview and FBX saving. Turning
+HaMeR off and reconstructing restored the original SAM-conditioned prediction.
+The nine-frame paired contact-correction check also retained identical corrected
+body/wrist/root/shape/contact tensors; only fingers differed in that test.
+
+- A nine-frame Low Memory run exercised SAM's one-frame CPU-crop/offload path
+  and HaMeR's one-hand-crop CPU-first loader. Both finished and reused verified
+  feature/motion caches on repeat calls. A separate 327-frame Automatic run
+  used body batches of 16 and hand batches of eight. HaMeR child resource/time
+  measurements are recorded in [performance](PERFORMANCE.md#optional-flowhmr-hamer-fingers-2026-11-03).
+- Controlled OOM splits retained exactly one ordered hand-box row per source
+  frame. Invalid-hand fallback retained original fingers exactly. Cancelling
+  the actual child before model loading preserved the previous completed hand
+  cache, left no partial output and reaped the process. A malformed hand cache
+  entered recovery. These do not establish physically exhausted-GPU behavior
+  or long-running child-process leak freedom.
+- Themed offscreen Qt checks verified default off, missing legacy flag defaults,
+  saved on/off restoration, automatic Fast SAM/four-frame activation and locking,
+  additional Model Manager rows and no inference on toggles. Draft checkbox
+  changes retained the committed source until reconstruction.
+
+No new runtime package, model weight or test video was distributed. Other GPUs,
+clean installation and universal accuracy/stability were not established.
+
+## Right-sidebar wheel routing (2026-11-03)
+
+A native Windows Qt/OpenGL test (150% scaling, 773×476 logical 3D viewport,
+no loaded actor or playback) sent 72 wheel events per target. Previously,
+hovering the preset combo changed its value 23 times and the numeric pelvis
+field 72 times, consuming the wheel without scrolling. These triggered the same
+number of model-readiness checks and 3D paints. After routing to the panel, both
+targets scrolled with no value changes, readiness checks or 3D paints. Measured
+event p95 changed 7.42→1.72 ms for the combo and 7.94→1.03 ms for the number
+field; maxima changed 8.97→3.85 ms and 9.34→1.32 ms. These are synthetic wheel
+event timings, not overall FPS or a heavy-scene playback benchmark.
+
+Additional Qt checks preserved pixel-delta behavior, open popups, focused
+Ctrl+wheel, text/keyboard edits, frame/camera and idle processing state. Six
+offscreen create/close cycles retained 419 handles and 34 threads; the final
+repeat's RSS ranged 81.56–84.43 MiB. This short trend does not establish long-session leak freedom.
+Inference, correction, preview math and installed packages were unchanged.
+
+## MAMMA direct SAM input (2026-11-03)
+
+The app now reads SAM 2.1 frames through the prepared-video reader instead of
+saving and rereading intermediate lossless RGB PNGs. The adapter creates no
+empty frame-index files. PIL resize, float64 division into FP32 storage,
+normalization, CPU video/state offload, prompts, matching, propagation and final
+mask cleanup are unchanged. Final person-mask PNGs are still saved normally.
+The helper is included in inference code identities. Existing committed results
+are not rewritten on open; explicit reconstruction uses a new generation.
+
+Independent four-camera, two-person 1080p tests used the same video prefix at
+210/426 frames (7/14.2 seconds, 30 fps). All 5,088 paired person-mask images
+were pixel-identical, with no memory-protection stop or OOM. Mask-stage time
+fell 16.9%/21.2%; peak RAM differences were +23/−3 MiB, with the same allocated
+and reserved CUDA peaks within each pair. These were fresh-process, single-run
+measurements on RTX 5090 / 96 GB RAM, not minute-scale or other-GPU guarantees.
+See [performance](PERFORMANCE.md#mamma-direct-sam-video-input-2026-11-03).
+
+The integrated app path was then exercised on a separate dynamic 90-frame,
+four-view/two-person 1080p segment through masks, FP32 landmarks and 3D fitting.
+Against the earlier PNG control with identical prepared inputs and calibration,
+all 720 person-mask images, landmark/contact arrays, final meshes and joints
+were bit-identical. The new mask worker took 91.48 s with 4.731 GiB maximum RAM
+working set and 2.536 GiB allocated / 2.861 GiB reserved CUDA memory. This is
+the mask stage only; fresh camera estimation, app correction, GUI playback and
+exports were not rerun for this input-loading change.
+
+Controlled checks covered sequential reads, the same normalized tensor as PNG,
+Unicode path registration, empty-source rejection, unregistered/image-source
+fallback, and restoration on success, decode/OOM/cancellation exceptions and
+repeated app-wrapper failures. The adapter owns no additional readers, queues
+or threads. The updated Model Guide rendered in offscreen Qt. The installed
+MAMMA engine's 368 checked source files were unchanged. Tests/inputs remained
+outside the public checkout; no runtime package or model weight was added.

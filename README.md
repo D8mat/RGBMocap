@@ -122,8 +122,10 @@ do not put passwords or account tokens in the agent chat.
 - Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with an optional leading T-pose; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
+- Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
 - Save projects with separate results for each AI model.
+- Reduce FlowHMR memory use with query-batched attention and optional sparse hand sampling; optional HaMeR refines fingers. See [controls and trade-offs](docs/models/FLOWHMR.md#controls) and [measured time/memory comparisons](docs/PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
 - Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
 
 ## How it works
@@ -172,13 +174,16 @@ projects, caches or retained downloads; shared files are counted once.
 | --- | ---: | ---: | ---: |
 | ExMR + FlowHMR + GVHMR and supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
 | MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
-| PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
+| PromptHMR additional files, Fixed Camera | 6.22 GiB | 6.13 GiB | 12.34 GiB |
 | **Five offline models** | **24.68 GiB** | **38.55 GiB** | **63.22 GiB** |
 | PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
 Including PEAR, the estimated combined model/runtime total is about
 **66.07 GiB (70.9 GB)**, before the additional space listed below. GeoCalib weights (about **0.11 GiB**) are shared by MAMMA and PEAR and counted once; both also reuse VGGT. See the
 [PEAR camera guide](docs/models/PEAR.md#multiple-fixed-cameras-and-camera-align).
+
+Optional PromptHMR moving-camera support adds approximately **18.6 MiB** of
+native modules and **1.55 GiB** of weights beyond these totals; see its model guide.
 
 **MAMMA and PromptHMR require separate runtime installation:** run
 `Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` after `install.cmd`, as described
@@ -197,14 +202,17 @@ Start with **Resource Mode > Automatic**. It uses the fast supported path when
 memory permits and falls back to a supported Low Memory path when needed.
 Memory-saving methods depend on the model; **Low Memory** can trade slower
 loading/transfers and more system RAM for lower VRAM use. See each model's guide
-for implemented options and limits.
+for implemented options and limits. **Resource Safety**, below Resource Mode,
+defaults on. Turn it off to bypass low-RAM stopping and the VRAM allocator limit;
+Automatic batching and actual allocation-error handling stay active. See the
+[Resource Safety details](docs/PERFORMANCE.md#resource-safety).
 
 Short paired tests reduced peak allocated VRAM from **5.68 to 3.87 GiB** for ExMR
 and **6.10 to 2.77 GiB** for FlowHMR. Separate short-clip tests of connected
 processing phases cut worker time by **44% for ExMR** and **24% for FlowHMR**,
 with unchanged measured peak VRAM. These are different tests, not full-job
 speed guarantees. See [resource modes, measured savings and acceleration](docs/PERFORMANCE.md)
-for conditions, per-model results and output differences.
+for conditions, per-model results, direct-video preprocessing and output differences.
 
 FlowHMR's **Adaptive Batching** selects 1–16 Fast SAM frames from available memory;
 Low Memory uses one. Warm feature tests took 16–23% less time at batch 16 than at
@@ -219,7 +227,7 @@ be smaller. Batch selection and OOM retry messages appear in Console and CMD.
 - [Recorded processing time, VRAM and RAM](docs/USER_GUIDE.md#recorded-processing-time-and-vram)
 - [Resource modes and measured optimizations](docs/PERFORMANCE.md)
 - [MAMMA: additional installation, model files and multi-video workflow](docs/MAMMA.md)
-- [PromptHMR: additional installation, model files and fixed-camera workflow](docs/models/PROMPTHMR.md)
+- [PromptHMR: additional installation, model files and camera workflows](docs/models/PROMPTHMR.md)
 - [Development and builds](docs/BUILD.md)
 - [Agent operating and development guide](docs/AGENT_GUIDE.md)
 - [Source validation](docs/VALIDATION.md)

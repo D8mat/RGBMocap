@@ -134,7 +134,12 @@ class ModelsDialog(QDialog):
         keys = ({key for key in STAGE_REQUIREMENTS[self.tool.key+'_assets']} if self.tool.key in ('mamma','prompthmr','pear') else
                 {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())})
         if self.tool.key=='pear':keys.update(STAGE_REQUIREMENTS['pear_align'])
-        if self.tool.key=='flowhmr':keys.add('flow_metadata')
+        if self.tool.key=='prompthmr':keys.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
+        if self.tool.key=='flowhmr':
+            keys.add('flow_metadata')
+            if window.flow_hamer.isChecked():
+                from .flow_hamer import MODEL_KEYS
+                keys.update(MODEL_KEYS)
         # Keep public automatic downloads together, followed by manual-only files.
         # Stable sorting preserves the existing component order within each group.
         self.models = sorted((model for model in MODELS_LIST if model.key in keys),
@@ -348,8 +353,9 @@ from .character_ui import CharacterWorkspace
 from .mamma_ui import MammaWorkspace
 from .prompthmr_ui import PromptHMRWorkspace
 from .pear_ui import PearWorkspace
+from .preview_export_ui import PreviewExportWorkspace
 
-class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
+class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
@@ -402,6 +408,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.data_loader.tracked_actor_ready.connect(self.tracked_actor_ready)
         build_workspace(self)
         self.init_characters()
+        self.video_view.frame_presented.connect(self.refresh_preview_export_action)
+        self.scene_loader.ready.connect(self.refresh_preview_export_action)
         self.timer = QTimer(self)
         self.timer.setTimerType(Qt.PreciseTimer)
         self.timer.setInterval(33)
@@ -434,6 +442,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
 
     @read_only_checks
     def update_readiness(self):
+        self.export_preview_action.setEnabled(self.preview_export_available())
         if self._pear_active:
             if hasattr(self,'camera_tools'):self.camera_tools.sync()
             self.pear_sync_controls();return
@@ -444,11 +453,19 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.update_people_readiness()
         tool = MOTION_TOOLS[self.model_choice.currentData()]
         self.compute_mode.setEnabled(not self.busy)
+        self.resource_safety.setEnabled(not self.busy)
         stages = tool.stages(self.htd_refine.isChecked(), self.footmr_refine.isChecked(), handflow=self.handflow_refine.isChecked())
         from .models import STAGE_REQUIREMENTS, BY_KEY
         required = {key for stage in stages for key in STAGE_REQUIREMENTS.get(stage, ())}
+        if self.flow_hamer.isChecked():
+            for checkbox in (self.fast_sam,self.flow_hand_stride4):
+                blocked=checkbox.blockSignals(True);checkbox.setChecked(True);checkbox.blockSignals(blocked)
+            if tool.key=='flowhmr':
+                from .flow_hamer import MODEL_KEYS
+                required.update(MODEL_KEYS)
         if tool.key=='flowhmr' and self.flow_sampling.currentData()==-1:required.discard('flow_vggt')
         if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.difference_update(('flow_vggt','pear_geocalib'))
+        if tool.key=='prompthmr' and self.prompthmr_camera.currentData()=='moving':required.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
         unavailable = [BY_KEY[key] for key in sorted(required) if not ready(BY_KEY[key])]
         count = len(required) - len(unavailable)
         text = f"{tool.label}: {count}/{len(required)} models ready"
@@ -490,7 +507,9 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.mesh_button.setEnabled(self.preview_preparation_available())
         self.import_character_action.setEnabled(not self.busy and not self.contact_saving)
         self.flow_sampling.setEnabled(not self.busy)
-        self.fast_sam.setEnabled(not self.busy)
+        self.fast_sam.setEnabled(not self.busy and not self.flow_hamer.isChecked())
+        self.flow_hand_stride4.setEnabled(not self.busy and not self.flow_hamer.isChecked())
+        self.flow_hamer.setEnabled(not self.busy)
         self.flow_acceleration.setVisible(self.fast_sam.isChecked())
         self.flow_acceleration.setEnabled(not self.busy)
         self.exmr_camera.setEnabled(not self.busy)
@@ -678,6 +697,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             self.fast_sam.setChecked(True)
             self.flow_batch4.setChecked(True)
             self.flow_gpu_crop.setChecked(True)
+            self.flow_hand_stride4.setChecked(True)
+            self.flow_hamer.setChecked(False)
             self.exmr_camera.setCurrentIndex(0)
             self.exmr_smoothing.setChecked(True)
             self.camera_tools.restore_background({})
@@ -781,9 +802,12 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         from .flow_camera import saved_interval
         from .flow_sam import saved_options
         flow=saved_options(project,manifest)
+        self.flow_hamer.setChecked(False)
         self.fast_sam.setChecked(flow['fast_sam'])
         self.flow_batch4.setChecked(flow['sam_batch4'])
         self.flow_gpu_crop.setChecked(flow['sam_gpu_crop'])
+        self.flow_hand_stride4.setChecked(flow['sam_hand_stride4'])
+        self.flow_hamer.setChecked(flow['hamer'])
         from .exmr_options import saved as saved_exmr
         exmr=saved_exmr(project,manifest)
         self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr['static_camera']))
@@ -989,6 +1013,10 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         if 'people' not in stages and self.input_person_jobs(stages,result):
             return
         unavailable = [model for stage in stages for model in ([] if self.model_choice.currentData()=='flowhmr' and stage=='flow_camera' and self.flow_sampling.currentData()==-1 else missing('flow_export' if self.model_choice.currentData()=='flowhmr' and stage in ('correct','export') else stage))]
+        if self.model_choice.currentData()=='flowhmr' and self.flow_hamer.isChecked():
+            from .flow_hamer import MODEL_KEYS
+            from .models import BY_KEY
+            unavailable += [BY_KEY[k] for k in MODEL_KEYS if not ready(BY_KEY[k])]
         if unavailable:
             names = ", ".join(dict.fromkeys(model.name for model in unavailable))
             self.status.setText(f"Prepare these models first: {names}")
@@ -1166,10 +1194,22 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         if self.project is not None and not self.busy:
             self.prepare_target_preview()
 
+    def resource_safety_changed(self,value):
+        from .resource_safety import ENV,save,message
+        try:save(value)
+        except (OSError,ValueError) as error:
+            self.resource_safety.blockSignals(True);self.resource_safety.setChecked(not value);self.resource_safety.blockSignals(False)
+            self.log.append('Cannot save Resource Safety: '+str(error));return
+        os.environ[ENV]='1' if value else '0'
+        self.log.append(message(value))
+
     def start_jobs(self, jobs, refresh_characters=False):
         if self.busy:
             return
         jobs=list(jobs)
+        from .resource_safety import message
+        self._job_resource_safety=self.resource_safety.isChecked()
+        self.log.append(message(self._job_resource_safety))
         self.character_refresh_queue=[]
         if refresh_characters:
             try:
@@ -1215,7 +1255,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             frames=int(arguments[arguments.index('--end-frame')+1])-int(arguments[arguments.index('--first-frame')+1])
         model=arguments[arguments.index('--model')+1] if '--model' in arguments else ''
         result=arguments[arguments.index('--result')+1] if '--result' in arguments else self.active_result
-        key=(stage,tool,frames,model,result,self.compute_mode.currentData(),self.fast_sam.isChecked(),self.flow_batch4.isChecked(),self.flow_gpu_crop.isChecked(),self.flow_sampling.currentData(),self.exmr_camera.currentData())
+        key=(stage,tool,frames,model,result,self.compute_mode.currentData(),self.fast_sam.isChecked(),self.flow_batch4.isChecked(),self.flow_gpu_crop.isChecked(),self.flow_hand_stride4.isChecked(),self.flow_hamer.isChecked(),self.flow_sampling.currentData(),self.exmr_camera.currentData())
         if not isinstance(estimate,(int,float)) or not math.isfinite(estimate) or not 1<=estimate<=7*86400:estimate=None
         if stage in ('flow_batch','exmr_batch','gvhmr_batch'):
             from .queue_groups import argument
@@ -1354,10 +1394,13 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         environment.insert("PYTHONIOENCODING", "utf-8")
         environment.insert("PYTHONUNBUFFERED", "1")
         environment.insert("RGB_MOCAP_COMPUTE_MODE", self.compute_mode.currentData())
+        environment.insert('RGB_MOCAP_RESOURCE_SAFETY','1' if self._job_resource_safety else '0')
         environment.insert('RGB_MOCAP_FLOW_INTERVAL',str(self.flow_sampling.currentData()))
         environment.insert('RGB_MOCAP_FLOW_FAST_SAM','1' if self.fast_sam.isChecked() else '0')
         environment.insert('RGB_MOCAP_FLOW_BATCH4','1' if self.flow_batch4.isChecked() else '0')
         environment.insert('RGB_MOCAP_FLOW_GPU_CROP','1' if self.flow_gpu_crop.isChecked() else '0')
+        environment.insert('RGB_MOCAP_FLOW_HAND_STRIDE4','1' if self.flow_hand_stride4.isChecked() else '0')
+        environment.insert('RGB_MOCAP_FLOW_HAMER','1' if self.flow_hamer.isChecked() else '0')
         environment.insert('RGB_MOCAP_EXMR_OPTIONS',json.dumps({'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'}))
         self.process.setProcessEnvironment(environment)
         self.process.readyReadStandardOutput.connect(self.read_stdout)
@@ -1370,7 +1413,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
     def start_processing_guard(self):
         from .processing_guard import ProcessingGuard
         try:
-            self.processing_guard = ProcessingGuard(self.process.processId())
+            self.processing_guard = ProcessingGuard(self.process.processId(),resource_safety=self._job_resource_safety)
             self.guard_timer.start()
         except Exception as error:
             self.log.append('Resource monitor unavailable: ' + str(error))
@@ -1818,6 +1861,10 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             else:self.load_video(Path(urls[0].toLocalFile()))
 
     def closeEvent(self, event):
+        if getattr(self, '_preview_export', None) is not None:
+            self._preview_export.cancel(close_window=True)
+            event.ignore()
+            return
         if self.busy and self.process:
             answer = QMessageBox.question(self, "Processing", "Cancel the current job and close the application?")
             if answer != QMessageBox.Yes:
