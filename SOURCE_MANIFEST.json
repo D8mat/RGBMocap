@@ -110,6 +110,11 @@
       "sha256": "c6db246a24c3b718cffbe7277a691145d366bb3df019c3cd7eff9f7040270a9f"
     },
     {
+      "path": "docs/KINECT.md",
+      "bytes": 5973,
+      "sha256": "4a147b1fa9577281b72e830f8e180763bfa56441a522af8c9420928c8133e608"
+    },
+    {
       "path": "docs/MAMMA.md",
       "bytes": 27500,
       "sha256": "4b3cc8491e2ed9f501ce8504c5fda0000f26c8396cb9aab192259984736bcffa"
@@ -125,9 +130,14 @@
       "sha256": "a258094f5bbdd9321e2bc48bb58cc9a3ebdd58372cbf7a12280c8ebf2295ec5e"
     },
     {
+      "path": "docs/UNREAL.md",
+      "bytes": 4295,
+      "sha256": "e1842f465b6738834d418fa747765d27a4df642b44bf933e8fb3c94a0c84e96d"
+    },
+    {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 63738,
-      "sha256": "4dfecb7421938caf468070775205193aa484400ca01ad7fdd4bcc524c6aa0f66"
+      "bytes": 64156,
+      "sha256": "3036258138dff9a84093995c7858d0e86369cb87146c5a73ddbd4d2ac710dcce"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1296,8 +1306,8 @@
     },
     {
       "path": "mocap/fbx_export.py",
-      "bytes": 3713,
-      "sha256": "2c091f3859ab09798c2f07be3b4751176d8fbf6de7664452873d630b3f162949"
+      "bytes": 4036,
+      "sha256": "86f4b0a5a1feaae19656e7544b07d89b86139b3bff95d0088734c7071fac722b"
     },
     {
       "path": "mocap/fbx_writer.py",
@@ -1396,8 +1406,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 108365,
-      "sha256": "d0cd184bc15a36c9e8c2f14c31a304bed2ed4e0e5f91c70fa13bdf334d365822"
+      "bytes": 108805,
+      "sha256": "957f2441c1a90edfc2659fdae5a9098b5d8891849a476cc2fd9a532aae359da2"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1438,6 +1448,26 @@
       "path": "mocap/inference_data.py",
       "bytes": 6610,
       "sha256": "beb72010f72d08c34b775faae7a899d5a952a848026a7f4a9c662044aa2e462e"
+    },
+    {
+      "path": "mocap/kinect_blender.py",
+      "bytes": 8915,
+      "sha256": "20351e2bdcfede0fafa681b000c95581a1e4346ac50858cb6ff15ea2f35ffc1e"
+    },
+    {
+      "path": "mocap/kinect_data.py",
+      "bytes": 7011,
+      "sha256": "a88d421f95831422c71b34b2228473826ed91c1e8b5d947a4efb9158cb3bf2d6"
+    },
+    {
+      "path": "mocap/kinect_export.py",
+      "bytes": 7319,
+      "sha256": "722207ede3b59ca37da6780aef2da373fb6ef375b3ccd187915ef9c49eea01d5"
+    },
+    {
+      "path": "mocap/kinect_ui.py",
+      "bytes": 12550,
+      "sha256": "85593db5d80c937af5a0ac2549e4d5f7fb2c3ca4dcd87784d2a30653fba5778a"
     },
     {
       "path": "mocap/mamma_body.py",
@@ -2041,8 +2071,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 5586,
-      "sha256": "94ed6f290981573b37f64282622337dc421fde69c49a6ca15e1f478c67375aae"
+      "bytes": 7986,
+      "sha256": "afb35266e7a75056ae7c5238086bbd22b5c8f2d46faa910f5c770a2a8f11aebc"
     },
     {
       "path": "mocap/source_export_worker.py",
@@ -2110,6 +2140,26 @@
       "sha256": "31264b89c10f76cc409d6d6e4fe1abe91c8a47bfa62dc9b42ea997c985282752"
     },
     {
+      "path": "mocap/unreal_export.py",
+      "bytes": 6476,
+      "sha256": "cf7c6c2d5b76cc8a7d1095465e2694a3ae3512c00ae3cb81593eb92e0d6d5af1"
+    },
+    {
+      "path": "mocap/unreal_ground.py",
+      "bytes": 1426,
+      "sha256": "3d300a08a434fbf1e31a62f6b550d201204b769553bb1232e186b93e9660e96d"
+    },
+    {
+      "path": "mocap/unreal_scene.py",
+      "bytes": 5035,
+      "sha256": "3f4881fec0b64fd5dbf60ea74ab47e52c8cb820e3b3aee3275f7dcfb1209b4a3"
+    },
+    {
+      "path": "mocap/unreal_smplh.py",
+      "bytes": 2808,
+      "sha256": "523c414e1829468ae09e2cd5737c9ad7f87fdad12a29e290d6565e4d841e657e"
+    },
+    {
       "path": "mocap/validation_snapshot.py",
       "bytes": 1065,
       "sha256": "5dcee454f346aa810fb5f948a1e4379a9f2a9a7dbf4bfbf409098bbce50082ef"
@@ -2146,8 +2196,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 39524,
-      "sha256": "938c78c65d486f5a60ca63ba3a513d17963b6697ceb040b69bd9c9d3aafe36a4"
+      "bytes": 39633,
+      "sha256": "b56114aeabc613242aff00d424f16dc980f1b2c4a6f05c3ed1ede83dfc135996"
     },
     {
       "path": "native_compat/LICENSE",
@@ -12825,6 +12875,11 @@
       "sha256": "87297fb5695c4472e3760ab1ec91df40a4f94254de4d3a7ed81f2a585cbafae5"
     },
     {
+      "path": "tools/KinectCapture.cs",
+      "bytes": 6221,
+      "sha256": "900c49b133334834ad01fdb853f0c304f59f5a2ee7f10edc893e7d8d1a0e7135"
+    },
+    {
       "path": "tools/build_character_runtime.py",
       "bytes": 3265,
       "sha256": "8c920c0422b50f059ec3f396a4fd574442832ee03057f200283db524c762d6bc"
@@ -12933,6 +12988,11 @@
       "path": "tools/support_components.py",
       "bytes": 3830,
       "sha256": "000772ff21d47a1a35d5fefa0e7685781e7c05fbbbcf708a29cfc3f275dd4984"
+    },
+    {
+      "path": "tools/test_kinect.py",
+      "bytes": 1936,
+      "sha256": "1bd2d915d983da97612ca305cba920fa64dc4c2492e4f6a44b0a318a04909233"
     },
     {
       "path": "update.cmd",

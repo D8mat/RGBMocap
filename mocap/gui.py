@@ -1813,6 +1813,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
                 row['rig_name']=self.export_person_name(project)
                 row['prepend_tpose']=getattr(self,'_source_export_options',{}).get('prepend_tpose',False)
                 row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
+                row['unreal']=getattr(self,'_source_export_options',{}).get('unreal',False)
+                row['unreal_z_offset_cm']=getattr(self,'_source_export_options',{}).get('unreal_z_offset_cm',0.)
+                row['unreal_ground_feet']=getattr(self,'_source_export_options',{}).get('unreal_ground_feet',True)
+                row['unreal_align_heading']=getattr(self,'_source_export_options',{}).get('unreal_align_heading',False)
                 for key,default in (('animate_camera',True),('background_refine',False),('camera_translation_scale',1.)):
                     row[key]=getattr(self,'_source_export_options',{}).get(key,default)
                 if self.people_root is not None:

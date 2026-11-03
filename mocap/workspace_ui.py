@@ -599,6 +599,8 @@ def build_workspace(w):
     root.addWidget(w.log)
 
     file_menu = w.menuBar().addMenu("File")
+    from .kinect_ui import open_kinect
+    file_menu.addAction("Kinect Studio...", lambda: open_kinect(w))
     w.open_actions = [file_menu.addAction("Open Video...", w.choose_video), file_menu.addAction("Open Project...", w.choose_project)]
     w.import_character_action=file_menu.addAction('Import Character...',w.choose_character)
     w.import_character_action.setToolTip('Import a Mixamo FBX, VRM or PMX humanoid. Right-click its People row to retarget a source person.')

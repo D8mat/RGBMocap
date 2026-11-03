@@ -14,6 +14,11 @@ def run(request, emit=lambda *a, **k:None):
     if request.stat().st_size>4*1024**2:raise ValueError('Export request is too large')
     rows=json.loads(request.read_text(encoding='utf-8'))
     if not isinstance(rows,list) or not 1<=len(rows)<=4096:raise ValueError('Invalid export request')
+    if any(row.get('unreal',False) for row in rows):
+        if not all(row.get('unreal',False) for row in rows):raise ValueError('Do not mix Unreal and source-only exports')
+        from .unreal_export import run as export_unreal
+        try:return export_unreal(rows,emit)
+        finally:request.unlink(missing_ok=True)
     staged=[]
     try:
         for i,row in enumerate(rows):

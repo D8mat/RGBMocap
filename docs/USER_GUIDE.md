@@ -879,3 +879,11 @@ If a text-encoding error occurs, record the complete error and the operation
 that triggered it. Updating code is preferable to renaming all files or changing
 the Windows system language. VMD retains its format-defined CP932 name fields;
 this restriction is separate from the filename used to save it.
+
+## Kinect v2
+
+Use **File > Kinect Studio...** for live RGB/depth/body capture, experimental AI depth anchoring and portable Blender/point-cloud exports. See [Kinect setup, workflow and limitations](KINECT.md).
+
+## Unreal Engine skeletal export
+
+Use **File > Export > FBX > Unreal Engine - skinned body + skeleton + animation** for supported SMPL-X results. See [Unreal export and import settings](UNREAL.md).
