@@ -97,7 +97,7 @@
     {
       "path": "docs/AGENT_GUIDE.md",
       "bytes": 58966,
-      "sha256": "4fe9829f4d14e497e44ae81788b50abcf1d0f0ae46d839e5ce60870a8e0903e2"
+      "sha256": "7e3721d2de1142fbefeae7df59052475d6512f5b48d6af9b9acaaabfaaf0b589"
     },
     {
       "path": "docs/BUILD.md",
@@ -111,13 +111,13 @@
     },
     {
       "path": "docs/MAMMA.md",
-      "bytes": 25972,
-      "sha256": "1682a83711942a29f64b7ec4b274bb1a6ee07dfb894d8a97e508825163b8326d"
+      "bytes": 25994,
+      "sha256": "3039796726e28d8977706f9b53f76ed638e7cc91d0ed4323bb4855351982413e"
     },
     {
       "path": "docs/MAMMA_AGENT_SETUP.md",
       "bytes": 22466,
-      "sha256": "39bd2ad349d37f2efa6246ffd76c345f422ffe5155eea010d4d46c96f1b23851"
+      "sha256": "f9bf6d9cd67e88a489be165517bee23b62533ea50848d360f685655f36e539a4"
     },
     {
       "path": "docs/PERFORMANCE.md",
@@ -127,7 +127,7 @@
     {
       "path": "docs/USER_GUIDE.md",
       "bytes": 59973,
-      "sha256": "ca250fd26156181cd333885dfae50342eb146a72d530d013c173b3dc67d72a39"
+      "sha256": "b82dac1913a30dac4470b7cc17a1e6d0c8e19a88276099359b6cca07edecab5c"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1097,7 +1097,7 @@
     {
       "path": "mocap/blend_multicam_export.py",
       "bytes": 10822,
-      "sha256": "2d0e1894cc3d897ac0865b8927c209a7c730485617a82d947564331e59c721f3"
+      "sha256": "7f79d9b6a0112cca382aa5ff68105f5647f33017d1d5054fef8d20c10e2098d2"
     },
     {
       "path": "mocap/blend_multicam_scene.py",
@@ -1427,7 +1427,7 @@
     {
       "path": "mocap/mamma_gravity_worker.py",
       "bytes": 5870,
-      "sha256": "41e94ffa5c96f7d07ae674e7438319b26df3cf526c7e8aa1637642a9c14c62e4"
+      "sha256": "9e0ec3f4ff9d094e517ee766cd1abfcef183e792b03a8607eef9b10b5410b500"
     },
     {
       "path": "mocap/mamma_inputs.py",
@@ -1447,7 +1447,7 @@
     {
       "path": "mocap/mamma_pipeline.py",
       "bytes": 19453,
-      "sha256": "21dd73e239904ab95bf147b0544bdd460cccf6979b35975095106363dfc2b069"
+      "sha256": "97df93cd4d21b9e7cf783fee2f7d627544b396802cfde9ad3cdb4fe7dc0b2a46"
     },
     {
       "path": "mocap/mamma_publish.py",

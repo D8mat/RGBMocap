@@ -79,8 +79,8 @@ def prepare(path, job):
     if job['end'] > common['duration']+1e-4:
         raise ValueError('The common trim extends beyond a camera video.')
     n = round((job['end']-job['start'])*30)
-    if not 4 <= n <= 1800:
-        raise ValueError('Use 4–1,800 frames for the MAMMA integration; no frames were dropped.')
+    if not 4 <= n <= 5000:
+        raise ValueError('Use 4–5,000 frames for the MAMMA integration; no frames were dropped.')
     if any(m.key not in {'flow_vggt','pear_geocalib'} or job['options']['camera_mode']!='manual' for m in missing('mamma_assets')):
         raise ValueError('Prepare the missing MAMMA models in Model Manager first.')
     options = job['options']

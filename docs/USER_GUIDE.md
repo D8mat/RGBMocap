@@ -508,7 +508,7 @@ the current step; **Total left** estimates the queue when timing data is availab
 Use **Console** for details and errors. Loading or unmeasured work shows activity
 instead of an invented percentage. FlowHMR is limited to 5,000 frames per take
 (about 166.7 seconds); available memory may require a shorter clip. MAMMA's
-adapter accepts 4–1,800 common frames and at most eight people. It requires
+adapter accepts 4–5,000 common frames and at most eight people. It requires
 two or more synchronized fixed-camera videos, with no fixed camera-count
 maximum. PromptHMR accepts one fixed-camera video, 4–1,800 working frames at
 30 fps and up to eight people. Four thumbnails per row is only a layout choice. These limits do not

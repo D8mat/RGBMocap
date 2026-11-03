@@ -73,7 +73,7 @@ input. Do not replace the YAML or invalidate motion to add this metadata.
 | PromptHMR | Multiple people reconstructed jointly from one video; can improve relative placement and interactions. Overall motion quality was lower than ExMR in our subjective tests. Fixed-camera Windows path, up to eight people; placement can still be wrong. | No finger tracking; fixed neutral fingers. Setup_PromptHMR.cmd; People defaults to 2, Interaction Prompt on. |
 | PEAR | Live single-person bone preview from a webcam or the video timeline; transient, with lightweight live foot lock and no recording/export or offline correction. | Fingers included; Start/Stop, fixed lengths/Reset Bones, One Euro filter, Rotation and default-on World Position. Shared support is installed by install.cmd. |
 
-Start with the [model guide index](models/README.md), then [ExMR](models/EXMR.md), [FlowHMR](models/FLOWHMR.md), [GVHMR](models/GVHMR.md), [MAMMA](MAMMA.md) or [PromptHMR](models/PROMPTHMR.md) for exact setup and controls. The [user guide](USER_GUIDE.md#recorded-processing-time-and-vram) includes observed timings, conditions and VRAM; these are historical measurements, not minimum specifications. FlowHMR has a 5,000-frame per-take limit and available memory may require less. MAMMA retains its 4–1,800-frame common trim and eight-person limits; there is no fixed camera-count maximum. Four-column thumbnails are a layout, not admission control. Do not change numerical precision, temporal context or model settings merely to improve a benchmark.
+Start with the [model guide index](models/README.md), then [ExMR](models/EXMR.md), [FlowHMR](models/FLOWHMR.md), [GVHMR](models/GVHMR.md), [MAMMA](MAMMA.md) or [PromptHMR](models/PROMPTHMR.md) for exact setup and controls. The [user guide](USER_GUIDE.md#recorded-processing-time-and-vram) includes observed timings, conditions and VRAM; these are historical measurements, not minimum specifications. FlowHMR has a 5,000-frame per-take limit and available memory may require less. MAMMA retains its 4–5,000-frame common trim and eight-person limits; there is no fixed camera-count maximum. Four-column thumbnails are a layout, not admission control. Do not change numerical precision, temporal context or model settings merely to improve a benchmark.
 
 Use **Model Manager** for the selected model and add-ons. Automatic download may fail, especially on Google Drive. Gated models require the user to register, accept upstream terms and obtain files; use **Manual Download...** and **Import...**. Do not handle provider passwords or redistribute licensed weights. Imports validate files; several model receipts tie validity to file size, timestamp and expected hash. If a copied file is not marked ready, import it again rather than assuming it is missing or editing receipts.
 
@@ -311,7 +311,7 @@ termination on errors/cancellation. Remove only exact owned staging paths with
 the matching request marker; never remove completed bundles or existing user
 folders. GUI cancellation terminates the worker tree and cleans its known staging
 directory. Revalidate source/stat/generation/scene receipts before publishing.
-MAMMA currently bounds the common trim to 1800 frames/eight people; geometry
+MAMMA currently bounds the common trim to 5000 frames/eight people; geometry
 baking must not accumulate whole mesh sequences in RAM. No new inference,
 runtime dependency, source motion or contact change is part of export.
 

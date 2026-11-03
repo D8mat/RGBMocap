@@ -20,7 +20,7 @@ def main():
     cameras=job['cameras'];frames=job['frames'];names=[c['id'] for c in cameras]
     if len(cameras)<2 or len(set(names))!=len(names) or not 1<=len(frames)<=3 or len(set(frames))!=len(frames):
         raise ValueError('Invalid camera/gravity samples.')
-    if any(not isinstance(f,int) or not 0<=f<1800 for f in frames):raise ValueError('Invalid gravity sample time.')
+    if any(not isinstance(f,int) or not 0<=f<5000 for f in frames):raise ValueError('Invalid gravity sample time.')
     for c in cameras:
         if not isinstance(c['id'],str) or Path(c['id']).name!=c['id'] or len(c['id'])>120 or any(x in c['id'] for x in '/\\:'):
             raise ValueError('Invalid camera identity.')

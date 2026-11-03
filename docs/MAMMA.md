@@ -143,7 +143,7 @@ are still needed.
   useful evidence for that person.
 
 The app uses a common 30 fps timeline, limited by the shortest input. The current
-adapter accepts 4–1,800 common frames (up to 60 seconds at 30 fps) and at most
+adapter accepts 4–5,000 common frames (about 166.7 seconds at 30 fps; memory permitting) and at most
 eight people. Start with a short trimmed section to check the cameras and masks
 before processing a long clip. These are adapter limits, not a guarantee that
 every clip fits memory; the full 60-second limit has not been validated.

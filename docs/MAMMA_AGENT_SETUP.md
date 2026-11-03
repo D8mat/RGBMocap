@@ -314,7 +314,7 @@ Do not upload registered weights or copy them into the public test source.
    Keep diagnostic logs and generated artifacts outside publishable files.
 
 The app has no fixed camera-count maximum, but still requires at least two
-views, 4–1,800 common frames and no more than eight people. Start small for
+views, 4–5,000 common frames and no more than eight people. Start small for
 runtime acceptance, then measure the user's intended workload. Do not restore
 the old four-view/64-entry ceilings or replace them with an arbitrary GPU-based
 camera cap. Keep the existing RAM/Windows allocation-headroom guard, CUDA

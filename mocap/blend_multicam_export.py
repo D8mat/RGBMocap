@@ -38,7 +38,7 @@ def run(request, emit=lambda *a, **k: None):
         selected=[p for p in people['people'] if p['id'] in ids]
         if len(selected)!=len(ids):raise ValueError('Selected people changed')
         n=int(state['frames']);fps=float(state['fps']);actors=[]
-        if not 1<=n<=1800 or not np.isfinite(fps) or fps<=0:raise ValueError('Invalid MAMMA scene timing')
+        if not 1<=n<=5000 or not np.isfinite(fps) or fps<=0:raise ValueError('Invalid MAMMA scene timing')
         for person in selected:
             if not person['takes']:raise ValueError('Selected person has no animation')
             for take in person['takes']:
