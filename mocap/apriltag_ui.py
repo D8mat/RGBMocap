@@ -63,6 +63,9 @@ class DetectionDialog(QDialog):
         self.status=QLabel();self.status.setWordWrap(True);layout.addWidget(self.status)
         from .calibration_solver_ui import AprilTagSolveDialog
         self.calculate=QPushButton('Calculate AprilTag Camera Positions...');self.calculate.clicked.connect(lambda:AprilTagSolveDialog(self).exec());layout.addWidget(self.calculate)
+        from .apriltag_board_ui import AprilTagBoardDialog
+        self.board_video=QPushButton('AprilTag Board - Calibrate from Videos...')
+        self.board_video.clicked.connect(lambda:AprilTagBoardDialog(self).exec());layout.addWidget(self.board_video)
         buttons=QHBoxLayout();layout.addLayout(buttons)
         self.stop=QPushButton('Stop');self.stop.setEnabled(False);self.stop.clicked.connect(self.cancel);buttons.addWidget(self.stop)
         self.save=QPushButton('Export Detections JSON...');self.save.setEnabled(False);self.save.clicked.connect(self.export);buttons.addWidget(self.save)
@@ -82,6 +85,7 @@ class DetectionDialog(QDialog):
         self.results=[];self.images=[];self.errors=[];self.cancelled=False;self.views.clear();self.save.setEnabled(False);self.photos.setEnabled(False);self.videos.setEnabled(False);self.stop.setEnabled(True);self.size.setEnabled(False);self.seconds.setEnabled(False)
         self.requested=[e['id'] for e in entries]
         self.calculate.setEnabled(False)
+        self.board_video.setEnabled(False)
         self.status.setText('Detecting at original resolution...');self.preview.clear()
         self.worker=DetectWorker(entries,self.seconds.value(),self.size.value(),self)
         self.worker.result.connect(self.received);self.worker.failure.connect(self.failed);self.worker.finished.connect(self.on_worker_finished);self.worker.start()
@@ -104,6 +108,7 @@ class DetectionDialog(QDialog):
         if self.worker:self.cancelled=True;self.worker.requestInterruption();self.status.setText('Stopping after the current image...')
     def on_worker_finished(self):
         self.calculate.setEnabled(True)
+        self.board_video.setEnabled(True)
         worker=self.worker;self.worker=None;worker.deleteLater();self.stop.setEnabled(False);self.photos.setEnabled(True);self.videos.setEnabled(bool(self.entries));self.save.setEnabled(bool(self.results));self.size.setEnabled(True);self.seconds.setEnabled(True)
         self.status.setText(self.status.text()+f'\nCompleted {len(self.results)}/{len(self.requested)} views; errors: {len(self.errors)}; stopped: {self.cancelled}.')
         if self.closing:self.close()

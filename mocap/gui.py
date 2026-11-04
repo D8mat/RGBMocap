@@ -971,6 +971,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         self.timer.start(max(1, math.ceil(remaining * 1000)))
 
     def shutdown_preview(self):
+        if hasattr(self,'multi_viewport'):self.multi_viewport.close()
+        if hasattr(self,'mamma_video_pair'):self.mamma_video_pair.shutdown()
         if hasattr(self,'camera_tools'):self.camera_tools.close()
         self.shutdown_mamma()
         self.stop_playback()

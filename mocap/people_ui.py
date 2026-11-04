@@ -9,7 +9,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QSize, QRect, Signal, QPersistentModelIndex, QEvent
 from PySide6.QtGui import QColor, QIcon, QPixmap, QPainter, QPen
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,
-    QListWidget,QListWidgetItem,QColorDialog,QComboBox,QFileDialog,
+    QListWidget,QListWidgetItem,QColorDialog,QComboBox,QFileDialog,QSplitter,
     QStyledItemDelegate,QStyleOptionViewItem,QToolTip,QStyle,QMenu,QInputDialog,QMessageBox)
 
 from .people_store import load_people,save_people,root_for,safe_child,DEFAULT_COLOR
@@ -237,12 +237,12 @@ class PeopleWorkspace:
         self.motion_view.update()
 
     def build_people_editor(self, video):
-        body = QWidget()
-        layout = QHBoxLayout(body)
-        layout.setContentsMargins(0,0,0,0);layout.setSpacing(2)
+        body = QSplitter(Qt.Horizontal)
+        body.setHandleWidth(5);body.setChildrenCollapsible(False)
+        self.people_splitter = body
         self.people_panel = QWidget()
         self.people_panel.setObjectName('editor')
-        self.people_panel.setMinimumWidth(158);self.people_panel.setMaximumWidth(240)
+        self.people_panel.setMinimumWidth(158)
         column = QVBoxLayout(self.people_panel)
         column.setContentsMargins(6,6,6,6);column.setSpacing(5)
         header=QHBoxLayout()
@@ -279,12 +279,14 @@ class PeopleWorkspace:
         self.people_note.setObjectName('muted');self.people_note.setWordWrap(True)
         self.people_note.hide()
         column.addWidget(self.people_note)
-        layout.addWidget(self.people_panel)
+        body.addWidget(self.people_panel)
         movie = QWidget()
         movie_layout = QVBoxLayout(movie)
         movie_layout.setContentsMargins(0,0,0,0);movie_layout.setSpacing(0)
         video.setMinimumWidth(260)
-        movie_layout.addWidget(video,1)
+        from .multi_preview import MammaVideoPair
+        self.mamma_video_pair = MammaVideoPair(self, video)
+        movie_layout.addWidget(self.mamma_video_pair,1)
         self.build_mamma_thumbnails(movie_layout)
         self.build_pear_thumbnails(movie_layout)
         footer = QWidget();footer.setObjectName('editorHeader')
@@ -294,7 +296,9 @@ class PeopleWorkspace:
         self.find_person_button.clicked.connect(self.find_people)
         bar.addWidget(self.find_person_button);bar.addStretch()
         movie_layout.addWidget(footer)
-        layout.addWidget(movie,1)
+        body.addWidget(movie)
+        body.setStretchFactor(0,0);body.setStretchFactor(1,1)
+        body.setSizes([180,460])
         return body
 
     def update_people_readiness(self):

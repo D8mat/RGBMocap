@@ -100,6 +100,11 @@
       "sha256": "0cfd342df6863c52902a8b9850d6e194a780953c4a6f844d274727748c7a6663"
     },
     {
+      "path": "docs/APRILTAG_BOARD.md",
+      "bytes": 4290,
+      "sha256": "bc4c090449d82ad30440810456eb242613bc5125e882ca0cc07e30dea35b8463"
+    },
+    {
       "path": "docs/BUILD.md",
       "bytes": 13113,
       "sha256": "3ca8d430ea8a261db29bd817c4c3674907d889af6bc9f59132d5818179866f56"
@@ -141,8 +146,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 64543,
-      "sha256": "9520fcd78c6c663165e28ebbf5d7ea5fb8adcabc35c6f9b10adbb5ae965a5ef9"
+      "bytes": 67132,
+      "sha256": "48321534cf9c806fe18862cbe03e28ee784021fe095359fa3734e8e962bce52b"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -198,6 +203,11 @@
       "path": "docs/models/README.md",
       "bytes": 6785,
       "sha256": "27f52898cf4f7ff8f6dc9e8b29e6769cff708c6083fb9bcec8d0e44cece80385"
+    },
+    {
+      "path": "docs/samples/apriltag_board_3x2.json",
+      "bytes": 2639,
+      "sha256": "7adfd73255a87b94bf7b86e83100344589f0c50ca29e21ea843517c21dc4f622"
     },
     {
       "path": "docs/samples/apriltags_36h11_150mm_ID0-5.pdf",
@@ -1115,14 +1125,24 @@
       "sha256": "960fa6f0b59f70ceeaeceae1fe9fde4a05c20fa22a169f01a68b7f6f9c6c50a9"
     },
     {
+      "path": "mocap/apriltag_board.py",
+      "bytes": 11522,
+      "sha256": "af9b6abdf4781603cd12c6196e2eb01e75e443a876818fcce7cddabcec801e85"
+    },
+    {
+      "path": "mocap/apriltag_board_ui.py",
+      "bytes": 10892,
+      "sha256": "c4429bafc8614b90a453b8be32ab3ead4df3af3cdf0d4ccca048cc6b9eea93a3"
+    },
+    {
       "path": "mocap/apriltag_detection.py",
       "bytes": 2598,
       "sha256": "4f807d90a369ce39719c2a10526e5f251fffb354bf45f98270ec7be0524fd170"
     },
     {
       "path": "mocap/apriltag_ui.py",
-      "bytes": 9921,
-      "sha256": "e7a549c3c21898b740f61c0188eddf082de2f223c02febf80acac833238bd6c5"
+      "bytes": 10269,
+      "sha256": "4b5a9a9a062d176e099ae3c1dbcd6d0b1682462c4d49cf982466f7d396488910"
     },
     {
       "path": "mocap/batch_prefetch.py",
@@ -1211,8 +1231,8 @@
     },
     {
       "path": "mocap/calibration_solver_ui.py",
-      "bytes": 15692,
-      "sha256": "a83f5bbb702556a37bd532aaf6cfe5cfda697ca62f1be672bba9f6fe207701f1"
+      "bytes": 16005,
+      "sha256": "12e9c4482bc6ee7e5b07b896fad25aa4c8374a57e2e79e518600261a77b41846"
     },
     {
       "path": "mocap/camera_background.py",
@@ -1276,8 +1296,8 @@
     },
     {
       "path": "mocap/checker_floor.py",
-      "bytes": 2165,
-      "sha256": "e98f54d3ca6bdb4e566ad3deb3bf23379d2411f299ecf5173da4a49ada55c42f"
+      "bytes": 2204,
+      "sha256": "dd263f6b0e912c306a8fe9f6f29a47bd69c619155a1ac7b3512c532bb37a5b42"
     },
     {
       "path": "mocap/checkerboard_pose.py",
@@ -1476,8 +1496,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 109416,
-      "sha256": "d52dfbd05aaaf7a4a6a07b59b5d503c5420a79a78099e3b7414ac1c3f60aa6dc"
+      "bytes": 109563,
+      "sha256": "904868556a5a2e9d7114c82e6c69b1babbc2b209e7fc69c93466b0f661b50e47"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1665,6 +1685,11 @@
       "sha256": "17a8d9bb43ce84075d77f6451bd9021d311b6cfe903a36706712f61db9fb286f"
     },
     {
+      "path": "mocap/multi_preview.py",
+      "bytes": 9799,
+      "sha256": "50bafc5dc5ff970368c6e5ce1cc2c865871936417a7bb933c7822272e195f86a"
+    },
+    {
       "path": "mocap/multilevel_contacts.py",
       "bytes": 5137,
       "sha256": "02be19c3307f329eb7abe6e48ec796f2dee5d5322d1cd66405f0c0e3e734e988"
@@ -1831,8 +1856,8 @@
     },
     {
       "path": "mocap/people_ui.py",
-      "bytes": 38638,
-      "sha256": "ea761aeb1bf128331f378fc97b1286783434f09b1b03fb0a96b5803cdb4373ef"
+      "bytes": 38846,
+      "sha256": "38ae2b8af032daef1757368f9dc200ae9ad06c90530f2e38bcd3f6e735994445"
     },
     {
       "path": "mocap/performance_history.py",
@@ -1991,8 +2016,8 @@
     },
     {
       "path": "mocap/retarget/blender_bake.py",
-      "bytes": 8312,
-      "sha256": "fe707ad285f1e0e0a07efcef695ef67f0e0c83aeae3219cb2408e16da18e4384"
+      "bytes": 8690,
+      "sha256": "546a19542c082d79da7eae4be1f7ce954d9c3ced0ffee3f29607e37c306f23c7"
     },
     {
       "path": "mocap/retarget/blender_entry.py",
@@ -2046,8 +2071,8 @@
     },
     {
       "path": "mocap/retarget/pipeline.py",
-      "bytes": 5618,
-      "sha256": "18ff7b66df2c95ce56d5c1a4a924a99ae590c0fd2d9324ea0ca33047c9015456"
+      "bytes": 7047,
+      "sha256": "7ebd0f9967a67df3c27f24316a3b1556b02f7f5bfb33a3e0115dee252b793ef7"
     },
     {
       "path": "mocap/retarget/refresh.py",
@@ -2091,8 +2116,8 @@
     },
     {
       "path": "mocap/retarget/worker.py",
-      "bytes": 4196,
-      "sha256": "0d23504f5437cf36764eb0d69d9a23613707719e8c6d8650d0f6e8fe4a91626f"
+      "bytes": 4211,
+      "sha256": "a791e2a0a6be203d131c04d3e48d72920c121b0c35620a143362ccc52f4d1bd8"
     },
     {
       "path": "mocap/rig_gl.py",
@@ -2271,8 +2296,8 @@
     },
     {
       "path": "mocap/viewport.py",
-      "bytes": 55165,
-      "sha256": "b2aa3b719913444fcad26d067cd381abbd0b1595351afca8561660b979bdf6a8"
+      "bytes": 55370,
+      "sha256": "af52af2df1342ef21ed8fb1a7d2f1b08a00d747728cab8af2855dec41d4bcde8"
     },
     {
       "path": "mocap/worker.py",
@@ -2286,8 +2311,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 40408,
-      "sha256": "1f799998a3144aadc72ff9e01e657359f0e414997e5d72f2fda9d2d5aa92870a"
+      "bytes": 41373,
+      "sha256": "4767b7e290f94d86f5bb64607929c0a69eb9f050470aff2031d3cc82f09c9ed4"
     },
     {
       "path": "native_compat/LICENSE",
@@ -13078,6 +13103,11 @@
       "path": "tools/support_components.py",
       "bytes": 3830,
       "sha256": "000772ff21d47a1a35d5fefa0e7685781e7c05fbbbcf708a29cfc3f275dd4984"
+    },
+    {
+      "path": "tools/test_apriltag_board.py",
+      "bytes": 3515,
+      "sha256": "43894a9cb97b567fce3f1b9c7fb54451e9411440dea671345d5b791345420320"
     },
     {
       "path": "tools/test_apriltag_detection.py",

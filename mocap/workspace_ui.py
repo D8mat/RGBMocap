@@ -155,7 +155,10 @@ def build_workspace(w):
     video_header.addWidget(overlay)
     from PySide6.QtWidgets import QStackedWidget
     camera_stack=QStackedWidget()
-    motion_panel, motion_header = editor("3D Viewport", camera_stack)
+    viewport_split = QSplitter(Qt.Horizontal)
+    viewport_split.setHandleWidth(5);viewport_split.setChildrenCollapsible(False)
+    viewport_split.addWidget(camera_stack)
+    motion_panel, motion_header = editor("3D Viewport 1", viewport_split)
     w.bone_overlay=QCheckBox('Bone Overlay')
     w.bone_overlay.setChecked(True)
     w.bone_overlay.setToolTip(tooltip_text('Show the skeleton used for FBX export over the motion mesh. Display only.'))
@@ -196,6 +199,15 @@ def build_workspace(w):
             w.motion_view.update()
         check.toggled.connect(toggle)
         viewport_footer.addWidget(check)
+        if attribute=='checker_floor':
+            w.floor_opacity=QSpinBox();w.floor_opacity.setRange(0,100);w.floor_opacity.setSuffix(' %')
+            w.floor_opacity.setValue(round(w.motion_view.checker_floor_opacity*100))
+            w.floor_opacity.setAccessibleName('Checker floor opacity')
+            w.floor_opacity.setToolTip('Checker floor opacity: 0% transparent, 100% opaque. Grid lines and text are unaffected.')
+            def set_floor_opacity(value):
+                w.motion_view.checker_floor_opacity=value/100.;w.motion_view.update()
+            w.floor_opacity.valueChanged.connect(set_floor_opacity)
+            viewport_footer.addWidget(w.floor_opacity)
     w.follow_actor = QCheckBox("Follow Actor")
     w.follow_actor.setToolTip(tooltip_text('Move the viewing camera with the person during playback. Does not change the animation.'))
     w.follow_actor.setChecked(True)
@@ -203,6 +215,8 @@ def build_workspace(w):
     viewport_footer.addWidget(w.follow_actor)
     viewport_footer.addStretch()
     motion_panel.layout().addWidget(w.viewport_footer)
+    from .multi_preview import MultiViewport
+    w.multi_viewport = MultiViewport(w, viewport_split, top)
     editors.addWidget(video_panel)
     editors.addWidget(motion_panel)
     editors.setSizes([460, 650])

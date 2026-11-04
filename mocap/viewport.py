@@ -79,6 +79,7 @@ class MotionView(ViewportBase):
         self.view_name = "Perspective"
         self.show_grid = True
         self.checker_floor = False
+        self.checker_floor_opacity = .5
         self._checker_texture = None
         self.show_correction_floor = False
         self.correction_floor = None
@@ -317,6 +318,8 @@ class MotionView(ViewportBase):
         target = self.scene_center.copy()
         if self.follow and self.people_scene is not None:
             actors=self.scene_actors()
+            selected=[(take,frame) for take,frame in actors if take.ident==self.scene_selected]
+            if selected:actors=selected
             roots=[self.scene_joint_points(take,frame)[0] for take,frame in actors]
             if roots:target[[0,2]]=np.mean(roots,axis=0)[[0,2]]
         elif self.follow and self.joints is not None:
@@ -852,7 +855,7 @@ class MotionView(ViewportBase):
         if self.checker_floor:
             from .checker_floor import texture,draw
             if self._checker_texture is None:self._checker_texture=texture(round(2*self.GRID_HALF_EXTENT/self.GRID_SPACING))
-            draw(painter,self._paint_camera,self.width(),self.height(),self.grid_floor,self.GRID_HALF_EXTENT,self.GRID_SPACING,self._checker_texture)
+            draw(painter,self._paint_camera,self.width(),self.height(),self.grid_floor,self.GRID_HALF_EXTENT,self.GRID_SPACING,self._checker_texture,self.checker_floor_opacity)
         if self.show_grid:
             lines3d(self.grid_minor + offset, "#454545", .65)
             lines3d(self.grid_major + offset, "#515151", 1.0)

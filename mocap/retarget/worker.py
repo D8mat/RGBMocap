@@ -53,7 +53,7 @@ def main(args):
             for name in [f'{kind}-rest.blend',f'{kind}-rig.json',f'{kind}-canonical.npz',f'{kind}-contact-geometry.npz','import.json']:
                 shutil.copy2(asset/name,folder/name)
             receipt=prepare(Path(take['project']),job['result'],folder)
-            report(f'Take {i+1}/{len(job["takes"])}: solving contact retargeting')
+            report(f'Take {i+1}/{len(job["takes"])}: transferring rotations and pelvis position')
             diagnostic=run(folder,kind)
             report(f'Take {i+1}/{len(job["takes"])}: baking body bones')
             invoke('bake',folder,kind)

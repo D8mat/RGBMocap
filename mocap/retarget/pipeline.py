@@ -5,7 +5,7 @@ import numpy as np
 from . import solver as m, stabilize as stab, surface, measured as t, foot_calibration
 from .calibration import desired,reorient_pose
 
-def run(folder,kind):
+def run_contact_legacy(folder,kind):
  original_safe=m.source_safe_reach;original_two=m.two_bone
  try:return _run(folder,kind)
  finally:
@@ -68,3 +68,25 @@ def _run(folder,kind):
   np.savez(path,**data)
  m.source_safe_reach=original_safe;m.two_bone=original_two
  return dict(seconds=time.perf_counter()-started,fixed_length_error_mm=float(abs(length-expect).max()*1000),frames=len(active))
+
+
+def run(folder,kind):
+    """Rotation-only transfer. Preserve target proportions; copy pelvis world path."""
+    started=time.perf_counter();out=Path(folder)
+    with np.load(out/'motion-source.npz',allow_pickle=False) as z:source={k:z[k] for k in z.files}
+    with np.load(out/f'{kind}-canonical.npz',allow_pickle=False) as z:target={k:z[k] for k in z.files}
+    rest=target['rest']
+    with np.load(out/'motion-neutral-calibration.npz',allow_pickle=False) as z:neutral=z['neutral']
+    # Transfer motion relative to source bind, not source absolute bone axes.
+    # Identity motion must leave the target exactly in its own reference pose.
+    world_delta=source['world']@neutral.swapaxes(-1,-2)
+    local=m.local_from_world(world_delta)
+    root=source['points'][:,0]+source['origin']
+    points,world=m.fk(local,rest,root)
+    if not np.isfinite(points).all() or not np.isfinite(world).all():raise ValueError('Non-finite rotation retarget')
+    result=dict(local=local,world=world,points=points,root=root,rest=rest,names=target['names'],ratio=1.)
+    for method in ('rotation','stance'):np.savez(out/f'motion-{kind}-{method}.npz',**result)
+    report=dict(mode='reference_rotation_deltas_and_pelvis',frames=len(root),seconds=time.perf_counter()-started,
+                contact_ik=False,proportion_scaling=False)
+    (out/'retarget-mode.json').write_text(json.dumps(report),encoding='utf8')
+    return report

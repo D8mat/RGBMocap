@@ -59,6 +59,8 @@ def bake(kind, label, method):
     source_asset = np.load(io_path(folder / info['asset_file']))
     source_names = info['names']
     source_rest = source_asset['rest']
+    mode_file=OUT/'retarget-mode.json'
+    delta_mode=mode_file.exists() and json.loads(mode_file.read_text(encoding='utf8')).get('mode')=='reference_rotation_deltas_and_pelvis'
     extra = {}
     base = np.load(io_path(OUT / (label + '-' + kind + '-rotation.npz')))
     for (j, name) in enumerate(source_names[22:], 22):
@@ -78,6 +80,10 @@ def bake(kind, label, method):
             number = phalanx - 1 if finger == 'Thumb' else phalanx
             target = jp + '０１２３'[number] + ('.L' if side == 'left' else '.R')
         if target not in indices:
+            continue
+        if delta_mode:
+            neutral=source_asset['fbx_rest_frames'][j]@source_asset['fbx_display_frames'][j].T
+            extra[target]=source_frames[:,j,:3,:3]@neutral.T
             continue
         target_bone = bones[indices[target]]
         vtarget = np.array(arm.matrix_world @ target_bone.tail_local) - rest[indices[target]]

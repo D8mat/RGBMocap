@@ -188,6 +188,8 @@ class CalibrationDialog(QDialog):
 def run_job(path,cancel=lambda:False):
     def read(name):return json.loads((path.parent/name).read_text(encoding='utf-8-sig'))
     job = json.loads(path.read_text(encoding='utf-8-sig'))
+    if not isinstance(job,dict) or not all(key in job for key in ('detections','marker_map','lenses')):
+        raise ValueError('Select a calibration JOB JSON referencing detections, marker_map and lenses, not the detections file. For the known 3x2 board, use AprilTag Board - Calibrate from Videos instead.')
     session = read(job['detections'])
     if session.get('cancelled') or session.get('errors'):raise ValueError('Use a complete detection session without errors')
     observations = session['observations']

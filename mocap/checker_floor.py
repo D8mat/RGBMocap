@@ -14,7 +14,7 @@ def texture(cells):
     painter.end();return image
 
 
-def draw(painter,camera,width,height,floor,extent,spacing,image):
+def draw(painter,camera,width,height,floor,extent,spacing,image,opacity=.5):
     eye,basis=camera
     # Texture coordinates map to app X/Z metres; Y is the existing grid height.
     scale=2*extent/image.width()
@@ -39,6 +39,6 @@ def draw(painter,camera,width,height,floor,extent,spacing,image):
     painter.save();painter.setClipPath(path,Qt.IntersectClip)
     painter.setTransform(QTransform(h[0,0],h[1,0],h[2,0],h[0,1],h[1,1],h[2,1],h[0,2],h[1,2],h[2,2]),True)
     painter.setRenderHint(QPainter.SmoothPixmapTransform,False)
-    painter.setOpacity(painter.opacity()*.5)
+    painter.setOpacity(painter.opacity()*max(0.,min(1.,float(opacity))))
     painter.drawImage(QRectF(0,0,image.width(),image.height()),image)
     painter.restore()

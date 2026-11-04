@@ -891,3 +891,37 @@ Use **File > Export > FBX > Unreal Engine - skinned body + skeleton + animation*
 ### Checker floor
 
 Enable **Checker Floor** below the 3D viewport for a black-and-white reference floor. Each square is 0.25 x 0.25 metres, aligned to the existing minor grid on the same 20 x 20 metre area at Y=0. **Floor Grid** independently controls grid lines and axes. The floor is procedural and display-only; it does not change calibration, contacts, mocap or exported files.
+
+### Rotation-only character retarget
+
+Character retargeting transfers bone rotation deltas relative to the source reference pose and the source pelvis world trajectory. It preserves target bone lengths and scale; no contact IK, pelvis-height correction or proportion-based trajectory scaling is applied. Foot sliding/floor penetration can remain when body proportions differ. This is independent of the source-export leading T-pose option. Existing baked characters must be retargeted again to use this behavior.
+
+Reference-delta retargeting also applies to fingers. A source reference pose produces identity deformation on the target bind pose; it does not align the target limbs to source rest directions. The leading export T-pose checkbox does not control this retarget calibration.
+
+The percentage control beside **Checker Floor** adjusts its opacity from 0 to 100% (default 50%). It changes only the floor texture; grid lines, text and character opacity remain unchanged. The value is retained during the current app session.
+
+### Multiple preview panes
+
+Use the **1 viewport / 2 viewports / 3 viewports** selector in the top bar to
+show independent 3D views side by side. Each has its own orbit, zoom, direction,
+Frame All and Follow Actor controls. In an extra view, Follow Actor follows the
+person selected in People; turn it off for a stationary scene overview. The
+main header and Follow Actor checkbox control View 1. Floor and overlay settings
+are shared. All views use the same motion data and timeline; extra visible views
+require additional rendering work and GPU memory, but do not run reconstruction.
+Drag the separators to resize views or the People panel.
+
+With two or more MAMMA input videos, enable **Second camera** above the movie
+preview and select its camera. The thumbnail selection still controls the first
+video. Both follow the primary playback timeline, including seeking and trim;
+source videos must already be synchronized. The second decoder may display a
+frame later under load. Disable Second camera to release its decoder. These
+preview layout choices last for the current application session.
+
+### AprilTag board calibration from videos
+
+Use **AprilTag Calibration > AprilTag Board - Calibrate from Videos...** to estimate
+lenses from a moving rigid 3x2 tag board and camera poses from a common stationary
+floor view. No manual marker map or focal lengths are required. See
+[AprilTag board workflow](APRILTAG_BOARD.md) for board dimensions, capture steps,
+Unreal settings and the current real-lens undistortion limitation.
