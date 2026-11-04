@@ -1,0 +1,11 @@
+{
+  "note": "EXAMPLE ONLY: replace all coordinates with measured corners of your mounted tags, in displayed corner order 0,1,2,3. This example places three 150 mm tags on a horizontal plane. It is not a measurement of your room.",
+  "units": "metres",
+  "world_up": "Z",
+  "family": "tag36h11",
+  "markers": {
+    "0": [[0,0,0],[0.15,0,0],[0.15,0.15,0],[0,0.15,0]],
+    "1": [[0.5,0,0],[0.65,0,0],[0.65,0.15,0],[0.5,0.15,0]],
+    "2": [[0,0.5,0],[0.15,0.5,0],[0.15,0.65,0],[0,0.65,0]]
+  }
+}

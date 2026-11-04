@@ -887,3 +887,7 @@ Use **File > Kinect Studio...** for live RGB/depth/body capture, experimental AI
 ## Unreal Engine skeletal export
 
 Use **File > Export > FBX > Unreal Engine - skinned body + skeleton + animation** for supported SMPL-X results. See [Unreal export and import settings](UNREAL.md).
+
+### Checker floor
+
+Enable **Checker Floor** below the 3D viewport for a black-and-white reference floor. Each square is 0.25 x 0.25 metres, aligned to the existing minor grid on the same 20 x 20 metre area at Y=0. **Floor Grid** independently controls grid lines and axes. The floor is procedural and display-only; it does not change calibration, contacts, mocap or exported files.

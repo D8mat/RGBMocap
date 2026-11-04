@@ -181,12 +181,12 @@ def build_workspace(w):
     viewport_footer = QHBoxLayout(w.viewport_footer)
     viewport_footer.setContentsMargins(9, 3, 6, 3)
     w.viewport_checks={}
-    for label, attribute in (("Floor Grid", "show_grid"), ("Correction Floor", "show_correction_floor"), ("Motion Path", "show_trajectory"),
+    for label, attribute in (("Floor Grid", "show_grid"), ("Checker Floor", "checker_floor"), ("Correction Floor", "show_correction_floor"), ("Motion Path", "show_trajectory"),
                              ("Lock", "show_foot_locks"), ("Name", "show_names"), ("Camera", "show_cameras")):
         check = QCheckBox(label)
         w.viewport_checks[attribute]=check
         check.setChecked(getattr(w.motion_view, attribute))
-        check.setToolTip(tooltip_text({'show_grid': 'Show the reference grid at height zero. Does not change ground contact.', 'show_correction_floor': 'Show the correction floor height as an orange plane. Display only.', 'show_trajectory': 'Show the path followed by the person.', 'show_foot_locks': '', 'show_names': 'Show each person\'s name above their mesh. Rename people by right-clicking the People list. Display only.', 'show_cameras':'Show saved camera frustums and available camera motion. Display only; does not estimate or refit cameras.'}[attribute]))
+        check.setToolTip(tooltip_text({'checker_floor': 'Black and white floor. Each square matches the minor grid: 0.25 x 0.25 m. Viewport only; does not change contact or export.', 'show_grid': 'Show the reference grid at height zero. Does not change ground contact.', 'show_correction_floor': 'Show the correction floor height as an orange plane. Display only.', 'show_trajectory': 'Show the path followed by the person.', 'show_foot_locks': '', 'show_names': 'Show each person\'s name above their mesh. Rename people by right-clicking the People list. Display only.', 'show_cameras':'Show saved camera frustums and available camera motion. Display only; does not estimate or refit cameras.'}[attribute]))
         if attribute=='show_names':w.name_labels=check
         if attribute=='show_foot_locks':
             check.setToolTip(tooltip_text('Show active foot and hand contacts as colored discs. Colors match the timeline. Display only; does not enable correction.'))
@@ -288,6 +288,10 @@ def build_workspace(w):
     w.clip_label.setMinimumWidth(0)
     w.clip_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
     action_bar.addWidget(w.clip_label, 1)
+    from .character_position import apply as position_character
+    w.recenter_character_button=button('Recenter Character',lambda:position_character(w),action_bar)
+    w.recenter_character_button.setToolTip('Center the selected source take at the current frame on the ground plane; applies to preview and exports. Height and motion are preserved.')
+    w.reset_character_position_button=button('Reset Position',lambda:position_character(w,True),action_bar)
     w.reset_footlocks_button=button('Reset Locks',w.reset_foot_contacts,action_bar)
     w.reset_footlocks_button.setToolTip(tooltip_text('Restore automatic foot and hand contact timings for this person. Click Apply Correction to update the motion.'))
     w.timeline_frame_all_button = button("Frame All", w.slider.frame_all, action_bar)
@@ -617,6 +621,8 @@ def build_workspace(w):
     file_menu.addSeparator()
     file_menu.addAction("Exit", w.close)
     help_menu = w.menuBar().addMenu("Help")
+    from .performance_history import show as show_performance
+    help_menu.addAction("Performance...",lambda:show_performance(w))
     w.check_system_action = help_menu.addAction("Check System", lambda: w.start_jobs([("diagnose", [])]))
     help_menu.addAction("Controls", lambda: QMessageBox.information(w, "Workspace Controls",
         "Space: Play / Pause\nLeft / Right: Step one frame\nShift + Left / Right: Step one second\nHome / End: First / last frame\n\nViewport: LMB orbit, MMB / RMB pan, wheel zoom\nGizmo: click an axis to align the view\nTimeline: drag video clip edges to trim\nClick the frame ruler or drag the blue frame box to seek\nWheel to zoom; MMB to pan; Reset Trim restores the full clip\nClick ? in the timeline header for editing help.\nPlayback and reconstruction use the selected video clip range.\n\nThe mesh shows the selected motion result.\nFlowHMR and ExMR track fingers directly. GVHMR uses optional HandFlow for finger tracking.\nUse File > Export to choose FBX, BVH or a portable Blender project and save the displayed animation."))

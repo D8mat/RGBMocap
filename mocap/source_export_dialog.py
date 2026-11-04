@@ -18,6 +18,17 @@ class SourceExportDialog(QDialog):
         self.unreal_ground.setToolTip('Ground the reference/T-pose and first motion frame using the skinned foot surface. Apply one constant offset to the whole original animation; preserve jumps. Additional Z offset is applied afterward.')
         self.unreal_heading=QCheckBox('Align animation facing to reference skeleton');layout.addWidget(self.unreal_heading)
         self.unreal_heading.setToolTip('Rotate the whole animation around the initial pelvis to match the reference heading. Preserves height and relative motion; useful for MetaHuman retargeting. Does not change the bind pose or IK chain mapping.')
+        self.unreal_resume=QCheckBox('Resume completed export steps');self.unreal_resume.setChecked(True);layout.addWidget(self.unreal_resume)
+        self.unreal_resume.setToolTip('Keep verified prepared data and completed output in the project export cache. Retry with the same destination after interruption. An unfinished step restarts; changed inputs invalidate it.')
+        self.unreal_preview=QCheckBox('Preview only: first 3 seconds as Blender project');layout.addWidget(self.unreal_preview)
+        self.unreal_preview.setToolTip('Save a short .blend with the exact export skeleton, skin, heading, floor offset and optional T-pose. Review it in Blender before exporting the full FBX.')
+        self.unreal_performance=QLabel();self.unreal_performance.setWordWrap(True);layout.addWidget(self.unreal_performance)
+        try:
+            import json
+            from pathlib import Path
+            report=json.loads((Path(parent.project)/'unreal-export-performance.json').read_text(encoding='utf8'))
+            self.unreal_performance.setText('Last Unreal export: %.2f s preparation, %.2f s build; reused preparation: %s, output: %s.' % (report['preparation_seconds'],report['build_seconds'],report['reused_preparation'],report['reused_output']))
+        except (AttributeError,TypeError,OSError,ValueError,KeyError):self.unreal_performance.setText('Export timings and checkpoint reuse will appear here after the first export and in the Console.')
         self.profile=QComboBox();self.profile.addItem('Generic / Blender','generic');self.profile.addItem('3ds Max Biped','biped')
         self.profile.setToolTip('Generic / Blender keeps anatomical names and original rotation orders. 3ds Max Biped uses Character Studio names and uniform ZXY rotations. Both keep metre units and Y up.')
         self.profile_label=QLabel('BVH profile');form.addRow(self.profile_label,self.profile)
@@ -44,7 +55,7 @@ class SourceExportDialog(QDialog):
         fmt=self.format.currentData();blend=fmt=='blend';whole=blend and self.model=='mamma' and self.whole_scene.isChecked()
         unreal=fmt=='fbx' and self.fbx_profile.currentData()=='unreal'
         self.fbx_label.setVisible(fmt=='fbx');self.fbx_profile.setVisible(fmt=='fbx')
-        self.unreal_z_label.setVisible(unreal);self.unreal_z.setVisible(unreal);self.unreal_ground.setVisible(unreal);self.unreal_heading.setVisible(unreal)
+        self.unreal_z_label.setVisible(unreal);self.unreal_z.setVisible(unreal);self.unreal_ground.setVisible(unreal);self.unreal_heading.setVisible(unreal);self.unreal_resume.setVisible(unreal);self.unreal_preview.setVisible(unreal);self.unreal_performance.setVisible(unreal)
         self.profile_label.setVisible(fmt=='bvh');self.profile.setVisible(fmt=='bvh')
         self.whole_scene.setVisible(blend and self.model=='mamma');self.tpose.setEnabled(not whole);self.tpose.setVisible(not whole)
         self.animate_camera.setVisible(blend and not whole)
@@ -64,5 +75,7 @@ class SourceExportDialog(QDialog):
         value['unreal_z_offset_cm']=self.unreal_z.value()
         value['unreal_ground_feet']=self.unreal_ground.isChecked()
         value['unreal_align_heading']=self.unreal_heading.isChecked()
+        value['unreal_resume']=self.unreal_resume.isChecked()
+        value['unreal_preview']=value['unreal'] and self.unreal_preview.isChecked()
         if fmt=='blend':value.update(animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
         return value

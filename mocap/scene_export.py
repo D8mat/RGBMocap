@@ -9,6 +9,10 @@ from .result_artifacts import file_stat
 
 def context(root,project):
     root,project=Path(root).resolve(),Path(project).resolve()
+    from .character_position import matrix,offset
+    placement=matrix(project)
+    if root==project:
+        return dict(root=str(root),transform=placement.tolist(),character_offset=offset(project).tolist())
     state=load_people(root)
     if root_for(project)!=root or not state or not any(
             safe_child(root,t['project'])==project for p in state['people'] for t in p.get('takes',[])):
@@ -28,7 +32,8 @@ def context(root,project):
         if camera.get('placement_version')!=2 or not np.allclose(transform,np.eye(4),rtol=0,atol=1e-7):
             raise ValueError('FlowHMR placement needs updating. Use Prepare Preview')
         transform=np.eye(4) # Native Flow tensors already inhabit the common world.
-    return dict(root=str(root),transform=transform.tolist(),reference=file_stat(path),
+    transform=placement@transform
+    return dict(root=str(root),character_offset=offset(project).tolist(),transform=transform.tolist(),reference=file_stat(path),
                 camera=file_stat(project/'scene_camera.json'),anchor=file_stat(anchor_project/'scene_camera.json'),
                 sources=camera['sources'],anchor_sources=anchor['sources'],model=camera.get('model'))
 

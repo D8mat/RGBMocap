@@ -145,7 +145,8 @@ class CharacterWorkspace:
                 manifest=json.loads((path/'project.json').read_text(encoding='utf8'))
                 start=float(manifest.get('start',0.))
                 # Preview scene's stored camera transform is the authoritative shared world.
-                transform=None
+                from .character_position import matrix as placement_matrix
+                transform=placement_matrix(path).tolist()
                 if self.scene_data:
                     st=self.scene_data.by_project.get(path.resolve())
                     if st is not None:transform=st.transform.tolist()

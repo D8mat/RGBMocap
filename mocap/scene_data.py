@@ -17,7 +17,8 @@ class SceneTake:
         self.ident,self.project=ident,project
         self.start,self.fps,self.frames=float(manifest['start']),float(manifest['fps']),int(manifest['frames'])
         self.end=self.start+self.frames/self.fps
-        self.transform=validate_transform(transform)
+        from .character_position import matrix
+        self.transform=matrix(project)@validate_transform(transform)
         self.arrays,self.summary,self.asset=arrays,summary,asset
         self.target_asset=None;self.raw_asset=None
         self.native_required=False

@@ -30,7 +30,7 @@ def run(request,emit=lambda *a,**k:None):
                 inputs.track(project/info[key])
             inputs.track(source);scene=row.get('scene')
             if scene is not None and context(scene['root'],project)!=scene:raise ValueError('Shared scene placement changed')
-            group=scene['root'] if scene is not None else None
+            group=scene['root'] if scene is not None and Path(scene['root']).resolve()!=project else None
             cameras=load(project,group)
             if row.get('background_refine',False) and row.get('animate_camera',True):
                 cameras=refined(cameras,project,lambda:False,

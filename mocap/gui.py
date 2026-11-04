@@ -1513,6 +1513,9 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
             self.status.setText("Processing failed. " + event.get("message", "See the console for details."))
             self.log.append(self.status.text())
         elif kind == "complete":
+            from .performance_history import record
+            try:record(self.project,event)
+            except (OSError,ValueError):pass
             if not event.get('batch_inner'):self.task_state.cached|=bool(event.get('cached',False))
             self.log.append(f"{STAGES.get(event['stage'])}: {event.get('elapsed', 0):.2f} s · {event.get('output')}")
         self.log.ensureCursorVisible()
@@ -1791,9 +1794,9 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         source = self.current_export()
         if source:
             from .person_names import export_stem
-            fmt=self._source_export_options['format']
+            fmt='blend' if self._source_export_options.get('unreal_preview') else self._source_export_options['format']
             default=export_stem(self.export_person_name(self.project))+'.'+fmt
-            name, _ = QFileDialog.getSaveFileName(self, "Export", default, fmt.upper()+" (*."+fmt+")",options=QFileDialog.DontConfirmOverwrite if fmt=='blend' else QFileDialog.Option(0))
+            name, _ = QFileDialog.getSaveFileName(self, "Export", default, fmt.upper()+" (*."+fmt+")",options=QFileDialog.DontConfirmOverwrite if fmt=='blend' and not self._source_export_options.get('unreal_preview') else QFileDialog.Option(0))
             if name:
                 if not Path(name).suffix:name+='.'+fmt
                 self.submit_fbx_exports([(self.project,self.active_result,source,Path(name))])
@@ -1817,11 +1820,16 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
                 row['unreal_z_offset_cm']=getattr(self,'_source_export_options',{}).get('unreal_z_offset_cm',0.)
                 row['unreal_ground_feet']=getattr(self,'_source_export_options',{}).get('unreal_ground_feet',True)
                 row['unreal_align_heading']=getattr(self,'_source_export_options',{}).get('unreal_align_heading',False)
+                row['unreal_preview']=getattr(self,'_source_export_options',{}).get('unreal_preview',False)
+                row['unreal_resume']=getattr(self,'_source_export_options',{}).get('unreal_resume',True)
                 for key,default in (('animate_camera',True),('background_refine',False),('camera_translation_scale',1.)):
                     row[key]=getattr(self,'_source_export_options',{}).get(key,default)
                 if self.people_root is not None:
                     from .scene_export import context
                     row['scene']=context(self.people_root,project)
+                else:
+                    from .scene_export import context
+                    row['scene']=context(project,project)
                 rows.append(row)
         except (OSError,ValueError,KeyError) as error:
             self.status.setText('Cannot export shared scene: '+str(error));return

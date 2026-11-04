@@ -47,7 +47,8 @@ def run(request, emit=lambda *a, **k: None):
                 if source is None or not result_is_current(p,kind) or not artifacts_current(p,kind):
                     raise ValueError(person['name']+': selected result is stale. Apply Correction or Prepare Preview first.')
                 track(source);scene=context(root,p)
-                if not np.allclose(scene['transform'],np.eye(4),atol=1e-6):raise ValueError('MAMMA actors must share one native world')
+                from .character_position import matrix as placement_matrix
+                if not np.allclose(np.linalg.inv(placement_matrix(p))@scene['transform'],np.eye(4),atol=1e-6):raise ValueError('MAMMA actors must share one native world')
                 first,end=map(int,meta['person_frames'])
                 if not 0<=first<end<=n or end-first!=meta['frames'] or abs(meta['fps']-fps)>1e-6:raise ValueError('Invalid actor timing')
                 info=read(track(p/(kind+'_mesh.json')))
@@ -91,7 +92,9 @@ def run(request, emit=lambda *a, **k: None):
                 with (temporary/cache).open('wb') as out:
                     out.write(struct.pack('<12siiffi',b'POINTCACHE2\0',1,count,0.,1.,len(frames)))
                     for f,frame in enumerate(frames):
-                        vertices=reference_vertices(packed,frame,count)[:,[0,2,1]].copy();vertices[:,1]*=-1
+                        vertices=reference_vertices(packed,frame,count)
+                        T=np.asarray(a['scene']['transform']);vertices=vertices@T[:3,:3].T+T[:3,3]
+                        vertices=vertices[:,[0,2,1]].copy();vertices[:,1]*=-1
                         if not np.isfinite(vertices).all():raise ValueError('Non-finite mesh vertices')
                         if f==0:
                             np.savez(temporary/(stem+'.npz'),vertices=vertices,faces=faces)

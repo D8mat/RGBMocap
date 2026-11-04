@@ -1,5 +1,6 @@
 """Blender-only FBX skin builder; centimetres, one root, native deformation bones."""
-import sys,json
+import sys,json,time
+started=time.perf_counter();timings={}
 from pathlib import Path
 import bpy,numpy as np
 from mathutils import Matrix,Vector
@@ -55,15 +56,59 @@ basis=[rig.data.bones[n].matrix_local.to_3x3() for n in job['names']]
 for pb in rig.pose.bones:pb.rotation_mode='QUATERNION'
 import itertools
 sequence=itertools.chain([tpose] if offset else [],frames)
-for f,world in enumerate(sequence):
+count=len(frames)+offset
+if job.get('preview_only'):count=min(count,max(2,round(job['fps']*3)+offset))
+scene.frame_end=count-1
+samples=np.empty((len(job['names']),count,10),dtype=np.float64)
+rest=[rig.data.bones[n].matrix_local.copy() for n in job['names']]
+root_rest=rig.data.bones['root'].matrix_local.copy()
+timings['skin_and_rig_seconds']=time.perf_counter()-started
+bake_started=time.perf_counter()
+for f,world in enumerate(itertools.islice(sequence,count)):
     SHIFT=np.array([0.,0.,ground['tpose' if offset and f==0 else 'motion']])
+    desired=[]
     for i,name in enumerate(job['names']):
         matrix=Matrix((C@world[i,:3,:3]@C.T).tolist()).to_4x4();matrix.translation=Vector(C@world[i,:3,3]*100+SHIFT)
-        pb=rig.pose.bones[name];pb.matrix=heading@matrix@basis[i].to_4x4();bpy.context.view_layer.update()
-        for prop in ('location','rotation_quaternion','scale'):pb.keyframe_insert(prop,frame=f)
-    if f%100==0:print('@@BLEND@@'+json.dumps(dict(current=f,total=len(frames),message='Baking Unreal skeleton')),flush=True)
-for curve in rig.animation_data.action.fcurves:
-    for k in curve.keyframe_points:k.interpolation='LINEAR'
+        desired.append(heading@matrix@basis[i].to_4x4())
+    for i,name in enumerate(job['names']):
+        p=int(parents[i])
+        local=rig.data.bones[name].convert_local_to_pose(desired[i],rest[i],
+            parent_matrix=desired[p] if p>=0 else root_rest,
+            parent_matrix_local=rest[p] if p>=0 else root_rest,invert=True)
+        loc,quat,scale=local.decompose()
+        if f and np.dot(samples[i,f-1,3:7],quat)<0:quat.negate()
+        samples[i,f]=[*loc,*quat,*scale]
+    if f%100==0:print('@@BLEND@@'+json.dumps(dict(current=f,total=count,message='Baking Unreal skeleton')),flush=True)
+rig.animation_data_create();action=bpy.data.actions.new('Motion');rig.animation_data.action=action
+indices=np.arange(count,dtype=np.float64)
+for i,name in enumerate(job['names']):
+    pb=rig.pose.bones[name]
+    for prop,start,width in (('location',0,3),('rotation_quaternion',3,4),('scale',7,3)):
+        for axis in range(width):
+            curve=action.fcurves.new(pb.path_from_id(prop),index=axis,action_group=name)
+            curve.keyframe_points.add(count)
+            curve.keyframe_points.foreach_set('co',np.column_stack((indices,samples[i,:,start+axis])).ravel())
+            for k in curve.keyframe_points:k.interpolation='LINEAR'
+            curve.update()
+timings['animation_seconds']=time.perf_counter()-bake_started
+if hasattr(action,'slots') and len(action.slots):rig.animation_data.action_slot=action.slots[0]
 rig.animation_data.action.name='Motion'
 scene.frame_set(0);rig.select_set(True);obj.select_set(True);bpy.context.view_layer.objects.active=rig
+if job.get('preview_only'):
+    bpy.context.view_layer.update()
+    evaluated=obj.evaluated_get(bpy.context.evaluated_depsgraph_get());bound=[evaluated.matrix_world@Vector(p) for p in evaluated.bound_box]
+    center=sum(bound,Vector())/8;extent=max((p-center).length for p in bound)
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            if area.type=='VIEW_3D':
+                space=area.spaces.active;space.clip_end=100000;space.region_3d.view_location=center;space.region_3d.view_distance=max(100,extent*3)
+    bpy.ops.wm.save_as_mainfile(filepath=str(folder/job['target']))
+    timings['total_seconds']=time.perf_counter()-started
+    (folder/'timings.json').write_text(json.dumps(timings),encoding='utf8')
+    raise SystemExit(0)
+export_started=time.perf_counter()
 bpy.ops.export_scene.fbx(filepath=str(folder/job['target']),use_selection=True,object_types={'ARMATURE','MESH'},global_scale=1,apply_unit_scale=True,apply_scale_options='FBX_SCALE_NONE',axis_forward='-Y',axis_up='Z',add_leaf_bones=False,use_armature_deform_only=False,armature_nodetype='NULL',bake_anim=True,bake_anim_use_all_actions=False,bake_anim_use_nla_strips=False,bake_anim_force_startend_keying=True,bake_anim_simplify_factor=0,mesh_smooth_type='FACE',use_mesh_modifiers=True)
+
+timings['fbx_seconds']=time.perf_counter()-export_started
+timings['total_seconds']=time.perf_counter()-started
+(folder/'timings.json').write_text(json.dumps(timings),encoding='utf8')

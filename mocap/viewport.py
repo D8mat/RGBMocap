@@ -50,6 +50,7 @@ class MotionView(ViewportBase):
         self.mesh_error = None
         self.mesh_presented_index = None
         self.body_color = QColor('#b5b5b5')
+        self.single_transform=np.eye(4)
         self.path = None
         self.signature = None
         self._owned_array = None
@@ -77,6 +78,8 @@ class MotionView(ViewportBase):
         self.auto_fit = True
         self.view_name = "Perspective"
         self.show_grid = True
+        self.checker_floor = False
+        self._checker_texture = None
         self.show_correction_floor = False
         self.correction_floor = None
         self.correction_floor_auto = True
@@ -156,6 +159,8 @@ class MotionView(ViewportBase):
         project=path.parent if path is not None else None
         fit=not self._camera_initialized or project!=self._camera_project
         self.path = path
+        from .character_position import matrix
+        self.single_transform=matrix(Path(path).parent) if path is not None else np.eye(4)
         self.joints = joints
         self.rotations = rotations
         self.mesh_frames, self.mesh_asset = mesh_frames, mesh_asset
@@ -170,7 +175,7 @@ class MotionView(ViewportBase):
             self.scene_span = summary["span"]
             if fit:
                 if not self.people_mode:
-                    self.scene_center = summary["center"].copy()
+                    self.scene_center = summary["center"].copy()+self.single_transform[:3,3]
                     self.scene_center[1] = self.floor + self.body_height * 0.50
                 self._camera_project=project;self._camera_initialized=True
             if fit and self.auto_fit:
@@ -234,7 +239,7 @@ class MotionView(ViewportBase):
                 entries.append(((take.ident,str(take.project)),take.target_asset['bones'],take.arrays['rig'][frame],frame,take.transform))
         elif self.joints is not None:
             if self.target_asset is not None and 'bones' in self.target_asset and self.target_frames is not None:
-                entries.append(('single',self.target_asset['bones'],self.target_frames[self.index],self.index,None))
+                entries.append(('single',self.target_asset['bones'],self.target_frames[self.index],self.index,self.single_transform))
             else:missing=True
         if OPENGL_VIEW and entries:
             painter.beginNativePainting()
@@ -277,7 +282,7 @@ class MotionView(ViewportBase):
                 entries.append((self.scene_names.get(take.ident,f'Person {take.ident}'),points))
         elif self.single_actor_visible and self.joints is not None and not self.mesh_error and self.mesh_presented_index==self.index:
             points=body_points(self.joints[self.index],
-                              self.target_frames[self.index] if self.target_frames is not None else None,self.target_asset)
+                              self.target_frames[self.index] if self.target_frames is not None else None,self.target_asset,self.single_transform)
             entries.append((self.actor_name,points))
         entries.extend(self.character_name_points)
         painter.save()
@@ -315,7 +320,7 @@ class MotionView(ViewportBase):
             roots=[self.scene_joint_points(take,frame)[0] for take,frame in actors]
             if roots:target[[0,2]]=np.mean(roots,axis=0)[[0,2]]
         elif self.follow and self.joints is not None:
-            target[[0, 2]] = self.joints[min(self.index, len(self.joints) - 1), 0, [0, 2]]
+            target[[0, 2]] = self.joints[min(self.index, len(self.joints) - 1), 0, [0, 2]]+self.single_transform[[0,2],3]
         return target + self.pan
 
     def scene_joint_points(self,take,frame):
@@ -612,7 +617,7 @@ class MotionView(ViewportBase):
             if not actors:return None
             center=np.mean([self.scene_joint_points(take,frame)[0] for take,frame in actors],axis=0)
         elif self.joints is not None:
-            center=self.joints[min(self.index,len(self.joints)-1),0]
+            center=self.joints[min(self.index,len(self.joints)-1),0]+self.single_transform[:3,3]
         else:return None
         from .floor_overlay import geometry
         return geometry(center,self.correction_floor,self.grid_floor)
@@ -680,7 +685,7 @@ class MotionView(ViewportBase):
                     asset=self.raw_asset['raw_asset']
                     frame=self.native_vertices[index]
                     self.draw_target('single',asset,frame,(asset['key'],index),
-                        (self.body_color.redF(),self.body_color.greenF(),self.body_color.blueF()))
+                        (self.body_color.redF(),self.body_color.greenF(),self.body_color.blueF()),transform=self.single_transform)
                     self.mesh_presented_index=index;self.mesh_error=None
                 except Exception as error:self.mesh_error='Cannot render target: '+str(error)
                 finally:painter.endNativePainting()
@@ -704,7 +709,7 @@ class MotionView(ViewportBase):
                 if self.mesh_binding is not None:self.mesh_renderer.bind_skin(self.mesh_binding)
                 self.mesh_renderer.deform(self.mesh_frames[index],(str(self.path),id(self.mesh_frames),index))
                 self.mesh_renderer.draw(*self._paint_camera,self.width(),self.height(),
-                    (self.body_color.redF(),self.body_color.greenF(),self.body_color.blueF()))
+                    (self.body_color.redF(),self.body_color.greenF(),self.body_color.blueF()),transform=self.single_transform)
                 self.mesh_presented_index = index
             except Exception as error:
                 self.mesh_error = "Cannot render SMPL-X Mesh: " + str(error)
@@ -792,7 +797,7 @@ class MotionView(ViewportBase):
             finally:painter.endNativePainting()
         elif not actors:
             self._empty_people_notice='No checked person has motion at this time.\nCheck a person or reconstruct the selected result.'
-        painter.setPen(QColor('#bebebe'))
+        painter.setPen(QColor("#ffffff"))
         painter.drawText(18,53,f'{len(actors)} people visible | Shared camera / world')
         warnings=self.people_scene.warnings
         if self.mesh_error or warnings:
@@ -844,6 +849,10 @@ class MotionView(ViewportBase):
         # Keep every world-space grid line; only the stroke rasterization changes.
         painter.setRenderHint(QPainter.Antialiasing, False)
         edge = self.GRID_HALF_EXTENT
+        if self.checker_floor:
+            from .checker_floor import texture,draw
+            if self._checker_texture is None:self._checker_texture=texture(round(2*self.GRID_HALF_EXTENT/self.GRID_SPACING))
+            draw(painter,self._paint_camera,self.width(),self.height(),self.grid_floor,self.GRID_HALF_EXTENT,self.GRID_SPACING,self._checker_texture)
         if self.show_grid:
             lines3d(self.grid_minor + offset, "#454545", .65)
             lines3d(self.grid_major + offset, "#515151", 1.0)
@@ -862,21 +871,21 @@ class MotionView(ViewportBase):
                 self.draw_people_scene(painter,actors,lines3d)
                 bone_actors=actors
             else:
-                painter.setPen(QColor('#bcbcbc'))
+                painter.setPen(QColor("#ffffff"))
                 painter.drawText(self.rect().adjusted(25,60,-25,-60),Qt.AlignCenter|Qt.TextWordWrap,self.scene_message)
             if self.mesh_error:
                 painter.setPen(QColor('#e0b06c'));painter.drawText(self.rect().adjusted(18,80,-100,-80),Qt.AlignTop|Qt.TextWordWrap,self.mesh_error)
         elif not self.single_actor_visible:
             self._empty_people_notice=f'{self.actor_name} is hidden. Check it in the People list to show.'
         elif self.joints is None and not (self.character_workspace and self.character_workspace.characters):
-            painter.setPen(QColor("#bcbcbc"))
+            painter.setPen(QColor("#ffffff"))
             painter.drawText(self.rect().adjusted(25, 30, -25, -30), Qt.AlignCenter | Qt.TextWordWrap,
                              "No motion loaded\n\nReconstruct a motion or open a project\nto compare the initial and refined animation.")
         elif self.joints is not None:
             index = min(self.index, len(self.joints) - 1)
-            joints = self.joints[index, :22]
+            joints = self.joints[index, :22]+self.single_transform[:3,3]
             # Root trajectory preserves world translation when following the actor.
-            trail = self.joints[max(0, index - 90):index + 1, 0].copy() if self.show_trajectory else []
+            trail = (self.joints[max(0, index - 90):index + 1, 0]+self.single_transform[:3,3]) if self.show_trajectory else []
             if len(trail):
                 trail[:, 1] = floor + .006
             xy, depth, focal = self.project(joints)
@@ -896,7 +905,7 @@ class MotionView(ViewportBase):
             # Contact discs are behind the actual mesh, so feet occlude them.
             self.draw_foot_locks(painter,index,joints)
             if self.show_foot_locks and self.target_frames is not None:
-                self.draw_hand_locks(painter,index,self.target_frames[index])
+                self.draw_hand_locks(painter,index,self.target_frames[index],transform=self.single_transform)
             # Floor arrow indicates the actor's forward direction, independent of camera.
             forward = self.rotations[index,0,:,2].copy() if self.rotations is not None else np.cross(joints[16]-joints[17],joints[12]-joints[0])
             forward[1] = 0
@@ -913,7 +922,7 @@ class MotionView(ViewportBase):
                 painter.drawPolygon(QPolygonF([QPointF(*point) for point in arrow]))
             self.draw_mesh(painter,index)
             bone_actors=None
-            painter.setPen(QColor("#bebebe"))
+            painter.setPen(QColor("#ffffff"))
             painter.drawText(QRectF(18, 39, self.width() - 36, 20), Qt.AlignLeft, f"Frame {index + 1} / {len(self.joints)}")
             painter.drawText(QRectF(18, 60, self.width() - 36, 20), Qt.AlignLeft,
                              f"X {joints[0, 0]:+.2f}   Z {joints[0, 2]:+.2f} m")
@@ -935,10 +944,10 @@ class MotionView(ViewportBase):
         # with the same ordering whether Bone Overlay was on or off previously.
         self.draw_bones(painter,bone_actors)
         if self._empty_people_notice and not characters_drawn:
-            painter.setPen(QColor('#bcbcbc'))
+            painter.setPen(QColor("#ffffff"))
             painter.drawText(self.rect().adjusted(25,60,-25,-60),Qt.AlignCenter|Qt.TextWordWrap,
                 self._empty_people_notice)
-        painter.setPen(QColor("#dedede"))
+        painter.setPen(QColor("#ffffff"))
         painter.drawText(18, 23, "User Perspective" if self.view_name == "Perspective" else self.view_name + " Perspective")
         if correction_plane_visible:
             from .floor_overlay import COLOR,label
@@ -954,13 +963,13 @@ class MotionView(ViewportBase):
         hint_font = painter.font()
         hint_font.setPixelSize(11)
         painter.setFont(hint_font)
-        painter.setPen(QColor("#999999"))
+        painter.setPen(QColor("#ffffff"))
         hint = "LMB: Orbit  |  MMB / RMB: Pan  |  Wheel: Zoom  |  Double-click: Frame"
         hint_width = max(0, self.width() - 30)
         hint = painter.fontMetrics().elidedText(hint, Qt.ElideRight, hint_width)
         painter.drawText(QRectF(15, self.height() - 43, hint_width, 17), Qt.AlignLeft | Qt.AlignVCenter, hint)
         painter.restore()
-        painter.setPen(QColor("#a8a8a8"))
+        painter.setPen(QColor("#ffffff"))
         painter.drawText(QRectF(15, self.height() - 26, self.width() - 30, 20), Qt.AlignRight,
                          f"Grid Y {self.grid_floor:+.3f} m | 20 m | 0.25 / 1 m | Y up")
         # Six clickable axis endpoints, drawn back to front in camera space.

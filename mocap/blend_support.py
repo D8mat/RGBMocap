@@ -72,7 +72,9 @@ def build(work,script,emit,stage):
     cmd=[str(blender()),'-b','--factory-startup','--disable-autoexec','--threads','3','--python-exit-code','1',
          '--python',str(Path(__file__).with_name(script)),'--',str(work)]
     env=dict(os.environ,OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1',MKL_NUM_THREADS='1',PYTHONIOENCODING='utf-8')
-    p=None
+    p=None;peak_bytes=0
+    try:import psutil
+    except ImportError:psutil=None
     try:
         with logpath.open('wb') as log,logpath.open('rb') as reader:
             p=subprocess.Popen(cmd,stdout=log,stderr=subprocess.STDOUT,env=env,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
@@ -80,6 +82,9 @@ def build(work,script,emit,stage):
             while True:
                 try:p.wait(timeout=.2);done=True
                 except subprocess.TimeoutExpired:done=False
+                if psutil is not None:
+                    try:peak_bytes=max(peak_bytes,psutil.Process(p.pid).memory_info().rss)
+                    except psutil.Error:pass
                 data=reader.read(256*1024)
                 if data:
                     lines=(carry+data).split(b'\n');carry=lines.pop()[-16384:]
@@ -92,6 +97,7 @@ def build(work,script,emit,stage):
         if p.returncode:
             with logpath.open('rb') as log:log.seek(max(0,logpath.stat().st_size-3000));detail=log.read().decode('utf-8',errors='replace')
             raise RuntimeError('Blender export failed: '+detail)
+        return dict(blender_sampled_peak_ram_bytes=peak_bytes or None)
     finally:
         if p is not None and p.poll() is None:
             p.terminate()

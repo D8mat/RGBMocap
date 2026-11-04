@@ -1,0 +1,8 @@
+{
+  "detections": "apriltag_detections.json",
+  "marker_map": "marker_map.measured.json",
+  "lenses": {
+    "camera1": "camera1_lens.json",
+    "camera2": "camera2_lens.json"
+  }
+}
