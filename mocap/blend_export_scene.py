@@ -21,6 +21,27 @@ scene.unit_settings.system='METRIC';scene.unit_settings.scale_length=1
 arms=[o for o in scene.objects if o.type=='ARMATURE']
 if len(arms)!=1:raise ValueError('Expected one exported source armature')
 arm=arms[0];arm.show_in_front=True;arm.data.display_type='OCTAHEDRAL'
+if job.get('surface'):
+    import numpy as np
+    surface=job['surface']
+    with np.load(folder/surface['geometry'],allow_pickle=False) as data:
+        vertices=data['vertices'];faces=data['faces']
+    mesh=bpy.data.meshes.new('FlowHMR body');mesh.from_pydata(vertices.tolist(),[],faces.tolist());mesh.update()
+    body=bpy.data.objects.new('FlowHMR body',mesh);scene.collection.objects.link(body)
+    for face in mesh.polygons:face.use_smooth=True
+    mat=bpy.data.materials.new('FlowHMR body material');mat.use_nodes=True
+    mat.diffuse_color=(.45,.55,.7,1);mat.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value=mat.diffuse_color
+    mat.node_tree.nodes.get('Principled BSDF').inputs['Roughness'].default_value=.65;mesh.materials.append(mat)
+    mod=body.modifiers.new('Exact recorded surface','MESH_CACHE');mod.cache_format='PC2';mod.filepath='//'+surface['cache']
+    mod.play_mode='SCENE';mod.time_mode='FRAME';mod.frame_start=start;mod.frame_scale=1.
+    mod.forward_axis='POS_Y';mod.up_axis='POS_Z';mod.deform_mode='OVERWRITE'
+    body['RGBMoCap surface']='Baked FlowHMR surface; reference armature is not a deformation rig'
+    if start:
+        for frame,hidden in ((0,True),(start,False)):
+            body.hide_viewport=hidden;body.hide_render=hidden
+            body.keyframe_insert(data_path='hide_viewport',frame=frame);body.keyframe_insert(data_path='hide_render',frame=frame)
+        for curve in body.animation_data.action.fcurves:
+            for key in curve.keyframe_points:key.interpolation='CONSTANT'
 camera=bpy.data.cameras.new('Source video camera');obj=bpy.data.objects.new(camera.name,camera)
 scene.collection.objects.link(obj);scene.camera=obj
 # FBX Y-up world -> Blender Z-up; CV camera (+Z forward, +Y down) -> Blender camera.

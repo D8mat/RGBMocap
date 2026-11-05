@@ -925,3 +925,12 @@ lenses from a moving rigid 3x2 tag board and camera poses from a common stationa
 floor view. No manual marker map or focal lengths are required. See
 [AprilTag board workflow](APRILTAG_BOARD.md) for board dimensions, capture steps,
 Unreal settings and the current real-lens undistortion limitation.
+
+### FlowHMR body in Blender exports
+
+FlowHMR Blender bundles now include the exact selected native SMPL-H body surface
+as `body.pc2`, alongside the editable reference skeleton and video. Keep that cache
+beside the `.blend` file when moving the bundle. The surface follows the selected
+result and shared/recenter placement; it is baked animation, not a mesh skinned to
+the reference skeleton. With an introductory T-pose, the body is hidden at frame 0
+and starts with the video at frame 1. Other models retain their existing export.

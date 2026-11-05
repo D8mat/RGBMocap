@@ -146,8 +146,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 67132,
-      "sha256": "48321534cf9c806fe18862cbe03e28ee784021fe095359fa3734e8e962bce52b"
+      "bytes": 67666,
+      "sha256": "b5bdb7ed5e118dcc80b1d8afbf05d1ab539227a4709855fec7419c33f0704143"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1161,13 +1161,13 @@
     },
     {
       "path": "mocap/blend_export.py",
-      "bytes": 6825,
-      "sha256": "fe6f881ab32a19cffe6a447e28ba1f22b0287324cf386125dbba145cb9d6b0d1"
+      "bytes": 7542,
+      "sha256": "3b9088821487e913908cdb62d73476918f9bb51cd5d8a8cf62c82f6c601ee385"
     },
     {
       "path": "mocap/blend_export_scene.py",
-      "bytes": 4389,
-      "sha256": "738daad476e9e7c0b3dfa332ce100633c310c39ee0931c213fa62246da3e0f5b"
+      "bytes": 5939,
+      "sha256": "63ad706b1f5ef1407b9fed3a562b3eee2fc8dff80e0746482b6ffaf480c39f40"
     },
     {
       "path": "mocap/blend_export_ui.py",
@@ -1178,6 +1178,11 @@
       "path": "mocap/blend_export_worker.py",
       "bytes": 786,
       "sha256": "fabadc9c97a005a988917d1a04996f8213e97be8249c89cceead20c8de81e60c"
+    },
+    {
+      "path": "mocap/blend_flow_surface.py",
+      "bytes": 2230,
+      "sha256": "d01ae2a9b9d7fdec03729246e708bd70d60640b92b7e0ad731100dd24e4d1e36"
     },
     {
       "path": "mocap/blend_multicam_export.py",
