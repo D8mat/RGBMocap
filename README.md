@@ -57,6 +57,11 @@ To update, close the app and run `update.cmd` from the same folder. See the
 [installation guide](docs/USER_GUIDE.md#install) for disk space, prerequisites
 and recovery.
 
+Updates reuse recently verified, unchanged runtimes. If PEAR or camera-alignment
+support preparation fails after the base installation succeeds, the base app
+remains usable; rerun `install.cmd` to retry the unavailable support. See
+[verification and repair](docs/USER_GUIDE.md#installation-verification-and-repair).
+
 ### Optional model runtimes
 
 `install.cmd` prepares ExMR, FlowHMR, GVHMR and the small shared-runtime support
@@ -119,7 +124,7 @@ do not put passwords or account tokens in the agent chat.
 - Reconstruct one or several people and preview the body mesh and animation bones.
 - Reduce sliding with foot/palm contact correction and editable contact timings.
 - Retarget motion to Mixamo FBX, VRM and PMX humanoid characters.
-- Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with an optional leading T-pose; export characters as FBX with or without meshes,
+- Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with optional leading T-pose, per-person origin placement and symmetrical rest pose; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).

@@ -284,8 +284,8 @@ class PeopleWorkspace:
         movie_layout = QVBoxLayout(movie)
         movie_layout.setContentsMargins(0,0,0,0);movie_layout.setSpacing(0)
         video.setMinimumWidth(260)
-        from .multi_preview import MammaVideoPair
-        self.mamma_video_pair = MammaVideoPair(self, video)
+        from .mamma_video_grid import MammaVideoGrid
+        self.mamma_video_pair = MammaVideoGrid(self, video)
         movie_layout.addWidget(self.mamma_video_pair,1)
         self.build_mamma_thumbnails(movie_layout)
         self.build_pear_thumbnails(movie_layout)

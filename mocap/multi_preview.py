@@ -38,15 +38,6 @@ class SecondaryMotionView(MotionView):
             self.mesh_error = None
             self.fit_view()
 
-    def target(self):
-        if self.follow and self.people_scene is not None:
-            selected = [(take, frame) for take, frame in self.scene_actors()
-                        if take.ident == self.scene_selected]
-            if selected:
-                take, frame = selected[0]
-                return self.scene_joint_points(take, frame)[0] + self.pan
-        return super().target()
-
     def fit_view(self):
         super().fit_view()
         if self.follow:

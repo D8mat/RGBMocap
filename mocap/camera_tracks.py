@@ -142,7 +142,14 @@ def load(project,group=None,cancelled=lambda:False,reference_cache=None):
             m=np.eye(4);m[:3,:3]=ext[:,:3]@WORLD_ROTATION.T;m[:3,3]=ext[:,3]
             if np.any(np.abs(c.get('distortion_coeffs',[0]))>1e-8):note=warning='Distorted camera videos may not align with the pinhole overlay.'
             items.append(record(e['id'],c['intrinsic_matrix'],c['image_size'],m,meta['start'],meta['fps'],'Saved fixed MAMMA calibration'))
-        if not np.allclose(items[0]['matrices'][0],base,atol=1e-6):raise ValueError('MAMMA camera world changed. Prepare Preview first.')
+        # Recenter is an actor edit, not a change to the capture calibration.
+        # Compare the camera in the unedited shared capture world.
+        capture_transform=transform.copy()
+        if group is not None:
+            capture_transform[:3,3]-=np.asarray(placement.get('character_offset',[0.,0.,0.]),float)
+        capture_base=reference@np.linalg.inv(capture_transform)
+        if not np.allclose(items[0]['matrices'][0],capture_base,rtol=0,atol=1e-6):
+            raise ValueError('Saved MAMMA calibration differs from the reconstructed capture world. Reopen the matching result or reconstruct with this calibration; Prepare Preview cannot refit cameras.')
     elif model=='prompthmr' and camera.get('camera_track'):
         from .people_store import root_for
         saved=camera['camera_track'];p=(project/saved['path']).resolve()

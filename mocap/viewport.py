@@ -316,6 +316,11 @@ class MotionView(ViewportBase):
             if self.follow and self.live_data is not None:target[[0,2]]=self.live_data["joints"][0,[0,2]]
             return target+self.pan
         target = self.scene_center.copy()
+        if self.follow:
+            character = self.character_follow_center()
+            if character is not None:
+                target[[0,2]] = character[[0,2]]
+                return target + self.pan
         if self.follow and self.people_scene is not None:
             actors=self.scene_actors()
             selected=[(take,frame) for take,frame in actors if take.ident==self.scene_selected]
@@ -325,6 +330,35 @@ class MotionView(ViewportBase):
         elif self.follow and self.joints is not None:
             target[[0, 2]] = self.joints[min(self.index, len(self.joints) - 1), 0, [0, 2]]+self.single_transform[[0,2],3]
         return target + self.pan
+
+    def character_follow_center(self):
+        """Follow retarget source roots independently of source visibility."""
+        workspace=self.character_workspace
+        if workspace is None:return None
+        selected=workspace.selected_character()
+        characters=[c for c in getattr(workspace,'characters',[]) if c.get('visible',True)]
+        if selected is not None:
+            chosen=[c for c in characters if c['id']==selected['id']]
+            if chosen:characters=chosen
+        elif self.people_scene is not None:
+            if any(self.scene_visible):return None
+        elif self.single_actor_visible:return None
+        roots=[]
+        for character in characters:
+            for entry in reversed(character.get('takes',[])):
+                if not entry['start']<=self.scene_time<entry['start']+entry['frames']/entry['fps']:continue
+                source=entry.get('source')
+                if not source:break
+                project=Path(source).resolve()
+                if self.people_scene is not None:
+                    take=self.people_scene.by_project.get(project)
+                    frame=take.frame_at(self.scene_time) if take is not None else None
+                    if frame is not None:roots.append(self.scene_joint_points(take,frame)[0])
+                elif self.joints is not None and self.path is not None and self.path.parent.resolve()==project:
+                    frame=min(self.index,len(self.joints)-1)
+                    roots.append(self.joints[frame,0]@self.single_transform[:3,:3].T+self.single_transform[:3,3])
+                break
+        return np.mean(roots,axis=0) if roots else None
 
     def scene_joint_points(self,take,frame):
         points=take.arrays.get('raw_joints') if getattr(take,'native_required',False) else take.arrays.get('joints')

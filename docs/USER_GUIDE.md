@@ -163,6 +163,42 @@ be reused. Do not delete `models`, `projects` or the remaining `.setup` state to
 retry. If Git reports a conflict or local changes, resolve or back them up before
 running `update.cmd` again.
 
+### Installation verification and repair
+
+First installation, changed dependencies and missing/changed runtime files still
+require full package hash and import checks. For up to seven days after a
+successful full check, ordinary updates/retries can reuse that result when the
+dependency/verifier identities and file inventory remain unchanged. This scans
+file metadata instead of repeatedly reading every package payload. The cache
+does not extend its own expiry. Size/timestamps are change detection, not a
+cryptographic proof against deliberate tampering.
+
+To force the full runtime checks, close the app and run:
+
+```cmd
+install.cmd --verify-all
+```
+
+`update.cmd --verify-all` also updates source and requests full verification.
+Existing installations without verification metadata perform one full check
+before gaining the faster retry path. The commands and separate runtime layout
+are unchanged; no new runtime manager or separate PEAR setup command is required.
+
+The base runtime transaction completes before PEAR and camera-alignment support
+are attempted independently. If only those support steps fail, setup reports
+**Installation complete with warnings** and the base app remains available.
+PEAR needs its own support; automatic MAMMA gravity needs camera-alignment
+support. Those capabilities remain unavailable until their preparation succeeds.
+Rerun `install.cmd`; the component summary is `.setup/git-components.json`.
+Failed mandatory base installation or an unresolved update still blocks launch.
+Do not manually remove `.setup/git-sync.pending` to bypass that protection.
+
+Pinned support downloads retry transient network failures up to three attempts
+with bounded waiting and validated partial-download recovery. HTTPS certificate
+and final size/SHA-256 checks remain required. Permanent errors are reported
+without an endless retry loop. Completed model/project files are not part of
+this repair work.
+
 On the tested PC, a separate-folder first install took about 10 min 32 sec with
 previously verified package downloads reused; Blender and FFmpeg were downloaded.
 A subsequent code update and runtime verification took about 1 min 55 sec. These
@@ -644,6 +680,26 @@ before the original motion, at its initial root position; original frames shift
 by one and retain their poses, frame rate and intervals. The option does not
 replace the bind pose or edit project motion/contact timings.
 
+**Place at origin** and **Symmetrical rest pose** default off and apply only to
+source-skeleton FBX/BVH exports, including both BVH profiles. They are unavailable
+for Blender project exports and do not change imported-character exports.
+
+- **Place at origin:** move each person's first exported root position to X=0,
+  Z=0, preserving its height, facing and subsequent travel. People are centered
+  independently, so their relative scene placement is intentionally removed.
+  Multiple exported takes of one person share the first exported take's constant
+  offset rather than resetting at every tracking gap. An optional leading T-pose
+  uses the same centered start.
+- **Symmetrical rest pose:** average paired left/right segment lengths and mirror
+  their reference directions, including shoulders, feet, hands, fingers and end
+  tips. The central spine/neck/head chain is vertical. Motion timing and canonical
+  animation rotations are retained, but the changed reference proportions move
+  animated joint/end positions; existing hand/foot contacts are not re-solved.
+  Source motion, correction results, viewport geometry and cached bind data remain
+  unchanged. The option is a reference skeleton change, not an added T-pose frame.
+
+The export options window keeps the same size when switching formats.
+
 BVH uses the same 52-bone hierarchy, metre units and Y up, including finger bones
 and terminal tips. Import into Blender with **Scale 1 / Forward -Z / Up Y**.
 The **3ds Max Biped** profile follows the PR #18 conversion: it uses Character
@@ -934,3 +990,31 @@ beside the `.blend` file when moving the bundle. The surface follows the selecte
 result and shared/recenter placement; it is baked animation, not a mesh skinned to
 the reference skeleton. With an introductory T-pose, the body is hidden at frame 0
 and starts with the video at frame 1. Other models retain their existing export.
+
+### MAMMA video overlays
+
+In the Movie Clip panel, choose **1 video** through **4 videos** (up to the
+number of loaded cameras). The primary video follows the camera thumbnails;
+the other views have independent camera selectors. All views follow the main
+timeline, including source FPS conversion and saved trimmed preview videos.
+
+Choose **Mesh overlay** or **Skeleton overlay**, then set **Opacity** (0-100%).
+The overlays use the selected Original/Corrected result, checked people and
+their colours and saved camera intrinsics/extrinsics. Video overlays use the
+original capture placement: Recenter Character remains applied to the 3D scene
+and exports, but does not move the overlay away from the person in the video.
+Mesh rendering uses a shared depth buffer so people occlude each other. It does
+not infer occlusion by objects in the original video. **Video only** turns the
+overlay off. The same mode applies to the primary Camera Preview view.
+
+Prepare Preview and valid saved MAMMA camera data are required. No reconstruction,
+camera refitting or source modification is performed. Inaccurate calibration,
+unsynchronised source videos or corrected motion can
+cause visible disagreement. Nonzero lens distortion currently displays a warning
+instead of an inaccurate pinhole overlay. This preview does not undistort footage.
+
+At most four video decoders and one offscreen OpenGL 4.3 renderer are used.
+Overlay images are capped at 640 pixels on the longest edge while retaining the
+full mesh topology. Disabled extra views release their decoders; turning the
+overlay off releases its GPU resources. This is an interactive preview, not a
+new composite-video export mode.

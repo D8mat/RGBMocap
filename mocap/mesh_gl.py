@@ -178,14 +178,14 @@ class MeshRenderer:
         self.frame_key = key
         self.dispatches += 1
 
-    def draw(self, eye, basis, width, height, color=(.71,.71,.71),transform=None,clear_depth=True):
+    def draw(self, eye, basis, width, height, color=(.71,.71,.71),transform=None,clear_depth=True,mvp=None):
         projection = QMatrix4x4()
         projection.perspective(40,width/max(1,height),.03,2000)
         view = np.eye(4)
         view[:3,:3] = basis * np.array([[1],[1],[-1]])
         view[:3,3] = -view[:3,:3] @ eye
         self.surface.bind()
-        self.surface.setUniformValue("mvp",projection * QMatrix4x4(*view.reshape(-1).tolist()))
+        self.surface.setUniformValue("mvp",mvp if mvp is not None else projection * QMatrix4x4(*view.reshape(-1).tolist()))
         self.surface.setUniformValue('sceneTransform',QMatrix4x4(*np.asarray(transform if transform is not None else np.eye(4)).reshape(-1).tolist()))
         self.surface.setUniformValue('bodyColor',QVector3D(*color))
         self.gl.glEnable(0x0B71)  # Depth test; true surface occlusion, not face sorting.

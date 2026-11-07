@@ -41,6 +41,7 @@ class VideoView(QWidget):
         self.timeline_requested_index = 0
         self.show_observations = True
         self.projected_overlay = None
+        self.mamma_overlay = None
         self.actor_color = None
         self.zoom = 1.0
         self.pan = QPointF()
@@ -265,6 +266,8 @@ class VideoView(QWidget):
                     painter.drawEllipse(QPointF(offset_x + point[0] * ratio, offset_y + point[1] * ratio), 3, 3)
         if self.show_observations and self.projected_overlay is not None:
             self.projected_overlay(painter,rect)
+        if self.mamma_overlay is not None:
+            self.mamma_overlay(painter,rect)
         painter.end()
         self.frame_painted.emit(self.index)
 

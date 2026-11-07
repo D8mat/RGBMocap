@@ -58,7 +58,7 @@ def run(request,emit=lambda *a,**k:None):
             disk_check(Path(row['target']).parent.parent,video.stat().st_size+source.stat().st_size*4)
             bundle=Bundle(row['target'],request);bundles.append(bundle);work=bundle.work
             copy_video(video,work/'video.mp4',emit,'save_blend')
-            nested=work/'fbx-request.json';nested.write_text(json.dumps([{**row,'target':str(work/'animation.fbx')}]),encoding='utf-8')
+            nested=work/'fbx-request.json';nested.write_text(json.dumps([{**row,'target':str(work/'animation.fbx'),'place_at_origin':False,'symmetric_rest':False}]),encoding='utf-8')
             export_fbx(nested,emit)
             surface=None
             if info.get('source_model')=='flowhmr' or info.get('representation')=='smplh':

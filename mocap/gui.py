@@ -623,21 +623,25 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         return ((self.project/RESULTS[self.active_result][0]).is_file()
                 and result_is_current(self.project,self.active_result))
 
-    def prepare_target_preview(self):
+    def prepare_target_preview(self, reload_current=False):
         if self.project is None or self.busy or self.contact_saving:return
-        from .mixamo_data import current
+        from .preview_preparation import plan, reload_preview
         projects=[self.project]
         if self.people_state:
             from .people_store import safe_child
             projects += [safe_child(self.people_root,take['project']) for person in self.people_state['people']
                 if person.get('checked') for take in person.get('takes',[])]
-        jobs=[]
-        for project in dict.fromkeys(projects):
-            from .flow_placement import needs_update
-            placement_old=self.model_choice.currentData()=='flowhmr' and needs_update(project)
-            if (project/RESULTS[base_result(self.active_result)][0]).is_file() and (placement_old or result_is_current(project,self.active_result) and not current(project,self.active_result)):
-                jobs.append(('rig',['--project',str(project),'--result',self.active_result]))
-        if jobs:self.start_jobs(jobs)
+        jobs,ready,unavailable=plan(projects,self.active_result,self.model_choice.currentData())
+        if jobs:
+            if reload_current:self.log.append(f'Prepare Preview: preparing {len(jobs)} take(s) from saved motion; no AI reconstruction.')
+            self.start_jobs(jobs)
+        elif reload_current:
+            if ready:
+                reload_preview(self)
+                message='Preview files are already prepared. Reloading motion, meshes and saved cameras.'
+            else:message='No current selected motion is available. Reconstruct 3D or Apply Correction first.'
+            if unavailable:message+=f' {unavailable} take(s) need reconstruction or correction.'
+            self.status.setText(message);self.log.append('Prepare Preview: '+message)
 
     def open_model_manager(self):
         dialog = ModelsDialog(self)
@@ -1194,7 +1198,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
 
     def prepare_mesh(self):
         if self.project is not None and not self.busy:
-            self.prepare_target_preview()
+            self.prepare_target_preview(reload_current=True)
 
     def resource_safety_changed(self,value):
         from .resource_safety import ENV,save,message
@@ -1824,6 +1828,14 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
                 row['unreal_align_heading']=getattr(self,'_source_export_options',{}).get('unreal_align_heading',False)
                 row['unreal_preview']=getattr(self,'_source_export_options',{}).get('unreal_preview',False)
                 row['unreal_resume']=getattr(self,'_source_export_options',{}).get('unreal_resume',True)
+                for key in ('place_at_origin','symmetric_rest'):
+                    row[key]=getattr(self,'_source_export_options',{}).get(key,False) and getattr(self,'_source_export_options',{}).get('format','fbx') in ('fbx','bvh') and not row['unreal']
+                row['origin_group']=str(Path(project).resolve())
+                if self.people_state:
+                    from .people_store import safe_child
+                    for person in self.people_state['people']:
+                        if any(safe_child(self.people_root,t['project'])==Path(project).resolve() for t in person.get('takes',[])):
+                            row['origin_group']='person:'+str(person['id']);break
                 for key,default in (('animate_camera',True),('background_refine',False),('camera_translation_scale',1.)):
                     row[key]=getattr(self,'_source_export_options',{}).get(key,default)
                 if self.people_root is not None:

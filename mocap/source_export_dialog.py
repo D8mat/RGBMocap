@@ -1,11 +1,12 @@
 """Source-motion export options; existing character exports remain separate."""
-from PySide6.QtWidgets import QDialog,QVBoxLayout,QFormLayout,QComboBox,QCheckBox,QLabel,QDialogButtonBox,QDoubleSpinBox,QLayout
+from PySide6.QtWidgets import QDialog,QVBoxLayout,QFormLayout,QComboBox,QCheckBox,QLabel,QDialogButtonBox,QDoubleSpinBox
 
 class SourceExportDialog(QDialog):
     def __init__(self,parent=None):
-        super().__init__(parent);self.setWindowTitle('Export');self.setMinimumWidth(480)
+        super().__init__(parent);self.setWindowTitle('Export');self.setMinimumWidth(660)
         self.model=parent.model_choice.currentData() if parent is not None and hasattr(parent,'model_choice') else None
-        layout=QVBoxLayout(self);layout.setSizeConstraint(QLayout.SetMinimumSize);form=QFormLayout();layout.addLayout(form)
+        layout=QVBoxLayout(self);layout.setContentsMargins(18,18,18,18);layout.setSpacing(12)
+        form=QFormLayout();form.setVerticalSpacing(12);layout.addLayout(form)
         self.format=QComboBox();self.format.addItem('FBX (.fbx)','fbx');self.format.addItem('BVH (.bvh)','bvh');self.format.addItem('Blender project + video (.blend)','blend')
         form.addRow('Format',self.format)
         self.fbx_profile=QComboBox();self.fbx_profile.addItem('Source skeleton only','generic')
@@ -37,6 +38,10 @@ class SourceExportDialog(QDialog):
         self.tpose=QCheckBox('Add T-pose before motion');self.tpose.setChecked(False)
         self.tpose.setToolTip('Insert a T-pose at the first motion frame root position. Original frames shift by one; their poses and timing intervals stay unchanged.')
         layout.addWidget(self.tpose)
+        self.place_at_origin=QCheckBox('Place at origin');layout.addWidget(self.place_at_origin)
+        self.place_at_origin.setToolTip("Center each person's first exported frame on world X/Z. Height and travel are preserved. People are centered independently; their relative placement changes.")
+        self.symmetric_rest=QCheckBox('Symmetrical rest pose');layout.addWidget(self.symmetric_rest)
+        self.symmetric_rest.setToolTip('Use mirrored left/right rest bones with averaged paired lengths and a straight vertical spine. Animation rotations and timing are retained; changed proportions can move hands and feet. Exported files only.')
         self.animate_camera=QCheckBox('Export saved camera tracking');self.animate_camera.setChecked(True);layout.addWidget(self.animate_camera)
         self.background_refine=QCheckBox('Refine Camera Rotation');layout.addWidget(self.background_refine)
         from .camera_ui import BACKGROUND_HELP
@@ -47,6 +52,7 @@ class SourceExportDialog(QDialog):
         self.translation_scale.setToolTip('Approximate saved camera movement. 0 fixes the camera center; 1 uses the estimate. This does not change the source animation.')
         self.scale_label=QLabel('Camera movement scale');form.addRow(self.scale_label,self.translation_scale)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
+        layout.addStretch(1)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Save).setText('Continue...');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
         for signal in (self.format.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
@@ -58,6 +64,7 @@ class SourceExportDialog(QDialog):
         self.unreal_z_label.setVisible(unreal);self.unreal_z.setVisible(unreal);self.unreal_ground.setVisible(unreal);self.unreal_heading.setVisible(unreal);self.unreal_resume.setVisible(unreal);self.unreal_preview.setVisible(unreal);self.unreal_performance.setVisible(unreal)
         self.profile_label.setVisible(fmt=='bvh');self.profile.setVisible(fmt=='bvh')
         self.whole_scene.setVisible(blend and self.model=='mamma');self.tpose.setEnabled(not whole);self.tpose.setVisible(not whole)
+        for control in (self.place_at_origin,self.symmetric_rest):control.setVisible(not blend and not unreal);control.setEnabled(not blend and not unreal)
         self.animate_camera.setVisible(blend and not whole)
         camera=blend and not whole and self.model in ('flowhmr','exmr')
         self.background_refine.setVisible(camera);self.background_refine.setEnabled(self.animate_camera.isChecked())
@@ -77,5 +84,6 @@ class SourceExportDialog(QDialog):
         value['unreal_align_heading']=self.unreal_heading.isChecked()
         value['unreal_resume']=self.unreal_resume.isChecked()
         value['unreal_preview']=value['unreal'] and self.unreal_preview.isChecked()
+        value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh') and not value['unreal'],symmetric_rest=self.symmetric_rest.isChecked() and fmt in ('fbx','bvh') and not value['unreal'])
         if fmt=='blend':value.update(animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
         return value

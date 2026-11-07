@@ -10,6 +10,9 @@ This guide is for agents helping users operate or modify RGB MoCap. It describes
 - Base worker commands use explicit `-X utf8`, including isolated `-I` launches. Isolated mode ignores `PYTHONIOENCODING`/`PYTHONUTF8` from the parent environment. Any redirected/discarded text log stream must also specify UTF-8. Keep byte-oriented PEAR IPC unchanged.
 - Close the app before `update.cmd`. The updater requires a clean tracked worktree and the `main` branch, uses `git pull --ff-only`, then verifies/repairs runtime configuration. It refuses tracked local edits. A plain `git pull` does not perform runtime repair; use `install.cmd` after dependency changes when needed. Do not discard local edits or force an update.
 - For setup failure, read the message, check connectivity and free space, then retry `install.cmd`. Preserve models, projects and `.setup` state. Do not repeatedly reinstall or redownload models without evidence.
+- Base completion and optional PEAR/camera-alignment readiness are separate. A post-commit support failure reports completion with warnings; it must not recreate the global base pending marker. Inspect `.setup/git-components.json` and the actual capability configuration. Retry with `install.cmd`; camera-alignment preparation is independent of PEAR and also serves MAMMA automatic gravity. Mandatory base failures and unresolved promotion journals remain blocking. Never delete a pending marker blindly.
+- Recent full runtime checks are reused for up to seven days with matching group/verifier identities and an unchanged bounded file inventory, including additions/removals. Reuse does not refresh the full-check date. `install.cmd --verify-all` or `update.cmd --verify-all` forces the existing RECORD hashes/import checks. Missing/expired metadata, dependency changes and detected file changes trigger full checks for affected groups/dependents. Metadata is a change-detection heuristic, not an authenticity guarantee. Do not mark a runtime verified without an actual successful check.
+- `tools/pinned_download.py` supplies bounded HTTPS retries/resume for support archives. Keep certificate verification, HTTPS redirects, exact size and SHA-256, validated Content-Range, cancellation propagation and finite attempt/time limits. Ordinary base wheel downloads and optional package fetching retain their own paths; do not claim this replaces every network call. Source contracts are frozen/rechecked during base installation. A failed Git pull must preserve any pre-existing incomplete-install marker.
 - Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA and PromptHMR add separate runtimes and model files; see [MAMMA](MAMMA.md) and [PromptHMR](models/PROMPTHMR.md). The five offline model/runtime sets total about **63.22 GiB (67.9 GB)** before optional PromptHMR moving-camera support, excluding caches, projects, downloads and compiler tools, counting shared files once. Camera support adds about **1.57 GiB** (18.6 MiB modules and 1.55 GiB weights). See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
 
 Multi-person reconstruction groups supported ExMR, FlowHMR and GVHMR phases
@@ -356,6 +359,24 @@ The optional leading pose is animation, not a replacement bind pose; validate
 both original-frame and fractional-frame suffix poses in Blender after changes.
 
 ### Portable Blender export implementation
+
+Source FBX/BVH requests accept default-off `place_at_origin` and `symmetric_rest`.
+`gui.py` attaches a stable `origin_group` for each person, distinct from display
+names. Within an export batch, each actor's first exported take determines one
+constant XZ offset; later takes retain their relative travel and Y is untouched.
+This intentionally discards placement between different people.
+
+`export_options.py` constructs mirrored averaged-length rest offsets and a
+vertical central chain. BVH changes exported hierarchy offsets; a rest-only
+Generic export preserves MOTION bytes. FBX uses the same canonical reference
+geometry with new proper display/rest bases and corresponding terminal markers.
+Validate input rigid offsets against the original committed bind, not the new
+lengths. Do not materialize a full new animation or rerun inference/contacts.
+Changed proportions intentionally change animated endpoints. Both options off
+retain the existing bind/output. `blend_export.py` explicitly clears both flags
+before its nested FBX export; MAMMA whole-scene requests never propagate them.
+Keep source results/receipts immutable, stream bounded BVH blocks, and validate
+ordinary Blender imports, profiles, T-pose combinations and independent actors.
 
 `blend_export_ui.py` constructs requests and selects new, collision-free bundle
 folders. `blend_export_worker.py` routes `save_blend`/`save_blend_scene` through

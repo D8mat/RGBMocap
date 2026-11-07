@@ -19,7 +19,7 @@ def run(request, emit=lambda *a, **k:None):
         from .unreal_export import run as export_unreal
         try:return export_unreal(rows,emit)
         finally:request.unlink(missing_ok=True)
-    staged=[]
+    staged=[];origins={}
     try:
         for i,row in enumerate(rows):
             project=Path(row['project']);kind=row['kind'];target=Path(row['target'])
@@ -43,14 +43,22 @@ def run(request, emit=lambda *a, **k:None):
                 needed=('parents','fbx_rest','fbx_rest_frames','fbx_display_frames','fbx_tip_local')
                 if not all(k in data for k in needed):raise ValueError('FBX rest pose is unavailable. Use Prepare Preview first.')
                 a={k:data[k] for k in needed}
+                symmetric=None
+                if row.get('symmetric_rest',False):
+                    if not all(k in data for k in ('rest','ends')):raise ValueError('Symmetric rest data is unavailable. Use Prepare Preview first.')
+                    symmetric=dict(rest=data['rest'],ends=data['ends'])
             frames=np.load(project/info['frames_file'],mmap_mode='r',allow_pickle=False)
             try:
+                transform=np.eye(4) if scene is None else np.asarray(scene['transform'],float)
+                if row.get('place_at_origin',False):
+                    from .export_options import centered_transform
+                    transform=centered_transform(transform,frames[0,0,:3,3],origins,row.get('origin_group',str(project)))
                 def progress(done,total):
                     emit('progress',stage='save_fbx',current=i*52+done,total=len(rows)*52,message='Export FBX: '+kind)
                 write(temporary,info['names'],a['parents'],a['fbx_rest'],a['fbx_rest_frames'],
                       a['fbx_display_frames'],a['fbx_tip_local'],frames,info['fps'],
-                      transform=None if scene is None else scene['transform'],progress=progress,
-                      rig_name=row.get('rig_name','SourceAnimation'),prepend_tpose=row.get('prepend_tpose',False))
+                      transform=transform,progress=progress,
+                      rig_name=row.get('rig_name','SourceAnimation'),prepend_tpose=row.get('prepend_tpose',False),symmetric_bind=symmetric)
             finally:frames._mmap.close()
         for _,_,project,kind,paths,stamps,scene in staged:
             if [file_stat(p) for p in paths]!=stamps or selected_export(project,kind)!=paths[1]:

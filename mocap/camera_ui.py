@@ -95,6 +95,9 @@ class CameraCanvas(VideoView):
     def paintEvent(self,event):
         super().paintEvent(event)
         painter=QPainter(self);painter.setRenderHint(QPainter.Antialiasing)
+        panel=getattr(self.tools.w,'mamma_video_pair',None)
+        if panel is not None and hasattr(panel,'overlay_wanted') and panel.overlay_wanted():
+            panel.overlay.paint(self,painter,self.image_rect(),panel.camera_id(0));return
         self.tools.paint_overlay(painter,self.image_rect(),self.tools.w.motion_view.show_bones,labels=True)
 
 class CameraTools:
@@ -137,7 +140,9 @@ class CameraTools:
         if pear and self.preview():
             w.view_choice.setCurrentText(view.view_name)
         left=w.video_view.show_observations and w.project is not None and w.preview_data is not None
-        wanted=(view.show_cameras or self.preview() or left) and not pear
+        panel=getattr(w,'mamma_video_pair',None)
+        overlay=panel is not None and hasattr(panel,'overlay_wanted') and panel.overlay_wanted()
+        wanted=(view.show_cameras or self.preview() or left or overlay) and not pear
         background=self.background_options().get(w.model_choice.currentData(),False)
         key=(str(w.project),str(w.people_root),id(w.preview_data),bool(w.busy),pear,wanted,background)
         if key==self.key:
@@ -178,6 +183,8 @@ class CameraTools:
         view.camera_translation_scale=self.scale.value();view.update();self.canvas.mirror();self.w.video_view.update()
     def paint_video_overlay(self,painter,rect):
         source=self.w.video_view
+        panel=getattr(self.w,'mamma_video_pair',None)
+        if self.w.model_choice.currentData()=='mamma' and hasattr(panel,'overlay_wanted'):return
         if getattr(self.w,'_pear_active',False) or source.external_mode:return
         if source.frame is not None and self.data is None:
             self.paint_overlay(painter,rect,False);return
