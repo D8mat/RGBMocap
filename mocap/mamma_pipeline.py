@@ -107,7 +107,7 @@ def prepare(path, job):
     from .storage import sha256
     from .resource_cache import code_hash
     # Exact-byte aliases retain inference after the download-only progress fix.
-    identity['code']={name:(code_hash if name in {'mamma_pipeline.py','worker_progress.py'} else sha256)(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
+    identity['code']={name:(code_hash if name in {'mamma_pipeline.py','worker_progress.py'} else sha256)(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_fit_cache.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     slot=job['root']/'mamma'/'inference'/token
     cached=False
@@ -243,17 +243,10 @@ def fit(engine,work,job):
     scope=dict(original.__globals__)
     exec(compile(source.replace(old,'torch.clamp(per_point_weight[cam_id][..., None], min=0., max=1.)*pred_in_img'),'<MAMMA visibility bridge>','exec'),scope)
     unfloored=scope['proj_pts_loss']
+    from .mamma_fit_cache import VisibilityCache, install
+    visibility_cache = VisibilityCache()
     def weighted(pts2d,pts3d_pred,intrinsics,extrinsics,loss='mse',per_point_weight=None,vis_clip_value=.8,weight=1.):
-        weights=per_point_weight
-        if weights is not None:
-            weights=[]
-            for v in per_point_weight:
-                q=((v.mean(-1)-.03)/.12).clamp(0,1);q=q*q*(3-2*q)
-                if len(q)>1:
-                    kernel=v.new_tensor([1.,4.,6.,4.,1.])[None,None]/16
-                    for _ in range(2):
-                        q=torch.nn.functional.conv1d(torch.nn.functional.pad(q[None,None],(2,2),mode='replicate'),kernel)[0,0]
-                weights.append(v*q[:,None])
+        weights = visibility_cache.weights(per_point_weight)
         return unfloored(pts2d,pts3d_pred,intrinsics,extrinsics,loss,weights,0.,weight)
     losses.proj_pts_loss=weighted
     from .models import BY_KEY
@@ -269,12 +262,28 @@ def fit(engine,work,job):
     downsample=data/'verts_512.pkl'
     if not downsample.exists():shutil.copy2(BY_KEY['mamma_vertices'].path,downsample)
     np.savez(data/'smplx_512_body_parts.npz',**parts)
-    run_script(engine,'optimization','run_ma_3d.py',[
-        '--config_file','config_files/contact_configs/config_real_gmf_small_vals_detr_exp_no_vtemplate.yaml',
-        '--seq_name','motion','--ma_2d_dir',work/'landmarks','--out_path',work/'fit',
-        '--ma_cap_dir',work/'capture','--smplx-models',BY_KEY['mamma_body'].path.parent.parent,
-        '--downsampled-verts',downsample,'--cam_names',*[v['id'] for v in job['inputs']],
-        '--skip_detection_analysis'])
+    os.chdir(engine/'optimization')
+    from utils.optimization import OptimizeSMPLX
+    restore_visibility = install(OptimizeSMPLX, visibility_cache)
+    fit_started = time.monotonic()
+    try:
+        run_script(engine,'optimization','run_ma_3d.py',[
+            '--config_file','config_files/contact_configs/config_real_gmf_small_vals_detr_exp_no_vtemplate.yaml',
+            '--seq_name','motion','--ma_2d_dir',work/'landmarks','--out_path',work/'fit',
+            '--ma_cap_dir',work/'capture','--smplx-models',BY_KEY['mamma_body'].path.parent.parent,
+            '--downsampled-verts',downsample,'--cam_names',*[v['id'] for v in job['inputs']],
+            '--skip_detection_analysis'])
+    finally:
+        metrics = dict(elapsed_seconds=time.monotonic()-fit_started,
+                       visibility_cache_hits=visibility_cache.hits,
+                       visibility_cache_misses=visibility_cache.misses,
+                       visibility_cache_bytes=visibility_cache.bytes)
+        restore_visibility()
+        losses.proj_pts_loss = original
+        emit('progress', current=0, total=0, message='MAMMA 3D fit performance: '+json.dumps(metrics))
+        # Diagnostics must not turn a successful fit into a failed reconstruction.
+        try: atomic_json(work/'fit-performance.json', metrics)
+        except OSError: pass
     outputs=list((work/'fit/motion').glob('smplx_params_body_id-*.npz'))
     if not outputs:raise ValueError('MAMMA did not produce a complete motion result.')
     outputs.extend([work/'camera-world.json',work/'inputs.json',*(work/'videos').glob('*.mp4'),

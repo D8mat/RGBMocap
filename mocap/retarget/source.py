@@ -104,7 +104,7 @@ def prepare(project,kind,out):
     from .solver import local_from_world
     extra={}
     if settings.get('mode',settings.get('correction_mode'))=='multi_level':extra['support_height']=heights-floor
-    np.savez(out/'motion-source.npz',names=info['names'][:22],parents=PARENTS,rest=rest,points=points,world=world,local=local_from_world(world),origin=origin,fps=fps,**extra)
+    np.savez(out/'motion-source.npz',names=info['names'][:22],parents=PARENTS,rest=rest,points=points,world=world,local=local_from_world(world),origin=origin,fps=fps,foot_surface_height=heights,**extra)
     np.savez(out/'motion-source-contacts.npz',active=active,fps=fps)
     np.savez(out/'motion-source-neutral.npz',vertices=vertices,rest=neutral,faces=body['f'],weights=weights,native_world=native)
     if 'fbx_rest_frames' not in asset:raise ValueError('Prepare Preview again to create the current FBX neutral reference.')

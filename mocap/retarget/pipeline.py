@@ -71,7 +71,7 @@ def _run(folder,kind):
 
 
 def run(folder,kind):
-    """Rotation-only transfer. Preserve target proportions; copy pelvis world path."""
+    """Rest-relative rotations and pelvis path, followed by target foot-contact IK."""
     started=time.perf_counter();out=Path(folder)
     with np.load(out/'motion-source.npz',allow_pickle=False) as z:source={k:z[k] for k in z.files}
     with np.load(out/f'{kind}-canonical.npz',allow_pickle=False) as z:target={k:z[k] for k in z.files}
@@ -85,8 +85,13 @@ def run(folder,kind):
     points,world=m.fk(local,rest,root)
     if not np.isfinite(points).all() or not np.isfinite(world).all():raise ValueError('Non-finite rotation retarget')
     result=dict(local=local,world=world,points=points,root=root,rest=rest,names=target['names'],ratio=1.)
-    for method in ('rotation','stance'):np.savez(out/f'motion-{kind}-{method}.npz',**result)
+    np.savez(out/f'motion-{kind}-rotation.npz',**result)
+    from .foot_lock import solve
+    with np.load(out/'motion-source-contacts.npz',allow_pickle=False) as z:active=z['active']
+    with np.load(out/f'{kind}-contact-geometry.npz',allow_pickle=False) as z:geo={k:z[k] for k in z.files}
+    result,contacts=solve(result,source,geo,active)
+    np.savez(out/f'motion-{kind}-stance.npz',**result)
     report=dict(mode='reference_rotation_deltas_and_pelvis',frames=len(root),seconds=time.perf_counter()-started,
-                contact_ik=False,proportion_scaling=False)
+                proportion_scaling=False,**contacts)
     (out/'retarget-mode.json').write_text(json.dumps(report),encoding='utf8')
     return report

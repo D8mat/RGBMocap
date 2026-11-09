@@ -2245,3 +2245,99 @@ logical-pixel window, visible unclipped controls and disabled/hidden options for
 Blender. Representative images were visually inspected. The new work did not run
 AI inference, modify user caches or test a complete real-time export gesture.
 Scripts, fixtures and generated files remain outside the public source tree.
+
+## Update launcher self-replacement repair (2026-11-07)
+
+Issue #26's unexpected command failure was reproduced in actual Windows CMD:
+a historical launcher replaced by the preceding current launcher returned 9009
+with `'B' is not recognized` after a tiny updater reported successful installation.
+CMD resumed at an old file offset in the replacement batch. The fixed launcher
+parses its final command block before starting Python; completion reporting and
+optional pause now run in the in-memory Python CLI. Explicit deferred numeric
+status expansion retains failures. A bare `exit /b` was tested and rejected
+because it lost nonzero status in the grouped-command test.
+
+34 isolated regressions passed with the installed Windows Python interpreter,
+actual CMD and local-only Git repositories. They cover shorter/longer/empty
+launcher replacements, received arguments, delayed-expansion callers, an
+inherited ERRORLEVEL shadow, Unicode/metacharacter paths, caller-batch return,
+missing runtime/startup failure, CLI cancellation, real no-argument pause,
+fast-forward replacement of both launcher and bootstrap, dirty/wrong-branch/
+divergent-update refusal, active app locking, pending-marker preservation and
+installation failure followed by successful repair. Sampled process statuses
+include 0, 1, 7, 130, 9009 and Windows 0x80004005. Model/project sentinel files
+were preserved. The existing update transaction body was unchanged.
+
+An old parent launcher cannot acquire the fix retroactively. Its first transition
+still emitted an unexpected command in the fixture; the guide documents direct
+Python invocation or rerunning the updated launcher after installation completion.
+Deleting the running launcher was explicitly checked and produces a nonzero
+missing-batch failure; forced console termination and caller-side shell expansion
+are outside the replacement guarantee. Arguments containing shell metacharacters
+must be quoted by the caller as usual.
+
+These checks used tiny local bootstrap fixtures, not runtime installation,
+GitHub publication, GPU inference or a clean-Windows installation. No user model,
+project, runtime package or dependency pin was changed. Test scripts, fixtures
+and reports remain outside the public source tree.
+## GEM-X integration checks
+
+The optional Windows setup installed the pinned GEM-X environment on an RTX
+5090 and passed the CUDA matrix and Warp checks. It reused the ExMR CPython
+base and 24 identical CUDA DLLs (3.17 GB). The model import validated all nine
+assets. Automatic downloads were also exercised for the NVIDIA statistics file
+and the official YOLOX archive, including extracting and registering the ONNX.
+
+- A 294-frame fixed-camera clip ran through the app's worker queue, preview
+  and project publication. A copied project reopened with its media and native
+  cache, including when the inference runtime was marked unavailable.
+- A separate 30-frame Low Memory run used batch one and honored a saved
+  video's nonzero timeline offset. A rejected trim preserved its current result.
+- Blender 4.5 reopened the portable scene. The 77-bone rig used only pose-bone
+  keys. Four sampled frames matched the SOMA surface cache exactly and joint
+  coordinates differed by less than 0.001 mm. The source video used the same
+  294-frame range. Mixamo FBX, VRM and PMX samples were imported and retargeted.
+  Character FBX and PMX VMD files were generated.
+- Existing ExMR, FlowHMR, GVHMR and PromptHMR cached previews were opened from
+  test copies. Existing model correction and export controls were checked in
+  Qt. These checks used cached results for the existing models.
+
+These checks cover one Windows GPU and Blender version. The Qt checks exercised
+widget state and the real job queue offscreen. A separate OpenGL 4.3 context
+executed both the surface and 77-bone shaders at three frames. See the
+[GEM-X guide](models/GEMX.md) for the supported scope and recorded resource use.
+
+### Native SOMA Motion Correction
+
+- On a saved 452-frame dance clip, Flat Ground correction took about 12 seconds
+  on the same RTX 5090. Horizontal sole speed over the applied contact intervals
+  decreased from 0.675 to 0.492 m/s at the 95th percentile. The bake preserved
+  bone lengths within 0.01 mm and retained world ankle orientations. The clip
+  provides a before/after stability check without labeled ground truth.
+- Qt/OpenGL switched the Native77 skeleton and surface together at the same
+  frame. A manual foot edit marked the export stale until Multi Level
+  correction was applied. The resulting Blender bundle included the corrected
+  skeleton and surface.
+- Fresh 60-frame inference ran the enabled correction automatically. A hand-only
+  run used the edited lock interval and preserved local finger rotations. The
+  corrected Native77 pose also retargeted to a Mixamo character through Blender.
+
+### Native SOMA FBX and BVH export
+
+- **File > Export** sent the original and corrected 60-frame GEM-X result to
+  the normal FBX and BVH workers. The corrected exports included the optional
+  SOMA rest frame and horizontal origin placement. A 452-frame cache also
+  exported in both formats before and after correction.
+- Blender 4.5 reimported the eight files. All kept the Native77 bone names,
+  hierarchy and 30 fps timing. All joint positions across the reimported
+  frames matched within 0.005 mm, including the optional reference frame and
+  origin placement. Animation channels targeted pose bones.
+- The default Blender FBX importer reproduced the initial bone-tail orientation
+  error. After aligning export axes to the rest segments, both FBX and BVH
+  stayed within 0.002 degrees of the expected bone directions across both clips.
+  The FBX axis change left the BVH bytes identical.
+- A failed export with an incompatible rest option left the existing file
+  intact and removed the staged output. Batch FBX and BVH reject destinations
+  that overlap the selected inputs. A mixed GEM-X and ExMR BVH batch rejected
+  an overwrite of a different row's source. ExMR's 52-bone FBX and BVH exports
+  passed with the T-pose, origin and symmetrical rest options enabled.

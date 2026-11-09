@@ -407,3 +407,27 @@ remain outside the supported app path. The latest ExMR/FlowHMR prefetch and
 connected-worker changes were not added to MAMMA.
 
 For remaining scope and actual checks, see [validation](VALIDATION.md).
+
+
+## MAMMA visibility reuse (2026-11-09)
+
+The 3D fitting adapter reuses smoothed visibility weights across repeated solver
+closures. Cache keys include the source tensor identity/version, selected vertex
+indices and skipped frame count. Changed inputs invalidate reuse. Gradient-bearing
+inputs use the original computation. Cache lifetime is one fit process, limited
+to eight entries and 128 MiB of cached output tensors; this is not a whole-process
+RAM/VRAM limit. No iteration count, precision, resolution or model setting changes.
+
+`fit-performance.json` in the inference work directory records 3D fit elapsed
+time, cache hits/misses and retained tensor bytes, including on failure. This is
+diagnostic output, not a completion receipt. Existing results remain untouched;
+the new adapter participates in the inference identity.
+
+Validation: CPU and CUDA tests against the installed solver's slicing and four
+projection losses produced exactly equal losses and 3D-point gradients. Covered
+in-place input changes, replacement tensors, changed vertex selections, gradient
+fallback, eviction and oversized entries. An isolated two-camera, 300-frame,
+512-point visibility preparation benchmark (30 repetitions) measured 0.437 ms
+before / 0.080 ms cached on the installed RTX 5060 Ti. This measures only visibility
+preparation, not end-to-end reconstruction; no full-take speedup is claimed.
+Run `tools/test_mamma_fit_cache.py --engine <installed-engine>` with MAMMA Python.
