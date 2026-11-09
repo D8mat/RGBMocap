@@ -246,7 +246,7 @@ class PeopleWorkspace:
         column = QVBoxLayout(self.people_panel)
         column.setContentsMargins(6,6,6,6);column.setSpacing(5)
         header=QHBoxLayout()
-        header.addWidget(QLabel('People'));header.addStretch()
+        header.addStretch()
         self.people_help_button=QPushButton('?')
         self.people_help_button.setFixedWidth(26)
         self.people_help_button.setAccessibleName('People Help')
@@ -298,6 +298,8 @@ class PeopleWorkspace:
         movie_layout.addWidget(footer)
         body.addWidget(movie)
         body.setStretchFactor(0,0);body.setStretchFactor(1,1)
+        from .panel_collapse import PanelCollapse
+        self.people_collapse=PanelCollapse(self.people_panel,body,'People')
         body.setSizes([180,460])
         return body
 

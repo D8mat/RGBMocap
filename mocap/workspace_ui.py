@@ -189,7 +189,7 @@ def build_workspace(w):
         check = QCheckBox(label)
         w.viewport_checks[attribute]=check
         check.setChecked(getattr(w.motion_view, attribute))
-        check.setToolTip(tooltip_text({'checker_floor': 'Black and white floor. Each square matches the minor grid: 0.25 x 0.25 m. Viewport only; does not change contact or export.', 'show_grid': 'Show the reference grid at height zero. Does not change ground contact.', 'show_correction_floor': 'Show the correction floor height as an orange plane. Display only.', 'show_trajectory': 'Show the path followed by the person.', 'show_foot_locks': '', 'show_names': 'Show each person\'s name above their mesh. Rename people by right-clicking the People list. Display only.', 'show_cameras':'Show saved camera frustums and available camera motion. Display only; does not estimate or refit cameras.'}[attribute]))
+        check.setToolTip(tooltip_text({'checker_floor': 'Black and white floor. Square size is adjustable equally on both floor axes; default 0.25 x 0.25 m. Viewport only; does not change contact or export.', 'show_grid': 'Show the reference grid at height zero. Does not change ground contact.', 'show_correction_floor': 'Show the correction floor height as an orange plane. Display only.', 'show_trajectory': 'Show the path followed by the person.', 'show_foot_locks': '', 'show_names': 'Show each person\'s name above their mesh. Rename people by right-clicking the People list. Display only.', 'show_cameras':'Show saved camera frustums and available camera motion. Display only; does not estimate or refit cameras.'}[attribute]))
         if attribute=='show_names':w.name_labels=check
         if attribute=='show_foot_locks':
             check.setToolTip(tooltip_text('Show active foot and hand contacts as colored discs. Colors match the timeline. Display only; does not enable correction.'))
@@ -208,6 +208,16 @@ def build_workspace(w):
                 w.motion_view.checker_floor_opacity=value/100.;w.motion_view.update()
             w.floor_opacity.valueChanged.connect(set_floor_opacity)
             viewport_footer.addWidget(w.floor_opacity)
+            w.floor_tile_size=QDoubleSpinBox();w.floor_tile_size.setRange(.25,5.)
+            w.floor_tile_size.setDecimals(2);w.floor_tile_size.setSingleStep(.25)
+            w.floor_tile_size.setPrefix('Tile ');w.floor_tile_size.setSuffix(' m')
+            w.floor_tile_size.setValue(w.motion_view.checker_floor_tile_size)
+            w.floor_tile_size.setAccessibleName('Checker floor tile size')
+            w.floor_tile_size.setToolTip('Uniform square size on both floor axes, in metres. Does not change the reference grid or scene scale.')
+            def set_floor_tile_size(value):
+                w.motion_view.checker_floor_tile_size=value;w.motion_view.update()
+            w.floor_tile_size.valueChanged.connect(set_floor_tile_size)
+            viewport_footer.addWidget(w.floor_tile_size)
     w.follow_actor = QCheckBox("Follow Actor")
     w.follow_actor.setToolTip(tooltip_text('Move the viewing camera with the person during playback. Does not change the animation.'))
     w.follow_actor.setChecked(True)
@@ -319,6 +329,8 @@ def build_workspace(w):
     w.slider.valueChanged.connect(w.seek)
     w.slider.setRange(0, 0)
     workspace_split.addWidget(timeline_panel)
+    from .panel_collapse import PanelCollapse
+    w.timeline_collapse=PanelCollapse(timeline_panel,workspace_split,'Timeline',timeline_header)
     workspace_split.setSizes([650, 150])
     workspace_split.setStretchFactor(0, 1)
     workspace_split.setStretchFactor(1, 0)
@@ -584,6 +596,7 @@ def build_workspace(w):
     w.settings_scroll=scroll
     w.model_choice.currentIndexChanged.connect(w.select_model)
     main.addWidget(sidebar)
+    w.models_collapse=PanelCollapse(sidebar,main,'AI Models')
     main.setSizes([1120, 260])
     main.setStretchFactor(0, 1)
     main.setStretchFactor(1, 0)

@@ -80,6 +80,8 @@ class MotionView(ViewportBase):
         self.show_grid = True
         self.checker_floor = False
         self.checker_floor_opacity = .5
+        self.checker_floor_tile_size = self.GRID_SPACING
+        self._checker_tile_size = None
         self._checker_texture = None
         self.show_correction_floor = False
         self.correction_floor = None
@@ -888,8 +890,10 @@ class MotionView(ViewportBase):
         edge = self.GRID_HALF_EXTENT
         if self.checker_floor:
             from .checker_floor import texture,draw
-            if self._checker_texture is None:self._checker_texture=texture(round(2*self.GRID_HALF_EXTENT/self.GRID_SPACING))
-            draw(painter,self._paint_camera,self.width(),self.height(),self.grid_floor,self.GRID_HALF_EXTENT,self.GRID_SPACING,self._checker_texture,self.checker_floor_opacity)
+            if self._checker_texture is None or self._checker_tile_size != self.checker_floor_tile_size:
+                self._checker_texture=texture(int(np.ceil(2*self.GRID_HALF_EXTENT/self.checker_floor_tile_size)))
+                self._checker_tile_size=self.checker_floor_tile_size
+            draw(painter,self._paint_camera,self.width(),self.height(),self.grid_floor,self.GRID_HALF_EXTENT,self.checker_floor_tile_size,self._checker_texture,self.checker_floor_opacity)
         if self.show_grid:
             lines3d(self.grid_minor + offset, "#454545", .65)
             lines3d(self.grid_major + offset, "#515151", 1.0)

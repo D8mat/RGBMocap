@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-07",
+  "date": "2026-11-09",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -1301,8 +1301,8 @@
     },
     {
       "path": "mocap/checker_floor.py",
-      "bytes": 2204,
-      "sha256": "dd263f6b0e912c306a8fe9f6f29a47bd69c619155a1ac7b3512c532bb37a5b42"
+      "bytes": 2249,
+      "sha256": "401f4574eef245eb3ad9da0b913135ac1edd827ab7025d58f25e12beca8bbe8c"
     },
     {
       "path": "mocap/checkerboard_pose.py",
@@ -1706,8 +1706,8 @@
     },
     {
       "path": "mocap/multi_preview.py",
-      "bytes": 9596,
-      "sha256": "f1c1580792d3f285e95e36207321fb1e5099689d9d3344263876444cd9b47f5c"
+      "bytes": 9620,
+      "sha256": "11705f5958ebdaf1f7a025154544c119efb8d2b2b1b64d3a44c6a75ded9216fb"
     },
     {
       "path": "mocap/multilevel_contacts.py",
@@ -1723,6 +1723,11 @@
       "path": "mocap/palm_contact.py",
       "bytes": 6488,
       "sha256": "6953468ba5cf972120bedc5391dc7c763eb7d3a422de34cef320ec8916696776"
+    },
+    {
+      "path": "mocap/panel_collapse.py",
+      "bytes": 3980,
+      "sha256": "cbbc2ef18d24f3d790d182f523e016893b0483d0d6e1947bbdd68730edf4f95e"
     },
     {
       "path": "mocap/paths.py",
@@ -1876,8 +1881,8 @@
     },
     {
       "path": "mocap/people_ui.py",
-      "bytes": 38849,
-      "sha256": "b468eb1b6c7e72ab1b0fa758df3c490adc578ff5c239aab43f7efa0cbe1b587e"
+      "bytes": 38942,
+      "sha256": "a2343b36c2b715e7ef345c9b22006b5d665dc3d0e2d3ad1abbb3dc6f00233c15"
     },
     {
       "path": "mocap/performance_history.py",
@@ -2321,8 +2326,8 @@
     },
     {
       "path": "mocap/viewport.py",
-      "bytes": 57264,
-      "sha256": "3a43da4b1f2f9bbed6aadf3966af800733bc707477d32a854471d1d659d02e0d"
+      "bytes": 57538,
+      "sha256": "47ad94c6dd7986b84cdf1f1b74e0e88331bb047d1d7635db35bd6202a2338a03"
     },
     {
       "path": "mocap/worker.py",
@@ -2336,8 +2341,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 41373,
-      "sha256": "4767b7e290f94d86f5bb64607929c0a69eb9f050470aff2031d3cc82f09c9ed4"
+      "bytes": 42428,
+      "sha256": "294fc9dc5a30df87a06cc0b897e34deb0b11b0305c112f41551446af4b340c93"
     },
     {
       "path": "native_compat/LICENSE",

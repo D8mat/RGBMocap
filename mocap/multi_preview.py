@@ -17,7 +17,7 @@ class SecondaryMotionView(MotionView):
         raw_asset native_vertices native_required index foot_lock_activity hand_lock_activity
         correction_floor correction_floor_auto correction_floor_pending correction_floor_enabled
         camera_records camera_message camera_translation_scale live_active live_data live_asset
-        live_message live_key show_grid checker_floor checker_floor_opacity show_correction_floor
+        live_message live_key show_grid checker_floor checker_floor_opacity checker_floor_tile_size show_correction_floor
         show_trajectory show_foot_locks show_names show_cameras'''.split()
 
     def __init__(self, source):

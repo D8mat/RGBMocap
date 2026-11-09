@@ -17,7 +17,7 @@ def texture(cells):
 def draw(painter,camera,width,height,floor,extent,spacing,image,opacity=.5):
     eye,basis=camera
     # Texture coordinates map to app X/Z metres; Y is the existing grid height.
-    scale=2*extent/image.width()
+    scale=spacing/8.  # Each procedural tile is exactly eight texture pixels.
     origin=(np.array([-extent,floor,-extent])-eye)@basis.T
     u=np.array([scale,0,0])@basis.T;v=np.array([0,0,scale])@basis.T
     focal=height*.5/math.tan(math.radians(20));cx=width*.5;cy=height*.5
