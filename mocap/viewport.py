@@ -554,7 +554,7 @@ class MotionView(ViewportBase):
                 if key not in self.character_renderers:self.character_renderers[key]=CharacterRenderer()
                 renderer=self.character_renderers[key]
                 renderer.load(data['asset'],data['palette']);renderer.deform(matrix,(key,frame))
-                renderer.draw(*self._paint_camera,self.width(),self.height(),transform=transform,clear_depth=clear)
+                renderer.draw(*self._paint_camera,self.width(),self.height(),transform=transform,clear_depth=clear,material_overrides=character.get('preview_materials'))
                 if self.show_names:
                     from .name_overlay import character_points
                     points=character_points(data['asset'].get('name_samples'),matrix,

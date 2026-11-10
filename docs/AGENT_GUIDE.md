@@ -96,6 +96,7 @@ Use **Model Manager** for the selected model and add-ons. Automatic download may
 | `Setup_MAMMA.cmd` | Optional independent MAMMA runtime | VS 2022 C++ tools/Windows SDK, CUDA Toolkit 12.8, provider license review |
 | `Setup_PromptHMR.cmd` | Optional independent PromptHMR runtime | Same build tools, separate provider license review; MAMMA/SDF not required |
 | `Setup_GEMX.cmd` | Optional GEM-X Windows runtime | Reuses the pinned ExMR CPython and compatible CUDA DLLs, keeps its own inference packages, verifies CUDA. No compiler required. |
+| `Setup_SAM31.cmd` | Optional SAM 3.1 Find person tracker for ExMR, FlowHMR and GVHMR on Windows | Base ExMR profile, Git, internet, upstream terms review and NVIDIA CUDA with native bfloat16. Uses pinned wheels and a separate overlay. |
 | `update.cmd` | Source update and base runtime verification | Close the app and preserve tracked edits; it does not install the optional runtimes |
 
 ### GEM-X support
@@ -137,6 +138,41 @@ fix; do not extend that exception to numerical/weight changes. No optional-runti
 rebuild is required. See [supporting downloads](models/PROMPTHMR.md#shared-supporting-model-download-cache).
 
 Model files are in `<installation>/models/` by default. To reuse a legitimate installation, close both apps, copy the complete models folder and its receipt/license files beside `RGBMoCap.cmd`, and check readiness in Model Manager. Do not copy old `runtime*` folders. SMPL Neutral is required by PromptHMR, although it is not required for ExMR/FlowHMR/GVHMR. Standard SMPL-X Neutral is shared by ExMR/GVHMR/PromptHMR; MAMMA uses its separate locked-head bodies. Exact requirements are defined by `mocap/models.py` and the chosen stages, not by guessed filenames.
+
+### SAM 3.1 person discovery
+
+1. Verify the base installation and ExMR runtime. Review the linked upstream
+   terms with the user. Close RGB MoCap, then run `Setup_SAM31.cmd`. Setup
+   stages the pinned Meta source and SHA-256-pinned wheels in a separate
+   `runtime_sam31/` overlay and tests native CUDA bfloat16 attention before
+   activation. It uses the base ExMR Python and Torch. Keep the ExMR pins and
+   the locked base runtime registry intact.
+2. In the app, choose ExMR, FlowHMR or GVHMR, then **SAM 3.1** next to
+   **Find person**. Open **Model Manager** and use **Auto Download** on the
+   optional SAM 3.1 row. For a manual import use the exact public Comfy-Org
+   FP16 safetensors file in the [tracker guide](models/SAM31.md#setup).
+   **Download All** skips this optional checkpoint.
+3. Test a short video with `person` and no markers, then seek to a clear frame
+   in the trim, mark a person and click **Track**. Markers select candidates
+   found by text in that frame. Check the desired People rows and run
+   **Reconstruct 3D**. Check **Default** separately when troubleshooting
+   detector behavior. A setup error and a missing checkpoint require different fixes.
+
+SAM 3.1 uses more VRAM than Default (YOLOv8x + OSNet). Treat the
+[measured VRAM peaks](models/SAM31.md#vram-use) as observations from specific
+clips. Exact overhead relative to Default remains unmeasured on matching
+inputs. Find person and 3D reconstruction run in separate stages.
+
+`mocap/sam31_discovery.py` uses the canonical 30 fps working video, the
+shared People publishing code and a discovery identity covering the media,
+tracker implementation, checkpoint, prompt and relevant frame/markers. Preserve
+the previous People result if a prompt or marker fails. Retain source trim
+validation and the nearest valid working frame, including the final frame of a
+high-FPS source. Keep the separate worker entry point and Resource Safety
+controls. SAM 3.1 here applies to offline discovery for the three listed models.
+MAMMA and PromptHMR keep their reconstruction trackers, GEM-X keeps its primary
+person detector, and PEAR keeps its live detector.
+See the [recorded checks](VALIDATION.md#sam-31-person-discovery-2026-11-10).
 
 ## Standard GUI workflow
 
@@ -243,7 +279,7 @@ corrected native actors feed the usual contact editing and FBX paths. See
 assumptions and adapter limits. The optional setup downloads official restricted source and builds native
 modules locally; Visual Studio 2022 C++ Build Tools and CUDA Toolkit 12.8 are
 prerequisites. Model Manager shows its runtime readiness and setup instructions.
-Do not claim clean-Windows or other-GPU validation or SAM 3.1 app support. Keep restricted upstream code, weights and derived bodies private.
+Do not claim clean-Windows or other-GPU validation for MAMMA. MAMMA uses SAM 2.1 masks. Keep restricted upstream code, weights and derived bodies private.
 
 For prerequisite checks, automatic setup, independent SAM 2/SDF builds, kernel
 verification, registration and rollback, use the
@@ -302,6 +338,14 @@ FFmpeg. Keep the window/viewport geometry fixed during capture, reject changing
 input generations and atomically replace only a finished destination. Cancel
 and window close must reap the encoder before destroying its QThread. Keep test
 projects, input media and output videos outside the public source package.
+
+### Blender bone streaming
+
+See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender). Install `blender_addon/rgbmocap_bone_stream.zip` from Blender's **Add-ons > Install from Disk** menu. The ZIP contains the adjacent Python source as `rgbmocap_bone_stream/__init__.py` and the MIT license. Keep the packaged source and the hash in `installer/source-resources.json` synchronized when the add-on changes.
+
+`mocap/stream_ui.py` samples ready frames for checked offline people, independently of People visibility. Multi-person streams use each take's shared scene transform. Selecting PEAR stops the stream. `mocap/bone_stream.py` sends Blender Z-up rest and pose matrices on a background thread and keeps only the latest live snapshot. The listener binds to `127.0.0.1:49168`. Selection metadata is requested by compatible receivers.
+
+`blender_addon/rgbmocap_bone_stream.py` applies poses on Blender's main thread, within the scene and view layer chosen at Connect. The stream collection stores references to its original armatures, keyed by person and rest skeleton. Keep those references when reusing rigs. Clean checks selection and scene references again at confirmation and skips armatures used by other objects. Bake reads the recorded takes on the sender thread, writes a separate Action in Blender, and detaches only after the action is assigned successfully. The app unchecks that person after Blender acknowledges completion.
 
 ### Saved camera display and source export implementation
 
@@ -381,6 +425,13 @@ verified 3ds Max behavior from the Blender/numerical checks alone.
 changing AI worker/cache fingerprints. Keep selected-result, pending contact and
 shared-scene guards, generation checks and atomic destination replacement in
 `fbx_export.py`/`export_copy.py`. Unchecked FBX output must remain identical.
+**FBX Compatibility (Maya)** is default-off and applies to source FBX, including
+GEM-X Native77. The worker prepares the selected take with the existing export
+options, then runs `fbx_compatibility_scene.py` in the included Blender runtime.
+Reuse the existing rest-pose sampler so the final FBX keeps the original bind
+pose and writes animation keys to bones. Verify the source generation again
+before publishing the converted file. The worker owns and cleans its staging
+folder using the Blender export marker.
 The optional leading pose is animation, not a replacement bind pose; validate
 both original-frame and fractional-frame suffix poses in Blender after changes.
 

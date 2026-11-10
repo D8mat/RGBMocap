@@ -41,8 +41,10 @@ n=mat3(sceneTransform)*v.normal.xyz;uv=corner.yz;}'''
 TEXTURE_FRAGMENT='''#version 430 core
 in vec3 n;in vec2 uv;out vec4 color;
 uniform sampler2D baseTexture;uniform bool hasTexture;uniform vec4 baseColor;
+uniform bool colorOverride;uniform bool tintTexture;
 void main(){vec4 c=hasTexture?texture(baseTexture,uv):baseColor;
 if(c.a<.1)discard;
+if(colorOverride)c.rgb=tintTexture&&hasTexture?c.rgb*baseColor.rgb:baseColor.rgb;
 float light=.60+.35*max(0,dot(normalize(n),normalize(vec3(-.4,.8,-.6))));
 color=vec4(c.rgb*light,1);}'''
 
@@ -96,7 +98,7 @@ class CharacterRenderer(MeshRenderer):
         self.asset_key=asset['key'];self.frame_key=None
         self.check('character load')
 
-    def draw(self,eye,basis,width,height,color=(.71,.71,.71),transform=None,clear_depth=True):
+    def draw(self,eye,basis,width,height,color=(.71,.71,.71),transform=None,clear_depth=True,material_overrides=None):
         if not self.batches:
             return super().draw(eye,basis,width,height,color,transform,clear_depth)
         projection=QMatrix4x4();projection.perspective(40,width/max(1,height),.03,2000)
@@ -110,10 +112,14 @@ class CharacterRenderer(MeshRenderer):
         for flag in (0x0B90,0x0C11,0x0B44,0x0BE2):gl.glDisable(flag)
         if clear_depth:gl.glClear(0x100)
         self.vao.bind()
-        for batch in self.batches:
+        for index,batch in enumerate(self.batches):
+            override=(material_overrides or {}).get(str(index))
             texture=self.textures.get(batch['image'])
             gl.glUniform1i(shader.uniformLocation('hasTexture'),int(texture is not None))
-            shader.setUniformValue('baseColor',QVector4D(*batch['color']))
+            rgba=(*override['color'],batch['color'][3]) if override else batch['color']
+            gl.glUniform1i(shader.uniformLocation('colorOverride'),int(override is not None))
+            gl.glUniform1i(shader.uniformLocation('tintTexture'),int(bool(override and override.get('tint'))))
+            shader.setUniformValue('baseColor',QVector4D(*rgba))
             if texture:texture.bind(0)
             gl.glDrawArrays(0x4,batch['start'],batch['count'])
         gl.glBindTexture(0x0DE1,0)

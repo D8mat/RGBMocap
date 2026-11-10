@@ -1,5 +1,48 @@
 # Source package validation
 
+## Blender bone streaming (2026-11-10)
+
+- Installed the same source ZIP through Blender's **Install from Disk**
+  operator in isolated Blender 4.5.0 and 5.2.3 environments. The application
+  exercised two-person streaming, selection changes, timeline gaps and
+  reconnecting to an edited rig.
+- Checked that switching to another scene or view layer paused application
+  without creating rigs there. Clean rejected stale confirmation after
+  disconnect and preserved referenced, shared and independently copied rigs.
+- Baked 91 frames across two takes from 30 fps source motion into a
+  24 fps Blender scene. Sampled bone matrices matched the incoming poses
+  within 0.00003 per component. The existing action and constraint were
+  retained, and the other rig stayed connected. An interrupted bake kept
+  the original action attached.
+- Verified basic live playback with add-on versions 1.0 and 1.1 connected
+  to the new sender. Full Bake and Clean workflows use the current ZIP.
+
+## SAM 3.1 person discovery (2026-11-10)
+
+- On the existing Windows development installation, checked launch and all
+  six base runtime profiles. Ran both SAM 3.1 and Default through the app's
+  Find person workflow on a 60 fps test clip prepared at 30 fps. The
+  `person` prompt and Default each returned two tracks covering all 24
+  working frames.
+- Reproduced a last-frame marker failure during source-to-working frame
+  conversion and at the end of reverse propagation. After the fix, a marker
+  on the final source frame returned one track covering all 24 working frames.
+  A marker that missed the detected people reported an error and kept the
+  previous People result.
+- Ran short-clip reconstruction, motion correction and export with ExMR,
+  FlowHMR and GVHMR. Also checked project copying and a portable Blender
+  bundle, opened native and compatibility FBX in Blender, and imported all
+  three compatibility FBX files in Maya 2027. Generated Generic/Blender and
+  3ds Max Biped BVH files.
+- Installed the SAM 3.1 overlay from its pinned sources and wheels in an
+  empty test folder linked to the existing base ExMR runtime. The installer
+  passed its CUDA check and the new overlay loaded the verified checkpoint
+  and tracked two people through all 24 working frames. A middle-frame
+  marker and a separate 286-frame text-only clip also passed.
+- Optional MAMMA, PromptHMR, GEM-X and PEAR checks covered runtime readiness
+  and worker routing. This pass did not measure tracking accuracy across
+  footage, test a clean Windows installation, or run those models end to end.
+
 ## Resource Safety control (2026-11-03)
 
 The default-on checkbox below Resource Mode controls the existing desktop

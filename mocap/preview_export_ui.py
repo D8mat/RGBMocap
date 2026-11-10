@@ -42,9 +42,10 @@ class ExportProgress(QDialog):
 
 
 class PreviewExport(QObject):
-    def __init__(self, window, destination, resume=False):
+    def __init__(self, window, destination, resume=False, viewport_only=False):
         super().__init__(window)
         self.window, self.destination, self.resume = window, Path(destination), resume
+        self.viewport_only = viewport_only
         self.writer = None
         self.error = None
         self.cancelling = self.close_window = False
@@ -69,6 +70,7 @@ class PreviewExport(QObject):
         self.dialog = getattr(window, '_preview_export_dialog', None)
         if self.dialog is None:
             self.dialog = window._preview_export_dialog = ExportProgress(window)
+        self.dialog.setWindowTitle('Viewport Playblast' if viewport_only else 'Export Preview')
         self.dialog.allow_close = False
         self.dialog.cancel_button.setEnabled(True)
         self.dialog.progress.setValue(0)
@@ -210,7 +212,7 @@ class PreviewExport(QObject):
             if image.isNull():
                 raise RuntimeError('Cannot capture the current 3D viewport.')
             if self.writer is None:
-                self.writer = PreviewEncoder(self.destination, output_layout(video.frame, image), self.fps,
+                self.writer = PreviewEncoder(self.destination, output_layout(video.frame, image, self.viewport_only), self.fps,
                     total, self.audio, self.audio_start, self)
                 self.writer.frame_written.connect(self.written)
                 self.writer.finished.connect(self.finish)
@@ -282,6 +284,7 @@ class PreviewExport(QObject):
 class PreviewExportWorkspace:
     def refresh_preview_export_action(self, *args):
         self.export_preview_action.setEnabled(self.preview_export_available())
+        self.playblast_action.setEnabled(self.preview_export_available())
 
     def preview_export_available(self):
         view = self.motion_view
@@ -296,27 +299,30 @@ class PreviewExportWorkspace:
                      and self.preview_data.project == self.project))
                 and (view.joints is not None or view.people_scene is not None or bool(getattr(self, 'character_assets', {}))))
 
-    def save_preview(self):
+    def save_playblast(self):
+        self.save_preview(viewport_only=True)
+
+    def save_preview(self, *, viewport_only=False):
         if not self.preview_export_available():
             return
         resume = self.timer.isActive()
         self.stop_playback()
-        picker = QFileDialog(self, 'Export Preview')
+        picker = QFileDialog(self, 'Viewport Playblast' if viewport_only else 'Export Preview')
         picker.setAcceptMode(QFileDialog.AcceptSave)
         picker.setNameFilter('MP4 video (*.mp4)')
         picker.setDefaultSuffix('mp4')
-        picker.selectFile(Path(self.video_path).stem + '-preview.mp4')
+        picker.selectFile(Path(self.video_path).stem + ('-playblast.mp4' if viewport_only else '-preview.mp4'))
         if not picker.exec():
             if resume:self.toggle_play()
             return
         try:
-            self.start_preview_export(picker.selectedFiles()[0], resume=resume)
+            self.start_preview_export(picker.selectedFiles()[0], resume=resume, viewport_only=viewport_only)
         except (OSError, ValueError, RuntimeError) as exc:
             self.status.setText('Cannot export preview: ' + str(exc))
             QMessageBox.warning(self, 'Export Preview', str(exc))
             if resume:self.toggle_play()
 
-    def start_preview_export(self, destination, *, resume=None):
+    def start_preview_export(self, destination, *, resume=None, viewport_only=False):
         if not self.preview_export_available():
             raise ValueError('Load an offline motion and its video before exporting a preview. PEAR is not supported.')
         path = Path(destination).resolve()
@@ -330,7 +336,8 @@ class PreviewExportWorkspace:
             raise ValueError('The timeline trim is invalid.')
         from .video import executable
         executable('ffmpeg')
-        controller = PreviewExport(self, path, self.timer.isActive() if resume is None else resume)
+        controller = PreviewExport(self, path, self.timer.isActive() if resume is None else resume, viewport_only=viewport_only)
         self._preview_export = controller
         self.export_preview_action.setEnabled(False)
+        self.playblast_action.setEnabled(False)
         controller.start()

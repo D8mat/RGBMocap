@@ -21,8 +21,11 @@ def file_stamp(path):
         return None
 
 
-def output_layout(video, viewport):
+def output_layout(video, viewport, viewport_only=False):
     """Keep both complete images; even MP4 dimensions, at most a 4K frame."""
+    if viewport_only:
+        if min(viewport.width(),viewport.height())<=0:raise ValueError('The 3D viewport must be ready.')
+        return 0, (viewport.width()+1)//2*2, (viewport.height()+1)//2*2
     if min(video.width(), video.height(), viewport.width(), viewport.height()) <= 0:
         raise ValueError('The video and 3D viewport must both be ready.')
     height = viewport.height()
@@ -41,6 +44,10 @@ def compose_frame(video, viewport, layout):
     try:
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         for image, x, width in ((video, 0, left), (viewport, left, right)):
+            if width==0:continue
+            if left==0:
+                painter.drawImage(0,0,image)
+                continue
             scale = min(width / image.width(), height / image.height())
             w, h = image.width() * scale, image.height() * scale
             painter.drawImage(QRectF(x + (width - w) / 2, (height - h) / 2, w, h), image)

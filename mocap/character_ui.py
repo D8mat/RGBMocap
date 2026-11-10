@@ -165,6 +165,9 @@ class CharacterWorkspace:
         for source in sources:
             action=retarget.addAction(source['name'])
             action.triggered.connect(lambda checked=False,s=source:self.retarget_character(c,s))
+        materials=menu.addAction('Material Colors...')
+        from .character_materials import edit
+        materials.triggered.connect(lambda:edit(self,c))
         export=menu.addAction('Export Character...');export.setEnabled(bool(c.get('takes')) and not c.get('needs_retarget'))
         export.triggered.connect(lambda:self.export_character(c))
         menu.addSeparator()
