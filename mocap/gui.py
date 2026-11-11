@@ -41,6 +41,7 @@ STAGES['correct'] = 'Motion Correction'
 from .workspace_ui import build_workspace
 from .people_ui import PeopleWorkspace
 from .stream_ui import StreamWorkspace
+from .face_ui import FaceWorkspace
 from .project_save_ui import ProjectSaving
 from .project_workspace_ui import ModelWorkspace
 STAGES.update(mamma_prepare='Prepare Multi-view Videos',mamma_masks='MAMMA Person Masks',mamma_landmarks='MAMMA Surface Landmarks',mamma_camera='MAMMA Cameras',mamma_fit='MAMMA 3D Fit',mamma_publish='MAMMA Motion Correction and Preview')
@@ -49,6 +50,8 @@ from .gemx_ui import GemXWorkspace
 STAGES['gemx_reconstruct']='Reconstruct Native SOMA / GEM-X'
 STAGES['gemx_correct']='Motion Correction / GEM-X'
 STAGES['save_project']='Save Project As'
+STAGES['face']='Capture Face from Video'
+STAGES['face_neutral']='Calibrate Neutral Face'
 STAGES.update(people='Find People',sam31_people='Find People with SAM 3.1',person='Prepare Person Motion')
 STAGES.update(flow_camera='Estimate Scene Camera / VGGT-Omega', flow_features='Extract Body and Hand Features / SAM', flowhmr='Reconstruct Motion / FlowHMR', flow_export='Prepare FlowHMR Preview and FBX', import_model='Import Model')
 STAGES.update(exmr_preprocess='ExMR Body, Hand and Foot Keypoints',exmr_features='ExMR Body and Hand Features',exmr='Reconstruct Motion / ExMR')
@@ -382,7 +385,7 @@ from .prompthmr_ui import PromptHMRWorkspace
 from .pear_ui import PearWorkspace
 from .preview_export_ui import PreviewExportWorkspace
 
-class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,QMainWindow):
+class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,FaceWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
@@ -470,6 +473,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     @read_only_checks
     def update_readiness(self):
         self.refresh_preview_export_action()
+        self.refresh_face_capture_action()
         if self._pear_active:
             if hasattr(self,'camera_tools'):self.camera_tools.sync()
             self.pear_sync_controls();return
@@ -1006,6 +1010,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.timer.start(max(1, math.ceil(remaining * 1000)))
 
     def shutdown_preview(self):
+        if hasattr(self,'face_video_overlay'):self.face_video_overlay.close()
         if hasattr(self,'multi_viewport'):self.multi_viewport.close()
         if hasattr(self,'mamma_video_pair'):self.mamma_video_pair.shutdown()
         if hasattr(self,'camera_tools'):self.camera_tools.close()
@@ -1359,6 +1364,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                     for path in paths:self.log.append('Exported: '+path)
                 self.update_readiness()
                 return
+            if self.current_stage in ('face','face_neutral'):
+                self._stream_frame = None
+                self.update_readiness()
+                return
             if self.current_stage=='save_project':
                 self.finish_project_save()
                 return
@@ -1531,6 +1540,14 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.task_state.update(dict(current=0,total=0,phase=f"batch:{event['phase']}:{event['index']}",message='Loading actor data'),time.monotonic())
             self.status.setText(self._task_actor+' · '+STAGES.get(event['stage'],event['stage']))
             self.update_task_progress()
+        elif kind == 'face_neutral_done':
+            self.status.setText(event['message']);self.log.append(event['message'])
+        elif kind == 'face_done':
+            rows = event.get('takes', [])
+            found = sum(row.get('found', 0) for row in rows)
+            frames = sum(row.get('frames', 0) for row in rows)
+            self.status.setText(f'Face capture: detected in {found}/{frames} frames.')
+            self.log.append(self.status.text())
         elif kind == 'gemx_corrected':
             if self.project == Path(event['project']):
                 self.set_active_result('corrected_initial')
@@ -1971,6 +1988,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             worker = self.process
             if worker:
                 worker.waitForFinished(3000)
+        if getattr(self, 'face_video_overlay', None) is not None:self.face_video_overlay.close()
+        if getattr(self, '_face_panel', None) is not None:self._face_panel.shutdown()
         self.pear_leave()
         self.pear_stop_scan()
         if self.character_process is not None:

@@ -105,3 +105,9 @@ existing Flow runtime. VGGT retains its existing upstream/model terms; its weigh
 file is reused, not bundled again. GeoCalib's public checkpoint is obtained
 separately through Model Manager under CC BY 4.0; the upstream
 LICENSE-WEIGHTS is retained with support files. No TensorRT engine/runtime is distributed.
+
+## Optional face capture
+
+Face capture and setup adapted from [Chamiseul_RGBMocap](https://github.com/mayalhc/Chamiseul_RGBMocap/commit/f5eccc5ff7c64d6f420415068c4a75e27b58fe69), MIT; full notice in [docs/FACE_CAPTURE.md](docs/FACE_CAPTURE.md). Google MediaPipe Face Landmarker uses Apache-2.0. Optional dependencies retain their packaged licenses.
+
+MediaPipe face landmark connection topology is adapted from `tasks/python/vision/face_landmarker.py` (MediaPipe 1.2.2), Copyright 2023 The MediaPipe Authors. Connections are converted to sorted unique undirected JSON edge pairs. See [Apache license](docs/licenses/mediapipe-LICENSE.txt) and [upstream notices](docs/licenses/mediapipe-NOTICE.txt).

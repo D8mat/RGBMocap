@@ -114,8 +114,9 @@ class StreamWorkspace:
             else:
                 rig, frames = stream_rig(view.target_asset), view.target_frames
                 frame, transform = view.index, None
+            project = take.project if self.people_state else self.project
             if rig is not None and frames is not None and 0 <= frame < len(frames):
-                yield ident, name, rig, frames, frame, transform
+                yield ident, name, rig, frames, frame, transform, project
 
     def stream_bake_plan(self, ident, actor, key):
         fps = float(self.info['fps'])
@@ -221,8 +222,8 @@ class StreamWorkspace:
             connected = sender.connected
             sources = tuple(self.stream_sources_at_playhead(rows)) if connected else ()
             checked = tuple(sorted(self._stream_checked)) if connected else None
-            key = (checked, tuple((ident, name, rig.key, id(frames), frame, id(transform))
-                                  for ident, name, rig, frames, frame, transform in sources))
+            key = (checked, tuple((ident, name, rig.key, id(frames), frame, id(transform), str(project))
+                                  for ident, name, rig, frames, frame, transform, project in sources))
             if key != self._stream_frame:
                 selected = {
                     ident: self.stream_actor_id(ident)
@@ -231,8 +232,8 @@ class StreamWorkspace:
                 try:
                     actors = tuple(
                         (selected[ident], name,
-                         rig, frame, frames[frame], transform)
-                        for ident, name, rig, frames, frame, transform in sources)
+                         rig, frame, frames[frame], transform, project)
+                        for ident, name, rig, frames, frame, transform, project in sources)
                 except (OSError, ValueError, IndexError) as error:
                     self.log.append(f'Blender stream could not read motion: {error}')
                     actors = ()

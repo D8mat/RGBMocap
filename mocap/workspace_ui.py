@@ -153,6 +153,8 @@ def build_workspace(w):
     overlay.toggled.connect(toggle_overlay)
     w.video_overlay=overlay
     video_header.addWidget(overlay)
+    from .face_video_overlay import FaceVideoOverlay
+    w.face_video_overlay=FaceVideoOverlay(w,video_header)
     from PySide6.QtWidgets import QStackedWidget
     camera_stack=QStackedWidget()
     viewport_split = QSplitter(Qt.Horizontal)
@@ -646,6 +648,11 @@ def build_workspace(w):
     w.playblast_action.setToolTip('Export only 3D Viewport 1 with its current camera, visible characters, floor and overlays. Uses the timeline trim and source frame rate.')
     w.export_preview_action.setToolTip(tooltip_text('Save the selected input video beside the current 3D viewport as MP4 over the timeline trim. Keeps the current view, visible people/characters and viewport overlays. Includes source audio when available. Not available in PEAR live mode.'))
     w.export_preview_action.setEnabled(False)
+    file_menu.addAction('Face Preview && Stream...', w.open_face_preview)
+    w.face_neutral_action=file_menu.addAction('Use Current Frame as Neutral Face',w.calibrate_face_neutral)
+    w.face_neutral_reset_action=file_menu.addAction('Reset Neutral Face',lambda:w.calibrate_face_neutral(reset=True))
+    w.face_capture_action = file_menu.addAction('Capture Face from Video (ARKit)...', w.extract_face)
+    w.face_capture_action.setToolTip('Capture facial expressions for the selected person/take. Requires Setup_Face.cmd; streams to the updated Blender add-on.')
     file_menu.addAction("Open Project Folder", w.open_folder)
     file_menu.addSeparator()
     file_menu.addAction("Exit", w.close)

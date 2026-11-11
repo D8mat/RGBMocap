@@ -40,6 +40,7 @@ class VideoView(QWidget):
         self._source_key = None
         self.timeline_requested_index = 0
         self.show_observations = True
+        self.face_overlay = None
         self.projected_overlay = None
         self.mamma_overlay = None
         self.actor_color = None
@@ -268,6 +269,8 @@ class VideoView(QWidget):
             self.projected_overlay(painter,rect)
         if self.mamma_overlay is not None:
             self.mamma_overlay(painter,rect)
+        if self.face_overlay is not None:
+            self.face_overlay(painter,rect)
         painter.end()
         self.frame_painted.emit(self.index)
 

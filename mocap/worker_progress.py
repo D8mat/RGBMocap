@@ -34,6 +34,9 @@ def main():
     if stage in ('save_blend','save_blend_scene'):
         from .blend_export_worker import main as save_main
         return save_main(emit)
+    if stage=='face_neutral':
+        from .face_neutral import main as neutral_main
+        return neutral_main(emit)
     if stage=='camera_background':
         from .camera_background_worker import main as camera_main
         return camera_main()

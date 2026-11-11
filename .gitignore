@@ -21,6 +21,7 @@ __pycache__/
 *.pdb
 *.zip
 !/blender_addon/rgbmocap_bone_stream.zip
+!/blender_addon/rgbmocap_face_stream.zip
 *.7z
 *.tar*
 *.log

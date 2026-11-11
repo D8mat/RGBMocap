@@ -180,6 +180,10 @@ class BoneStream:
         incoming = bytearray()
         baking = None
         include_selection = False
+        include_face = False
+        from .face_data import FaceCache
+        from .face_extract import ARKIT
+        face_cache = FaceCache()
         while not self.stopping.is_set():
             self.changed.clear()
             snapshot = self.latest
@@ -189,22 +193,26 @@ class BoneStream:
                 # declare its rig again and Blender resolves its persistent ID.
                 known = {actor: known[actor] for actor, *_ in actors if actor in known}
                 parts = [struct.pack('<QH', sequence, len(actors))]
-                for actor, name, rig, frame, world, transform in actors:
+                for actor, name, rig, frame, world, transform, project in actors:
                     entry = (name, rig.key)
                     if actor not in known or known[actor][0] != entry:
                         occupied = {slot for _, slot in known.values()}
                         slot = known[actor][1] if actor in known else next(
                             index for index in range(1, MAX_ACTORS + 1) if index not in occupied)
                         schema = dict(version=2, actor=actor, name=name, slot=slot, bones=rig.bones,
-                                      bake=1, selection=1)
+                                      bake=1, selection=1, face=list(ARKIT))
                         client.sendall(packet(b'R', json.dumps(schema, ensure_ascii=False,
                                                                separators=(',', ':')).encode('utf-8')))
                         known[actor] = entry, slot
                     parts.extend((struct.pack('<II', known[actor][1], frame), rig.pose(world, transform)))
-                if include_selection and selected is not None:
+                if include_selection and (selected is not None or include_face):
                     # Selection is independent of the poses present at this time.
-                    parts.append(struct.pack('<H', len(selected)))
-                    parts.extend(bytes.fromhex(actor) for actor in selected)
+                    parts.append(struct.pack('<H', len(selected or ())))
+                    parts.extend(bytes.fromhex(actor) for actor in selected or ())
+                if include_face:
+                    parts.append(struct.pack('<H', len(actors)))
+                    for actor, name, rig, frame, world, transform, project in actors:
+                        parts.extend((struct.pack('<I', known[actor][1]), face_cache.frame(project, frame).tobytes()))
                 client.sendall(packet(b'S', b''.join(parts)))
                 last = snapshot
                 sequence += 1
@@ -233,6 +241,11 @@ class BoneStream:
                 incoming.extend(data)
                 while incoming:
                     kind = incoming[0]
+                    if kind == ord('Q'):
+                        include_face = include_selection = True
+                        last = None
+                        del incoming[0]
+                        continue
                     if kind == ord('V'):
                         if not include_selection:
                             include_selection = True

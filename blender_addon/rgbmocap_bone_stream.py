@@ -2,7 +2,7 @@
 
 bl_info = {
     'name': 'RGB MoCap Bone Stream', 'blender': (4, 5, 0),
-    'version': (1, 3, 0), 'category': 'Animation',
+    'version': (1, 4, 0), 'category': 'Animation',
 }
 
 from hashlib import sha256
@@ -327,6 +327,7 @@ class Receiver:
         self.scene_id = self.target_layer = None
         self.generation = 0
         self.selection_requested = False
+        self.face_requested = False
         self.paused_for_context = False
         self.status = 'Disconnected'
 
@@ -357,6 +358,7 @@ class Receiver:
         self.selected = None
         self.scene_id = self.target_layer = None
         self.selection_requested = False
+        self.face_requested = False
         self.paused_for_context = False
         self.status = status
 
@@ -459,10 +461,25 @@ class Receiver:
         if offset < len(payload):
             total, = SELECTION_COUNT.unpack_from(payload, offset)
             offset += SELECTION_COUNT.size
-            if total > MAX_ACTORS or len(payload) != offset + total * ACTOR_ID_BYTES:
+            if total > MAX_ACTORS or len(payload) < offset + total * ACTOR_ID_BYTES:
                 raise ValueError('Invalid stream selection.')
             selected = {payload[start:start + ACTOR_ID_BYTES].hex()
-                        for start in range(offset, len(payload), ACTOR_ID_BYTES)}
+                        for start in range(offset, offset + total * ACTOR_ID_BYTES, ACTOR_ID_BYTES)}
+            offset += total * ACTOR_ID_BYTES
+
+        faces = {}
+        if offset < len(payload):
+            face_count, = struct.unpack_from('<H', payload, offset)
+            offset += 2
+            if face_count > count or len(payload) != offset + face_count * 212:
+                raise ValueError('Invalid face snapshot size.')
+            for _ in range(face_count):
+                slot, = struct.unpack_from('<I', payload, offset)
+                values = struct.unpack_from('<52f', payload, offset + 4)
+                offset += 212
+                if slot not in entries or slot in faces or any(not math.isfinite(v) or not 0 <= v <= 1 for v in values):
+                    raise ValueError('Invalid face values.')
+                faces[slot] = values
 
         if selected is not None:
             self.detached.intersection_update(selected)
@@ -475,6 +492,18 @@ class Receiver:
             if rig is None:
                 rig = RigTarget(context, self.schemas[slot])
             rig.apply(payload, offset)
+            if slot in faces:
+                names = self.schemas[slot].get('face', ())
+                for name, value in zip(names, faces[slot]):
+                    rig.object['arkit_' + name] = value
+                # Only meshes explicitly parented to this actor are affected.
+                for child in rig.object.children_recursive:
+                    keys = getattr(getattr(child, 'data', None), 'shape_keys', None)
+                    if keys is not None:
+                        for name, value in zip(names, faces[slot]):
+                            key = keys.key_blocks.get(name)
+                            if key is not None:
+                                key.value = value
             live[slot] = rig
             visible.add(rig.object)
         self.rigs = live
@@ -527,6 +556,12 @@ class Receiver:
                     if schema.get('selection') == 1 and not self.selection_requested:
                         self.sock.sendall(b'V')
                         self.selection_requested = True
+                    if schema.get('face') and not self.face_requested:
+                        names = schema['face']
+                        if len(names) != 52 or any(not isinstance(n, str) or len(n) > 64 for n in names):
+                            raise ValueError('Invalid face schema.')
+                        self.sock.sendall(b'Q')
+                        self.face_requested = True
                     self.rigs.pop(slot, None)
                     self.snapshot = None
                 elif kind == ord('S'):

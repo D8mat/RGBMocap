@@ -104,8 +104,13 @@
     },
     {
       "path": "blender_addon/rgbmocap_bone_stream.zip",
-      "bytes": 9439,
-      "sha256": "3e51960b75797f08a7e209ff50e8868c2ff0172a16582f3b6a853b59b5f04e72"
+      "bytes": 9890,
+      "sha256": "e37054ff1cec43954d29ccfb5a03b4aeff51edfc8dbc05c760452f9de06a1011"
+    },
+    {
+      "path": "blender_addon/rgbmocap_face_stream.zip",
+      "bytes": 4505,
+      "sha256": "516b94cf44c06a8353c56cf0b0a1b7da3ac1761545bc6f91db47c54d7f491c58"
     }
   ]
 }
