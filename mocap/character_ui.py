@@ -118,15 +118,24 @@ class CharacterWorkspace:
             if c['id']==key.split(':',1)[1]:c['visible']=item.checkState()==Qt.Checked
         self.save_characters();self.motion_view.update();return True
 
-    def choose_character(self):
-        if self.busy:return
+    def choose_character(self, filename=None):
+        if self.busy or self.contact_saving:return
         self.sync_characters()
         if len(self.characters)>=8:
             QMessageBox.information(self,'Import Character','Up to 8 characters are supported per project.');return
-        name,_=QFileDialog.getOpenFileName(self,'Import Character','','Humanoid characters (*.fbx *.vrm *.pmx)')
+        if filename is None or isinstance(filename,bool):
+            name,_=QFileDialog.getOpenFileName(self,'Import Character','','Humanoid characters (*.fbx *.vrm *.pmx)')
+        else:name=str(filename)
         if not name:return
         ident=uuid.uuid4().hex
         self.start_character_job(dict(mode='import',file=name,output=str(self.character_path(ident+'/asset')),id=ident))
+
+    def import_puppet(self):
+        if not self.import_character_action.isEnabled():return
+        path=ROOT/'assets/characters/rgb_mocap_puppet_V4.fbx'
+        if not path.is_file():
+            QMessageBox.warning(self,'Import Puppet','The bundled puppet file is missing: '+str(path));return
+        self.choose_character(path)
 
     def character_sources(self):
         from .motion_tools import result_is_current

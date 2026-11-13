@@ -110,14 +110,6 @@ class MammaWorkspace:
         self.mamma_camera_import=QPushButton('Import Camera Data...')
         self.mamma_camera_import.setToolTip('Load JSON or MAMMA YAML calibration for these videos. Camera names must match filenames without extensions; use original image sizes and metres. See docs/MAMMA.md for the format and docs/samples/mamma-camera-example.json for a synthetic example.')
         self.mamma_camera_import.clicked.connect(self.choose_mamma_calibration);box.addWidget(self.mamma_camera_import)
-        from . import mamma_calibration_export as calibration_tools
-        self.mamma_camera_export=QPushButton('Export Camera Data...');self.mamma_camera_export.clicked.connect(lambda:calibration_tools.export_json(self));box.addWidget(self.mamma_camera_export)
-        self.mamma_camera_editor=QPushButton('Edit Cameras in Blender...');self.mamma_camera_editor.clicked.connect(lambda:calibration_tools.open_editor(self));box.addWidget(self.mamma_camera_editor)
-        self.mamma_camera_restore=QPushButton('Restore Previous Camera Settings');self.mamma_camera_restore.clicked.connect(lambda:calibration_tools.restore(self));box.addWidget(self.mamma_camera_restore)
-        from .calibration_solver_ui import CalibrationDialog
-        self.mamma_calculate=QPushButton('Calibration Board...');self.mamma_calculate.clicked.connect(lambda:CalibrationDialog(self).exec());box.addWidget(self.mamma_calculate)
-        from .apriltag_ui import show as show_apriltags
-        self.mamma_tags=QPushButton('AprilTag Calibration...');self.mamma_tags.clicked.connect(lambda:show_apriltags(self));box.addWidget(self.mamma_tags)
         self.mamma_camera_note=QLabel('VGGT-Omega + GeoCalib (Automatic)');self.mamma_camera_note.setWordWrap(True)
         self.mamma_camera_note.setMaximumHeight(72)
         self.mamma_camera_note.setTextFormat(Qt.PlainText)
@@ -177,8 +169,6 @@ class MammaWorkspace:
         if kind=='calibration':
             try:
                 if self.mamma_inputs:match_calibration(result,self.mamma_inputs)
-                from .mamma_calibration_export import confirm_import
-                if not confirm_import(self,result):return
                 self.mamma_calibration=result
                 self.mamma_camera_mode.setCurrentIndex(self.mamma_camera_mode.findData('manual'))
                 self.mamma_settings_changed()

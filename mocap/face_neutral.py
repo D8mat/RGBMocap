@@ -34,7 +34,7 @@ def save_reference(project, frame=None, reset=False):
 
 class NeutralCache:
     def __init__(self):self.rows=OrderedDict();self.status='Neutral: Off'
-    def apply(self,project,raw,identity):
+    def apply(self,project,raw,identity,reference_values=None):
         path=Path(project)/FILE;self.status='Neutral: Off'
         try:
             stat=path.stat();key=(stat.st_size,stat.st_mtime_ns)
@@ -54,10 +54,11 @@ class NeutralCache:
             if baseline is None:return raw
             if data['capture']!=identity:
                 self.status='Neutral: capture changed; select a new reference';return raw
+            if reference_values is not None:baseline=reference_values[data['frame']]
             self.status=f"Neutral: frame {data['frame']+1}"
             return np.clip(raw-baseline,0,1).astype('<f4',copy=False)
         except FileNotFoundError:return raw
-        except (OSError,ValueError,KeyError,TypeError):
+        except (OSError,ValueError,KeyError,TypeError,IndexError):
             self.status='Neutral: invalid reference; reset or select again';return raw
 
 

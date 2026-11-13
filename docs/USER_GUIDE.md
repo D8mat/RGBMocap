@@ -1059,14 +1059,6 @@ source videos must already be synchronized. The second decoder may display a
 frame later under load. Disable Second camera to release its decoder. These
 preview layout choices last for the current application session.
 
-### AprilTag board calibration from videos
-
-Use **AprilTag Calibration > AprilTag Board - Calibrate from Videos...** to estimate
-lenses from a moving rigid 3x2 tag board and camera poses from a common stationary
-floor view. No manual marker map or focal lengths are required. See
-[AprilTag board workflow](APRILTAG_BOARD.md) for board dimensions, capture steps,
-Unreal settings and the current real-lens undistortion limitation.
-
 ### FlowHMR body in Blender exports
 
 FlowHMR Blender bundles now include the exact selected native SMPL-H body surface

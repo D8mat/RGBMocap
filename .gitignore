@@ -109,3 +109,6 @@ third_party/**/.git/
 
 # Local temporary shader/kernel caches
 /temp/
+
+# Bundled character for Import Puppet
+!assets/characters/rgb_mocap_puppet_V4.fbx

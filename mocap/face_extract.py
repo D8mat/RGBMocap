@@ -53,7 +53,7 @@ def head_box(box, width, height):
     return a, b, int(min(width, a + side)), int(min(height, b + side))
 
 
-def extract(take, root, progress=lambda done, total: None):
+def extract(take, root, progress=lambda done, total: None, selection=None):
     import cv2
     import mediapipe as mp
     from mediapipe.tasks.python import BaseOptions, vision
@@ -91,25 +91,40 @@ def extract(take, root, progress=lambda done, total: None):
     landmarks = np.full((total,478,2),np.nan,np.float16)
     index = 0
     preferred = None
+    anchor=0 if selection is None else int(selection[0])
+    if selection is not None and (not 0<=anchor<total or not all(np.isfinite(selection[1:])) or not all(0<=v<=1 for v in selection[1:])):
+        capture.release();raise ValueError('Invalid selected face/frame')
+    order=list(range(anchor,total))+list(range(anchor-1,-1,-1))
+    target=None if selection is None else np.array([selection[1],selection[2],selection[1],selection[2]])
+    initial_target=target;anchor_region=None;missing=0;processed=0
     try:
         with vision.FaceLandmarker.create_from_options(options) as landmarker:
-            while index < total:
+            for index in order:
+                if selection is not None:
+                    if index==anchor-1:target=anchor_region;missing=0
+                    if int(capture.get(cv2.CAP_PROP_POS_FRAMES))!=index:capture.set(cv2.CAP_PROP_POS_FRAMES,index)
                 ok, frame = capture.read()
                 if not ok:
                     break
-                if boxes is None or (observed[index] and np.isfinite(boxes[index]).all()):
-                    box = None if boxes is None else boxes[index]
-                    result, region, points, preferred = detect_face(frame, box, landmarker, mp, cv2, preferred)
+                if (selection is not None and missing<=round(fps*.5)) or (selection is None and (boxes is None or (observed[index] and np.isfinite(boxes[index]).all()))):
+                    box = None if selection is not None or boxes is None else boxes[index]
+                    result, region, points, preferred = detect_face(frame, box, landmarker, mp, cv2, preferred, target)
                     if result is not None:
                         values[index] = [result.get(name, 0.0) for name in ARKIT]
                         valid[index] = True
                         regions[index] = region
                         landmarks[index] = points
-                index += 1
-                if index % 15 == 0 or index == total:
-                    progress(index, total)
+                        if selection is not None:
+                            target=region;missing=0
+                            if index==anchor:anchor_region=region
+                    elif selection is not None:
+                        missing+=1
+                        if index==anchor:raise ValueError('No unambiguous face at the clicked position; choose a clearer frame.')
+                processed += 1
+                if processed % 15 == 0 or processed == total:progress(processed, total)
     finally:
         capture.release()
+    index=processed
     if index != total:
         raise ValueError("Video decode ended early; previous face capture was preserved.")
     if source_identity(take) != identity:
@@ -144,7 +159,7 @@ def detection_crops(box, width, height, preferred=None):
     return [(name, crop) for name, crop in rows if crop[2]>crop[0] and crop[3]>crop[1]]
 
 
-def detect_face(frame, box, landmarker, mp, cv2, preferred=None):
+def detect_face(frame, box, landmarker, mp, cv2, preferred=None, target=None):
     height, width = frame.shape[:2]
     for name, (a,b,c,d) in detection_crops(box,width,height,preferred):
         crop = frame[b:d,a:c]
@@ -166,6 +181,20 @@ def detect_face(frame, box, landmarker, mp, cv2, preferred=None):
             source_points=(points*np.array([c-a,d-b])+np.array([a,b]))/np.array([width,height])
             if source_points.shape != (478,2):continue
             candidates.append((float(np.sum((center-[.5,.15])**2)),blendshapes,region,source_points))
+        if target is not None:
+            center=(target[:2]+target[2:])/2;size=max(target[2]-target[0],target[3]-target[1])
+            ranked=[]
+            for _,shapes,region,points in candidates:
+                distance=float(np.linalg.norm((region[:2]+region[2:])/2-center))
+                if size==0:
+                    if not (region[0]<=center[0]<=region[2] and region[1]<=center[1]<=region[3]):continue
+                elif distance>max(.04,size*.65):continue
+                ranked.append((distance,shapes,region,points))
+            ranked.sort(key=lambda row:row[0])
+            if ranked and (len(ranked)==1 or ranked[1][0]-ranked[0][0]>max(.015,size*.15)):
+                _,shapes,region,points=ranked[0]
+                return {c.category_name:float(np.clip(c.score,0,1)) for c in shapes},region,points,name
+            continue
         # Without person tracking, refuse ambiguous multi-face frames.
         if candidates and (box is not None or len(candidates)==1):
             _,shapes,region,points=min(candidates,key=lambda row:row[0])
@@ -197,6 +226,9 @@ def _hold(values, valid, max_gap=6):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--take', '--project', dest='take', action='append', required=True)
+    parser.add_argument('--face-point',type=float,nargs=2)
+    parser.add_argument('--face-frame',type=int,default=0)
+    parser.add_argument('--face-time',type=float)
     args = parser.parse_args(sys.argv[2:])
     root = Path(__file__).resolve().parents[1]
     takes = [Path(take) for take in args.take]
@@ -209,7 +241,11 @@ def main():
             emit('progress', stage='face', current=number * 1000 + int(1000 * done / max(total, 1)),
                  total=len(takes) * 1000, message='Face capture %d/%d' % (number + 1, len(takes)))
         try:
-            summary.append(extract(take, root, progress))
+            frame=args.face_frame
+            if args.face_time is not None:
+                state=json.loads((take/'project.json').read_text(encoding='utf-8'))
+                frame=round((args.face_time-float(state.get('start',0)))*float(state['fps']))
+            summary.append(extract(take, root, progress, (frame,*args.face_point) if args.face_point else None))
         except Exception as error:  # report per take, keep going
             summary.append(dict(take=str(take), error=str(error)))
     emit('face_done', stage='face', takes=summary)

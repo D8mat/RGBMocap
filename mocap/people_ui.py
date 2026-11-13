@@ -311,6 +311,10 @@ class PeopleWorkspace:
         self._sam31_prompt = 'person'
         bar.addWidget(self.find_person_button)
         bar.addWidget(self.people_tracker)
+        self.select_face_button=QPushButton('Select Face to Track...')
+        self.select_face_button.setToolTip('Pause on a clear frame, then click the face to capture.')
+        self.select_face_button.clicked.connect(self.select_face_to_track)
+        bar.addWidget(self.select_face_button)
         bar.addStretch()
         movie_layout.addWidget(footer)
         body.addWidget(movie)

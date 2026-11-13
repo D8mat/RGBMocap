@@ -7,7 +7,10 @@ class FaceWorkspace:
     def refresh_face_capture_action(self):
         # Keep the entry usable without a reconstructed project, including before
         # model-specific early returns. Clicking explains missing input/support.
-        self.face_capture_action.setEnabled(not self.busy and not self.contact_saving)
+        enabled=not self.busy and not self.contact_saving
+        self.face_capture_action.setEnabled(enabled)
+        self.face_capture_button.setEnabled(enabled)
+        self.select_face_button.setEnabled(enabled and not self._pear_active and self.model_choice.currentData()!='mamma')
         for name in ('face_neutral_action','face_neutral_reset_action'):
             action=getattr(self,name,None)
             if action is not None:action.setEnabled(not self.busy and not self.contact_saving)
@@ -41,6 +44,30 @@ class FaceWorkspace:
         # Prepare the clip, then detect faces directly; body tracking is optional.
         self.input_jobs(['face'])
 
+    def select_face_to_track(self):
+        if self.busy or self.contact_saving:return
+        project,frame,_=self.face_source_at_display()
+        image=self.video_view.frame
+        if image is None or self.video_view.preview_rotation%360 or self._pear_active or self.model_choice.currentData()=='mamma':
+            self.status.setText('Open a video, wait for its image, and pause on a clear face in an unrotated preview.');return
+        try:worker_command('face')
+        except (OSError,RuntimeError) as error:self.status.setText(str(error));return
+        self.stop_playback()
+        source_time=self.source_offset+int(self.video_view.index)/float((self.info or {}).get('fps',30))
+        if project is None:
+            first,end=self.processing_range()
+            if not first<=source_time<end:
+                self.status.setText('Choose a face frame inside the selected video trim.');return
+        from .face_picker import pick_face
+        point=pick_face(self,image.copy())
+        if point is None:return
+        if project is None:
+            self.input_jobs(['face'])
+            if self.busy:
+                self.jobs=[(stage,['--face-time',str(source_time),'--face-point',str(point[0]),str(point[1])] if stage=='face' else args) for stage,args in self.jobs]
+            return
+        self.start_jobs([('face',['--take',str(project),'--face-frame',str(frame),'--face-point',str(point[0]),str(point[1])])])
+
     def open_face_preview(self):
         from PySide6.QtCore import Qt
         from .face_panel import FacePanel
@@ -52,8 +79,12 @@ class FaceWorkspace:
 
     def face_source_at_display(self):
         if self._pear_active or self.model_choice.currentData()=='mamma':return None,0,'Unavailable'
+        key=getattr(self.video_view,'_source_key',None)
+        if self.project is not None and key and Path(key[0]).parent.resolve()==Path(self.project).resolve():
+            return self.project,int(self.video_view.index),'Selected take'
         if self.people_state and self.scene_data is not None:
-            current=self.scene_data.take_at(self.active_person_id,self.motion_view.scene_time,self.project)
+            seconds=self.source_offset+int(self.video_view.index)/float((self.info or {}).get('fps',30))
+            current=self.scene_data.take_at(self.active_person_id,seconds,self.project)
             if current is None:return None,0,'No take at this time'
             take,frame=current;person=self.current_person()
             return take.project,frame,person['name'] if person else 'Selected person'

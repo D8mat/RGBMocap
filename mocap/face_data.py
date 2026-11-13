@@ -10,6 +10,8 @@ from .face_extract import ARKIT, source_identity
 class FaceCache:
     def __init__(self):
         self.rows = OrderedDict()
+        self.smoothing = False
+        self.use_ai = False
         from .face_neutral import NeutralCache
         self.neutral = NeutralCache()
         self.calibration_status = 'Neutral: Off'
@@ -25,6 +27,9 @@ class FaceCache:
             stat = path.stat()
             identity = source_identity(project)
             key = (stat.st_size, stat.st_mtime_ns, json.dumps(identity, sort_keys=True))
+            ai_path=Path(project)/'face_ai.npz'
+            ai_stamp=ai_path.stat() if self.use_ai and calibrated and ai_path.is_file() else None
+            key=key+((ai_stamp.st_size,ai_stamp.st_mtime_ns) if ai_stamp else (None,))
             row = self.rows.get(path)
             if row is None or row[0] != key:
                 if stat.st_size > 96 * 1024 * 1024:
@@ -43,6 +48,15 @@ class FaceCache:
                     valid = np.asarray(data['valid'],bool) if 'valid' in data else np.ones(len(values),bool)
                     if valid.shape != (len(values),):return neutral
                     values = np.clip(values, 0, 1)
+                if ai_stamp is not None:
+                    if ai_stamp.st_size>16*1024*1024:raise ValueError('Oversized AI result')
+                    with zipfile.ZipFile(ai_path) as archive:
+                        if sum(i.file_size for i in archive.infolist())>16*1024*1024:raise ValueError('Oversized AI result')
+                    with np.load(ai_path,allow_pickle=False) as ai:
+                        candidate=ai['values'].astype('<f4')
+                        if (int(ai['capture_bytes'])!=stat.st_size or int(ai['capture_mtime'])!=stat.st_mtime_ns or json.loads(str(ai['source']))!=identity):raise ValueError('Stale AI result')
+                        if candidate.shape!=values.shape or not np.isfinite(candidate).all():raise ValueError('Invalid AI result')
+                        values=np.clip(candidate,0,1)
                 self.rows[path] = (key, values, valid)
                 self.rows.move_to_end(path)
                 while len(self.rows) > 4:
@@ -52,7 +66,24 @@ class FaceCache:
                 self.last_status = 'Ready' if row[2][frame] or np.any(row[1][frame]) else 'No face detected in this frame'
                 raw = row[1][frame]
                 if not calibrated:return raw.copy()
-                values = self.neutral.apply(project,raw,dict(bytes=stat.st_size,mtime_ns=stat.st_mtime_ns,source=identity))
+                identity=dict(bytes=stat.st_size,mtime_ns=stat.st_mtime_ns,source=identity)
+                values = self.neutral.apply(project,raw,identity,row[1] if ai_stamp else None)
+                if self.smoothing and self.last_status=='Ready' and not np.all(values==0):
+                    # Symmetric, seek-independent window; never cross missing detections.
+                    samples=[];weights=[]
+                    for offset in range(-2,3):
+                        index=frame+offset
+                        if not 0<=index<len(row[1]):continue
+                        lo,hi=sorted((frame,index))
+                        if not row[2][lo:hi+1].all():continue
+                        sample=self.neutral.apply(project,row[1][index],identity,row[1] if ai_stamp else None)
+                        weight=np.exp(-.5*(offset/1.2)**2-.5*((sample-values)/.1)**2)
+                        samples.append(sample*weight);weights.append(weight)
+                    if weights:
+                        filtered=np.sum(samples,axis=0)/np.sum(weights,axis=0)
+                        for name in ('eyeBlinkLeft','eyeBlinkRight'):
+                            filtered[ARKIT.index(name)]=values[ARKIT.index(name)]
+                        values=filtered.astype('<f4')
                 self.calibration_status = self.neutral.status
                 return values
             self.last_status = 'Outside captured frames'

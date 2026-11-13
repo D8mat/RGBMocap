@@ -18,8 +18,8 @@ class FacePanel(QDockWidget):
         self.process=None;self.pending=None;self.token=None;self.closed=False
         panel=QWidget();layout=QVBoxLayout(panel);buttons=QHBoxLayout()
         self.open_button=QPushButton('Load Face FBX...');buttons.addWidget(self.open_button)
-        self.capture_button=QPushButton('Capture Face');buttons.addWidget(self.capture_button)
-        layout.addLayout(buttons);self.model_label=QLabel('Load an ARKit face model for a 3D preview.');self.model_label.setWordWrap(True);layout.addWidget(self.model_label)
+        layout.addLayout(buttons)
+        self.model_label=QLabel('Load an ARKit face model for a 3D preview.');self.model_label.setWordWrap(True);layout.addWidget(self.model_label)
         self.view=FaceView();layout.addWidget(self.view,1)
         neutral_row=QHBoxLayout();self.neutral_button=QPushButton('Set Current Frame as Neutral');self.neutral_reset=QPushButton('Reset Neutral')
         neutral_row.addWidget(self.neutral_button);neutral_row.addWidget(self.neutral_reset);layout.addLayout(neutral_row)
@@ -27,14 +27,45 @@ class FacePanel(QDockWidget):
         self.neutral_button.setToolTip('Pause on a relaxed face with eyes open. Subtract its 52 raw values from every frame; negative results become zero.')
         self.neutral_button.clicked.connect(window.calibrate_face_neutral)
         self.neutral_reset.clicked.connect(lambda:window.calibrate_face_neutral(reset=True))
+        self.smooth=QCheckBox('Smooth face curves (preserve blinks)');layout.addWidget(self.smooth)
+        self.smooth.setToolTip('Symmetric five-frame adaptive filter for preview and face UDP. Keeps blink channels and the zero neutral frame. Raw capture is unchanged.')
+        self.smooth.toggled.connect(lambda enabled:setattr(self.feed,'smoothing',enabled))
+        self.ai_button=QPushButton('SAiD: refine next 2 seconds');layout.addWidget(self.ai_button)
+        self.ai_button.clicked.connect(self.refine_ai);self.ai_process=None
+        self.ai_toggle=QCheckBox('Preview SAiD candidate');layout.addWidget(self.ai_toggle)
+        self.ai_toggle.toggled.connect(lambda enabled:setattr(self.feed,'use_ai',enabled))
         self.stream=QCheckBox('Stream selected face to Blender');layout.addWidget(self.stream)
         self.stream.setToolTip(f'Local UDP port {PORT}. Enable Connect in the RGB MoCap Face Stream Blender add-on. Body reconstruction is not required.')
         self.status=QLabel('Capture a face, then play or scrub the video.');self.status.setWordWrap(True);layout.addWidget(self.status)
         self.setWidget(panel);self.resize(420,550)
-        self.open_button.clicked.connect(self.choose_model);self.capture_button.clicked.connect(window.extract_face)
+        self.open_button.clicked.connect(self.choose_model)
         self.timer=QTimer(self);self.timer.timeout.connect(self.tick);self.timer.start(33)
         self.visibilityChanged.connect(self.visibility_changed)
         self.load_saved_model()
+
+    def refine_ai(self):
+        if self.ai_process is not None or self.window.busy:return
+        project,frame,_=self.source()
+        if project is None:return
+        from .resource_safety import path,read_settings
+        try:
+            folder=Path(read_settings(path())['face_ai_said_runtime'])
+            python=folder/'venv_said/Scripts/python.exe';runner=ROOT/'tools/face_ai_said.py'
+            if not python.is_file() or not runner.is_file():raise ValueError('SAiD runtime is not prepared')
+        except (OSError,ValueError,KeyError) as error:
+            self.model_label.setText('SAiD unavailable: '+str(error));return
+        self.window.stop_playback();self.ai_button.setEnabled(False)
+        process=QProcess(self);self.ai_process=process;self.ai_log=''
+        process.setProcessChannelMode(QProcess.MergedChannels)
+        def output():self.ai_log=(self.ai_log+bytes(process.readAllStandardOutput()).decode('utf-8','replace'))[-4000:]
+        def finished(code,*args):
+            if self.ai_process is None:return
+            output();self.ai_process=None;self.ai_button.setEnabled(True)
+            self.model_label.setText('SAiD candidate ready; enable Preview SAiD candidate to compare.' if code==0 else self.ai_log[-1500:] or 'SAiD failed to start')
+            process.deleteLater()
+        process.readyReadStandardOutput.connect(output);process.finished.connect(finished)
+        process.errorOccurred.connect(lambda error:finished(1) if error==QProcess.FailedToStart else None)
+        process.start(str(python),['-X','utf8','-B',str(runner),'--runtime',str(folder),'--app',str(ROOT),'--project',str(project),'--frame',str(frame)])
 
     def visibility_changed(self,visible):
         if not visible:self.stream.setChecked(False);self.view.set_values(np.zeros(52,np.float32))
@@ -102,7 +133,6 @@ class FacePanel(QDockWidget):
 
     def tick(self):
         if self.closed:return
-        self.capture_button.setEnabled(self.window.face_capture_action.isEnabled())
         enabled=not self.window.busy and not self.window.contact_saving
         self.neutral_button.setEnabled(enabled);self.neutral_reset.setEnabled(enabled)
         self.neutral_label.setText(self.feed.calibration_status)
@@ -133,7 +163,10 @@ class FacePanel(QDockWidget):
 
     def shutdown(self):
         if self.closed:return
-        self.closed=True;self.timer.stop();self.stream.setChecked(False);self.feed.close()
+        self.closed=True
+        if self.ai_process is not None:
+            self.ai_process.blockSignals(True);self.ai_process.kill();self.ai_process.waitForFinished(3000);self.ai_process=None
+        self.timer.stop();self.stream.setChecked(False);self.feed.close()
         if self.process is not None:
             self.process.blockSignals(True);self.process.kill();self.process.waitForFinished(3000)
             if self.pending:self.pending[2].unlink(missing_ok=True)

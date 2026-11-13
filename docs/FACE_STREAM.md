@@ -103,3 +103,29 @@ reset, invalid frame rejection, recapture invalidation, independent takes and re
 UDP zero values. An actual GUI/worker test verified displayed-frame selection,
 zero preview values and reset while preserving the raw capture bytes. The existing
 capture, stream and geometry tests also passed (nine regression tests in total).
+
+## Experimental local SAiD editing
+
+The prepared local installation exposes **SAiD: refine next 2 seconds** in the
+face dock. It uses the displayed frame and a separate Python environment specified
+by `face_ai_said_runtime` in local settings. The runtime folder contains
+`venv_said/Scripts/python.exe`, pinned SAiD sources in `SAiD`, and `SAiD.pth`.
+It is not installed by Setup_Face.cmd or bundled with the repository.
+The adapter is `tools/face_ai_said.py`. Source revision:
+`bb7b18018358d3156569d8051f386943744a5ea0`; checkpoint revision:
+`2e901c38bee43ee6c0933eae467f64d6a2152d5b`.
+
+Original source audio is hash-checked and offset by the take start time. The model
+edits 32 lower-face channels using 20% diffusion strength and 35% output mixing,
+with fades at both interval boundaries. Eyes and brows are retained. Each run
+replaces the previous candidate with a fresh edit of raw capture; edits do not
+accumulate. `face_ai.npz` stores the candidate separately. Toggle **Preview SAiD
+candidate** to compare. It affects face preview and face-only UDP, not the body
+stream, exports or landmark overlay. Neutral calibration remains zero at its
+reference frame. Smooth face curves uses a five-frame symmetric adaptive filter
+and preserves blink channels; it is not AI and depends on capture frame rate.
+
+Local validation: actual CUDA inference on RTX 5060 Ti; two-second GoPro candidate
+created; ranges, preserved eye/brow channels and neutral zero checked. No visual
+quality improvement is claimed yet. SemanticFace is not integrated: its author
+model download endpoints returned HTTP 403/404 during preparation.

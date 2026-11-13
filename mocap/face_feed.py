@@ -14,7 +14,7 @@ PORT=49169
 class FaceFeed:
     def __init__(self):
         self.condition=Condition();self.request=None;self.output=None;self.asset=None;self.calibration_status='Neutral: Off'
-        self.asset_request=None;self.closed=False;self.session=uuid.uuid4().hex
+        self.use_ai=False;self.smoothing=False;self.asset_request=None;self.closed=False;self.session=uuid.uuid4().hex
         self.thread=Thread(target=self.run,name='Face preview and stream',daemon=True);self.thread.start()
 
     def submit(self,request):
@@ -48,6 +48,8 @@ class FaceFeed:
                 token,project,frame,label,stream=request
                 now=time.monotonic()
                 if request!=last or now-last_sent>=.25:
+                    cache.smoothing=self.smoothing
+                    cache.use_ai=self.use_ai
                     values=cache.frame(project,frame)
                     status=cache.last_status
                     self.calibration_status=cache.calibration_status

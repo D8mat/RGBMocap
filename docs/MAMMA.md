@@ -437,4 +437,3 @@ method. For development environments and detailed checks, see
 
 [MAMMA paper](https://arxiv.org/abs/2506.13040) · [Research citations and BibTeX](CITATIONS.md#mamma)
 
-For camera export/import, Blender editing and printable calibration boards, see [Editable Camera Calibration](CAMERA_CALIBRATION.md).

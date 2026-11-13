@@ -154,3 +154,19 @@ reset, invalid frame rejection, recapture invalidation, independent takes and re
 UDP zero values. An actual GUI/worker test verified displayed-frame selection,
 zero preview values and reset while preserving the raw capture bytes. The existing
 capture, stream and geometry tests also passed (nine regression tests in total).
+
+## Choosing one face in a multi-face video
+
+Pause a prepared video on a clear, unrotated frame. Choose **File > Select Face
+to Track...**, or the same button in the face dock, then click inside the desired
+face in the frozen image. Capture starts automatically and follows spatial
+continuity forward and backward from that frame. The explicit face choice takes
+precedence over the body crop. Up to four detected faces are considered.
+Ambiguous nearby candidates are rejected. After more than half a second of
+continuous loss in either direction, tracking stops for that direction; select
+a better reference and recapture. This is spatial tracking, not biometric identity
+recognition: crossings, cuts and occlusion can still cause errors. Inspect the
+overlay before relying on the result. Raw body tracking stays unchanged.
+
+Validated locally on a six-frame two-face fixture: selecting the right face at
+frame 4 selected the right face on all six frames, including reverse traversal.
