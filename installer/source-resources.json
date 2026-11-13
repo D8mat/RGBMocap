@@ -113,9 +113,9 @@
       "sha256": "516b94cf44c06a8353c56cf0b0a1b7da3ac1761545bc6f91db47c54d7f491c58"
     },
     {
-      "path": "assets/characters/rgb_mocap_puppet_V4.fbx",
-      "bytes": 2374572,
-      "sha256": "e7802ab73e5a711b2ee6227ee668ce88927995f316609beb3d209d96ced0e565"
+      "path": "assets/characters/rgb_mocap_puppet_V5.fbx",
+      "bytes": 2370508,
+      "sha256": "1839cfcd823e4acdc6c5fa2337978f80e9eba05a5d40b76be6b40e64ca0a3918"
     }
   ]
 }

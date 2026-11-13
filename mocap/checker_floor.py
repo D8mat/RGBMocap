@@ -14,7 +14,7 @@ def texture(cells):
     painter.end();return image
 
 
-def draw(painter,camera,width,height,floor,extent,spacing,image,opacity=.5):
+def draw(painter,camera,width,height,floor,extent,spacing,image,opacity=.5,ortho_distance=None):
     eye,basis=camera
     # Texture coordinates map to app X/Z metres; Y is the existing grid height.
     scale=spacing/8.  # Each procedural tile is exactly eight texture pixels.
@@ -24,6 +24,10 @@ def draw(painter,camera,width,height,floor,extent,spacing,image,opacity=.5):
     h=np.array([[focal*u[0]+cx*u[2],focal*v[0]+cx*v[2],focal*origin[0]+cx*origin[2]],
                 [-focal*u[1]+cy*u[2],-focal*v[1]+cy*v[2],-focal*origin[1]+cy*origin[2]],
                 [u[2],v[2],origin[2]]])
+    if ortho_distance is not None:
+        k=focal/ortho_distance
+        h=np.array([[k*u[0],k*v[0],k*origin[0]+cx],
+                    [-k*u[1],-k*v[1],-k*origin[1]+cy],[0.,0.,1.]])
     if abs(np.linalg.det(h))<1e-10:return
     corners=np.array([[-extent,floor,-extent],[extent,floor,-extent],
                       [extent,floor,extent],[-extent,floor,extent]])
@@ -32,7 +36,7 @@ def draw(painter,camera,width,height,floor,extent,spacing,image,opacity=.5):
         if a[2]>=.08:clipped.append(a)
         if (a[2]>=.08)!=(b[2]>=.08):clipped.append(a+(b-a)*((.08-a[2])/(b[2]-a[2])))
     if len(clipped)<3:return
-    p=np.array(clipped);xy=p[:,:2]*focal/p[:,2:];xy[:,0]+=cx;xy[:,1]=cy-xy[:,1]
+    p=np.array(clipped);xy=p[:,:2]*focal/(ortho_distance if ortho_distance is not None else p[:,2:]);xy[:,0]+=cx;xy[:,1]=cy-xy[:,1]
     path=QPainterPath();path.moveTo(QPointF(*xy[0]))
     for point in xy[1:]:path.lineTo(QPointF(*point))
     path.closeSubpath()

@@ -70,7 +70,7 @@ class MultiViewport(QObject):
             box = QVBoxLayout(panel); box.setContentsMargins(0, 0, 0, 0)
             bar = QHBoxLayout()
             bar.addWidget(QLabel(f'View {len(self.views)+2}'))
-            choice = QComboBox(); choice.addItems(['Perspective','Front','Back','Right','Left','Top','Bottom'])
+            choice = QComboBox(); choice.addItems(['Perspective','Orthographic','Front','Back','Right','Left','Top','Bottom'])
             choice.currentTextChanged.connect(view.set_view)
             def changed(name, combo=choice):
                 combo.blockSignals(True); combo.setCurrentText(name); combo.blockSignals(False)

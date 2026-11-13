@@ -41,13 +41,13 @@ class LiveRenderer:
         if view.show_grid:
             eye,basis=view._paint_camera;matrix=np.eye(4);matrix[:3,:3]=basis*np.array([[1],[1],[-1]]);matrix[:3,3]=-matrix[:3,:3]@eye
             projection=QMatrix4x4();projection.perspective(40,view.width()/max(1,view.height()),.03,2000)
-            self.program.bind();self.program.setUniformValue('mvp',projection*QMatrix4x4(*matrix.reshape(-1).tolist()))
+            self.program.bind();self.program.setUniformValue('mvp',view.camera_mvp())
             gl.glDisable(0x0B71);self.vao.bind();gl.glDrawArrays(0x1,0,self.count);self.vao.release();self.program.release()
         if view.live_data is None or view.live_asset is None:return
         if view.live_asset.get('render_mode')!='bones':
             if self.mesh is None:self.mesh=RigRenderer()
             self.mesh.load(view.live_asset);self.mesh.deform(view.live_data['vertices'],view.live_key)
-            self.mesh.draw(*view._paint_camera,view.width(),view.height(),(.64,.79,.86))
+            self.mesh.draw(*view._paint_camera,view.width(),view.height(),(.64,.79,.86),mvp=view.camera_mvp())
         if view.show_bones:
             j=view.live_data['joints'];parents=view.live_parents
             revision=view.live_data.get('rig_revision',0)
@@ -56,7 +56,7 @@ class LiveRenderer:
             if self.bone_key!=view.live_key:
                 self.bone_frames=self.bone_preview.frames(j,view.live_data['bone_facing']);self.bone_key=view.live_key
             self.bones.load(self.bone_preview.asset);self.bones.deform(self.bone_frames,view.live_key)
-            self.bones.draw(*view._paint_camera,view.width(),view.height())
+            self.bones.draw(*view._paint_camera,view.width(),view.height(),mvp=view.camera_mvp())
 
     def close(self):
         self.bones.close()

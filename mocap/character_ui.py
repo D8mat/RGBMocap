@@ -132,7 +132,7 @@ class CharacterWorkspace:
 
     def import_puppet(self):
         if not self.import_character_action.isEnabled():return
-        path=ROOT/'assets/characters/rgb_mocap_puppet_V4.fbx'
+        path=ROOT/'assets/characters/rgb_mocap_puppet_V5.fbx'
         if not path.is_file():
             QMessageBox.warning(self,'Import Puppet','The bundled puppet file is missing: '+str(path));return
         self.choose_character(path)
@@ -268,8 +268,17 @@ class CharacterWorkspace:
         p.readyReadStandardOutput.connect(self.character_output)
         p.finished.connect(self.character_finished)
         p.errorOccurred.connect(lambda error:self.character_finished(-1) if error==QProcess.FailedToStart else None)
-        self.busy=True;self.progress.setRange(0,0);self.character_timer.start();self.character_progress();self.update_readiness()
-        p.start(cmd[0],cmd[1:])
+        self.busy=True;self.progress.setRange(0,0);self.character_timer.start();self.character_progress()
+        try:
+            self.update_readiness()
+            p.start(cmd[0],cmd[1:])
+        except Exception as exc:
+            self.character_process=None;self.character_timer.stop();self.busy=False
+            self.character_refresh_queue=[];p.deleteLater()
+            self.progress.setRange(0,100);self.progress.setValue(0);self.task_info.setText('')
+            self.cancel_button.setEnabled(False)
+            self.status.setText('Cannot start character processing: '+str(exc))
+            self.log.append('Character startup failed: '+str(exc))
 
     def character_output(self, final=False):
         if not self.character_process:return
@@ -320,12 +329,25 @@ class CharacterWorkspace:
             self.next_character_refresh()
 
     def cancel_character(self):
+        from shiboken6 import isValid
         p=self.character_process
-        if not p:return
-        self.character_cancelled=True;self.character_line='Cancelling character job...'
+        if p is None or not isValid(p):return
+        self.character_cancelled=True;self.character_refresh_queue=[]
+        self.character_line='Cancelling character job...'
+        if p.state()==QProcess.NotRunning:
+            self.character_finished(-1);return
+        pending=getattr(self,'_character_killer',None)
+        if pending is not None and isValid(pending) and pending.state()!=QProcess.NotRunning:return
+        if not p.processId() or os.name!='nt':
+            p.kill();return
         helper=QProcess(self);self._character_killer=helper
-        helper.start('taskkill',['/PID',str(p.processId()),'/T','/F'])
-        helper.finished.connect(helper.deleteLater)
+        def finished(code=1,*args):
+            if code and self.character_process is p and isValid(p):p.kill()
+            if self._character_killer is helper:self._character_killer=None
+            helper.deleteLater()
+        helper.finished.connect(finished)
+        helper.errorOccurred.connect(lambda error:finished() if error==QProcess.FailedToStart else None)
+        helper.start('taskkill.exe',['/PID',str(p.processId()),'/T','/F'])
 
     def request_character(self,c):
         path=self.character_path(c['asset']);self.character_loader.request(path)

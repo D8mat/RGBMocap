@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-13",
+  "date": "2026-11-14",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -12,7 +12,7 @@
     {
       "path": ".gitignore",
       "bytes": 2029,
-      "sha256": "f71103d68145390bdb844c25183053b5ac784925928ce66cd5a7031282df7e4b"
+      "sha256": "cd77f56166a0bdc0125f09309160bc6d89b4f9f0c6f5357e724c468b1fe53c1b"
     },
     {
       "path": "AGENTS.md",
@@ -70,9 +70,9 @@
       "sha256": "5f3bba99d4ca9580c970a47a0c393853ac8a077e81b4d489442f31a4e53c72d7"
     },
     {
-      "path": "assets/characters/rgb_mocap_puppet_V4.fbx",
-      "bytes": 2374572,
-      "sha256": "e7802ab73e5a711b2ee6227ee668ce88927995f316609beb3d209d96ced0e565"
+      "path": "assets/characters/rgb_mocap_puppet_V5.fbx",
+      "bytes": 2370508,
+      "sha256": "1839cfcd823e4acdc6c5fa2337978f80e9eba05a5d40b76be6b40e64ca0a3918"
     },
     {
       "path": "assets/fonts/NotoSansKR.ttf",
@@ -1147,7 +1147,7 @@
     {
       "path": "installer/source-resources.json",
       "bytes": 4806,
-      "sha256": "a2f17c9ea89721a7ef83c5f6ef74e90c27a1842fe4b28161af1fcb8c62e87c43"
+      "sha256": "ed901544e003a4eba35055012a39421cb8075c708d6558e2e4b7db4512149010"
     },
     {
       "path": "installer/verify_gemx.py",
@@ -1326,8 +1326,8 @@
     },
     {
       "path": "mocap/character_gl.py",
-      "bytes": 7689,
-      "sha256": "5f0b7c8ccbbaa4bf1ed18c9791cde2dd024384bd73d980bc1e60c8ad75ed0875"
+      "bytes": 7734,
+      "sha256": "00c4561a8e59d8bb3ba336ebd586b2a999e3e20e9ff72349b6eab9a5f307dea4"
     },
     {
       "path": "mocap/character_materials.py",
@@ -1346,13 +1346,13 @@
     },
     {
       "path": "mocap/character_ui.py",
-      "bytes": 21710,
-      "sha256": "bb8e66024685f5342063fe2def9537b3d32124f653728f372dc612bd6bf36f80"
+      "bytes": 22947,
+      "sha256": "56ba8094ea4154ec6e5247ccf990360f8ac5842f69bf2d62995d9ec750472fdd"
     },
     {
       "path": "mocap/checker_floor.py",
-      "bytes": 2249,
-      "sha256": "401f4574eef245eb3ad9da0b913135ac1edd827ab7025d58f25e12beca8bbe8c"
+      "bytes": 2510,
+      "sha256": "a403853fe84c6c259af40b205d9a424af9eb211ff3539aed29cce222d49c97ac"
     },
     {
       "path": "mocap/compute_policy.py",
@@ -1806,8 +1806,8 @@
     },
     {
       "path": "mocap/mamma_ui.py",
-      "bytes": 30465,
-      "sha256": "f04649adb8b8b2c39c178bafaebd89d45c940023ab8ba82cfc138589c8aa2035"
+      "bytes": 29979,
+      "sha256": "127df817bf9f87b57d39de6d9cdf171db1c75bae8ca26d05ca39d5f911782cb2"
     },
     {
       "path": "mocap/mamma_video_grid.py",
@@ -1866,8 +1866,8 @@
     },
     {
       "path": "mocap/multi_preview.py",
-      "bytes": 9620,
-      "sha256": "11705f5958ebdaf1f7a025154544c119efb8d2b2b1b64d3a44c6a75ded9216fb"
+      "bytes": 9635,
+      "sha256": "1047b34d3d46f5884dded204d9885f686dd2e0419d9fbb9dedf543c3dc54b0bb"
     },
     {
       "path": "mocap/multilevel_contacts.py",
@@ -1961,8 +1961,8 @@
     },
     {
       "path": "mocap/pear/live_view.py",
-      "bytes": 3998,
-      "sha256": "cf7606a417d0e174a61ff65aa42c7efbd2b9cbab870948543855b774d17136c6"
+      "bytes": 4008,
+      "sha256": "f152e937aee8935092ae87a5a99eafcb8993d621b633229f42c4d7885c790fae"
     },
     {
       "path": "mocap/pear/multi_worker.py",
@@ -2521,8 +2521,8 @@
     },
     {
       "path": "mocap/viewport.py",
-      "bytes": 57592,
-      "sha256": "0cd1f2cadffb1a32080259a19664646fb6e96420687e305d5530ac9be0362f91"
+      "bytes": 59026,
+      "sha256": "4ec5917e1168fae058efea25dd381525805c72c9bc0ca0bd58476cdd1c80ed4c"
     },
     {
       "path": "mocap/worker.py",
@@ -2536,8 +2536,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 44032,
-      "sha256": "e0e6f9a8614ddd6d703f6fa4cf1abdb8c870edb75b850c3ad7f218516472ae18"
+      "bytes": 44048,
+      "sha256": "207b37c163cd24c9e50a5fedef06afe86aec4242c88229c72dd5b96f1e763e6c"
     },
     {
       "path": "native_compat/LICENSE",

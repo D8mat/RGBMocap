@@ -168,7 +168,7 @@ def build_workspace(w):
     motion_header.addWidget(w.bone_overlay)
     w.view_choice = QComboBox()
     w.view_choice.setToolTip(tooltip_text('Choose a viewing direction. This changes the camera, not the motion.'))
-    w.view_choice.addItems(["Perspective", "Front", "Back", "Right", "Left", "Top", "Bottom", "Camera Preview"])
+    w.view_choice.addItems(["Perspective", "Orthographic", "Front", "Back", "Right", "Left", "Top", "Bottom", "Camera Preview"])
     from .camera_ui import CameraTools
     w.camera_tools=CameraTools(w,camera_stack,motion_header)
     w.view_choice.currentTextChanged.connect(w.camera_tools.set_view)

@@ -98,13 +98,13 @@ class CharacterRenderer(MeshRenderer):
         self.asset_key=asset['key'];self.frame_key=None
         self.check('character load')
 
-    def draw(self,eye,basis,width,height,color=(.71,.71,.71),transform=None,clear_depth=True,material_overrides=None):
+    def draw(self,eye,basis,width,height,color=(.71,.71,.71),transform=None,clear_depth=True,material_overrides=None,mvp=None):
         if not self.batches:
-            return super().draw(eye,basis,width,height,color,transform,clear_depth)
+            return super().draw(eye,basis,width,height,color,transform,clear_depth,mvp=mvp)
         projection=QMatrix4x4();projection.perspective(40,width/max(1,height),.03,2000)
         view=np.eye(4);view[:3,:3]=basis*np.array([[1],[1],[-1]]);view[:3,3]=-view[:3,:3]@eye
         shader=self.textured;gl=self.gl;shader.bind()
-        shader.setUniformValue('mvp',projection*QMatrix4x4(*view.ravel().tolist()))
+        shader.setUniformValue('mvp',mvp if mvp is not None else projection*QMatrix4x4(*view.ravel().tolist()))
         shader.setUniformValue('sceneTransform',QMatrix4x4(*np.asarray(transform if transform is not None else np.eye(4)).ravel().tolist()))
         gl.glUniform1i(shader.uniformLocation('baseTexture'),0)
         gl.glBindBufferBase(0x90D2,1,self.vertices.bufferId())

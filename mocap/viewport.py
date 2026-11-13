@@ -77,6 +77,7 @@ class MotionView(ViewportBase):
         self._camera_update_timer.timeout.connect(self.update)
         self.auto_fit = True
         self.view_name = "Perspective"
+        self.orthographic = False
         self.show_grid = True
         self.checker_floor = False
         self.checker_floor_opacity = .5
@@ -230,7 +231,7 @@ class MotionView(ViewportBase):
             shared=next((r for r in self.target_renderers.values() if r.shared is None and r.topology_key==topology),None) if asset.get('mode')=='raw' else None
             self.target_renderers[slot]=RigRenderer(shared)
         renderer=self.target_renderers[slot];renderer.load(asset);renderer.deform(frame,key)
-        renderer.draw(*self._paint_camera,self.width(),self.height(),color,transform=transform,clear_depth=clear_depth)
+        renderer.draw(*self._paint_camera,self.width(),self.height(),color,transform=transform,clear_depth=clear_depth,mvp=self.camera_mvp())
 
     def draw_bones(self,painter,actors=None):
         if not self.show_bones:return
@@ -255,7 +256,7 @@ class MotionView(ViewportBase):
                     used.add(slot)
                     if slot not in self.bone_renderers:self.bone_renderers[slot]=BoneRenderer()
                     renderer=self.bone_renderers[slot];renderer.load(asset);renderer.deform(frame,(asset['key'],index))
-                    renderer.draw(*self._paint_camera,self.width(),self.height(),transform=transform,clear_depth=ordinal==0)
+                    renderer.draw(*self._paint_camera,self.width(),self.height(),transform=transform,clear_depth=ordinal==0,mvp=self.camera_mvp())
                 for slot in list(self.bone_renderers):
                     if slot not in used:self.bone_renderers.pop(slot).close()
                 self.bone_error=None
@@ -412,6 +413,13 @@ class MotionView(ViewportBase):
         self.frame_all()
 
     def set_view(self, name, fit=True):
+        if name in ('Perspective','Orthographic'):
+            self.orthographic = name == 'Orthographic'
+            self.view_name = name
+            self.auto_fit = False
+            self.update()
+            self.view_changed.emit(name)
+            return
         self.yaw, self.pitch = {"Perspective": (-2.76, .20), "Front": (math.pi, 0),
             "Back": (0, 0), "Right": (math.pi / 2, 0), "Left": (-math.pi / 2, 0),
             "Top": (0, math.pi / 2 - .001), "Bottom": (0, -math.pi / 2 + .001)}[name]
@@ -434,11 +442,24 @@ class MotionView(ViewportBase):
         up = np.cross(right, forward)
         return eye, np.array([right, up, forward])
 
+    def camera_mvp(self):
+        from PySide6.QtGui import QMatrix4x4
+        eye,basis=self._paint_camera if self._paint_camera is not None else self.camera()
+        projection=QMatrix4x4()
+        aspect=self.width()/max(1,self.height())
+        if self.orthographic:
+            half=self.distance*math.tan(math.radians(20))
+            projection.ortho(-half*aspect,half*aspect,-half,half,.03,2000.)
+        else:projection.perspective(40,aspect,.03,2000.)
+        view=np.eye(4);view[:3,:3]=basis*np.array([[1],[1],[-1]])
+        view[:3,3]=-view[:3,:3]@eye
+        return projection*QMatrix4x4(*view.ravel().tolist())
+
     def project(self, points):
         eye, basis = self._paint_camera if self._paint_camera is not None else self.camera()
         view = (np.asarray(points) - eye) @ basis.T
         focal = self.height() * 0.5 / math.tan(math.radians(20))
-        depth = np.maximum(view[..., 2], 0.03)
+        depth = self.distance if self.orthographic else np.maximum(view[..., 2], 0.03)
         xy = np.stack([self.width() / 2 + view[..., 0] * focal / depth,
                        self.height() / 2 - view[..., 1] * focal / depth], axis=-1)
         return xy, view[..., 2], focal
@@ -482,9 +503,9 @@ class MotionView(ViewportBase):
         if event.buttons() & Qt.LeftButton and not event.modifiers() & Qt.ShiftModifier:
             self.yaw -= delta.x() * 0.008
             self.pitch = np.clip(self.pitch + delta.y() * 0.006, -1.45, 1.55)
-            if self.view_name != "Perspective":
-                self.view_name = "Perspective"
-                self.view_changed.emit("Perspective")
+            if self.view_name not in ("Perspective","Orthographic"):
+                self.view_name = "Orthographic" if self.orthographic else "Perspective"
+                self.view_changed.emit(self.view_name)
         elif event.buttons() & (Qt.RightButton | Qt.MiddleButton | Qt.LeftButton):
             _, basis = self.camera()
             scale = 2 * self.distance * math.tan(math.radians(20)) / max(1, self.height())
@@ -554,7 +575,7 @@ class MotionView(ViewportBase):
                 if key not in self.character_renderers:self.character_renderers[key]=CharacterRenderer()
                 renderer=self.character_renderers[key]
                 renderer.load(data['asset'],data['palette']);renderer.deform(matrix,(key,frame))
-                renderer.draw(*self._paint_camera,self.width(),self.height(),transform=transform,clear_depth=clear,material_overrides=character.get('preview_materials'))
+                renderer.draw(*self._paint_camera,self.width(),self.height(),transform=transform,clear_depth=clear,material_overrides=character.get('preview_materials'),mvp=self.camera_mvp())
                 if self.show_names:
                     from .name_overlay import character_points
                     points=character_points(data['asset'].get('name_samples'),matrix,
@@ -670,7 +691,7 @@ class MotionView(ViewportBase):
         view=clip_polygon(corners,eye,basis)
         if len(view)>=3:
             focal=self.height()*.5/math.tan(math.radians(20))
-            xy=view[:,:2]*focal/view[:,2:]
+            xy=view[:,:2]*focal/(self.distance if self.orthographic else view[:,2:])
             xy[:,0]+=self.width()/2;xy[:,1]=self.height()/2-xy[:,1]
             tint=QColor(COLOR);tint.setAlpha(24)
             painter.setBrush(tint);painter.setPen(Qt.NoPen)
@@ -705,7 +726,7 @@ class MotionView(ViewportBase):
                         clipped.append(a+(b-a)*((.08-a[2])/(b[2]-a[2])))
                 view=np.asarray(clipped)
             focal=self.height()*.5/math.tan(math.radians(20))
-            xy=view[:,:2]*focal/view[:,2:]
+            xy=view[:,:2]*focal/(self.distance if self.orthographic else view[:,2:])
             xy[:,0]+=self.width()/2
             xy[:,1]=self.height()/2-xy[:,1]
             color=QColor(colors[side]);color.setAlpha(125)
@@ -748,7 +769,7 @@ class MotionView(ViewportBase):
                 if self.mesh_binding is not None:self.mesh_renderer.bind_skin(self.mesh_binding)
                 self.mesh_renderer.deform(self.mesh_frames[index],(str(self.path),id(self.mesh_frames),index))
                 self.mesh_renderer.draw(*self._paint_camera,self.width(),self.height(),
-                    (self.body_color.redF(),self.body_color.greenF(),self.body_color.blueF()),transform=self.single_transform)
+                    (self.body_color.redF(),self.body_color.greenF(),self.body_color.blueF()),transform=self.single_transform,mvp=self.camera_mvp())
                 self.mesh_presented_index = index
             except Exception as error:
                 self.mesh_error = "Cannot render SMPL-X Mesh: " + str(error)
@@ -826,7 +847,7 @@ class MotionView(ViewportBase):
                     renderer.deform(mesh[frame],(str(take.project),id(mesh),frame))
                     color=QColor(self.scene_colors.get(take.ident,'#b5b5b5'))
                     renderer.draw(*self._paint_camera,self.width(),self.height(),
-                        (color.redF(),color.greenF(),color.blueF()),transform=take.transform,clear_depth=slot==0)
+                        (color.redF(),color.greenF(),color.blueF()),transform=take.transform,clear_depth=slot==0,mvp=self.camera_mvp())
                     self.scene_presented[take.ident]=(str(take.project),frame)
                     if take.ident==self.scene_selected:self.mesh_presented_index=frame
                 for ident in list(self.scene_renderers):
@@ -875,7 +896,7 @@ class MotionView(ViewportBase):
                     factor = (0.08 - behind[:, 2]) / (front[:, 2] - behind[:, 2])
                     view[mask, endpoint] = behind + (front - behind) * factor[:, None]
             focal = self.height() * 0.5 / math.tan(math.radians(20))
-            xy = view[:, :, :2] * focal / np.maximum(view[:, :, 2:], 0.08)
+            xy = view[:, :, :2] * focal / (self.distance if self.orthographic else np.maximum(view[:, :, 2:], 0.08))
             xy[:, :, 0] += self.width() / 2
             xy[:, :, 1] = self.height() / 2 - xy[:, :, 1]
             painter.setPen(QPen(QColor(color), width, Qt.SolidLine, Qt.RoundCap))
@@ -893,7 +914,7 @@ class MotionView(ViewportBase):
             if self._checker_texture is None or self._checker_tile_size != self.checker_floor_tile_size:
                 self._checker_texture=texture(int(np.ceil(2*self.GRID_HALF_EXTENT/self.checker_floor_tile_size)))
                 self._checker_tile_size=self.checker_floor_tile_size
-            draw(painter,self._paint_camera,self.width(),self.height(),self.grid_floor,self.GRID_HALF_EXTENT,self.checker_floor_tile_size,self._checker_texture,self.checker_floor_opacity)
+            draw(painter,self._paint_camera,self.width(),self.height(),self.grid_floor,self.GRID_HALF_EXTENT,self.checker_floor_tile_size,self._checker_texture,self.checker_floor_opacity,ortho_distance=self.distance if self.orthographic else None)
         if self.show_grid:
             lines3d(self.grid_minor + offset, "#454545", .65)
             lines3d(self.grid_major + offset, "#515151", 1.0)
@@ -936,7 +957,7 @@ class MotionView(ViewportBase):
             for foot in (joints[7], joints[8]):
                 center2d, z, _ = self.project([foot[0], floor + 0.005, foot[2]])
                 if z > 0.08:
-                    size = focal * 0.13 / z
+                    size = focal * 0.13 / (self.distance if self.orthographic else z)
                     shadow = QRadialGradient(QPointF(*center2d), size)
                     shadow.setColorAt(0, QColor(0, 0, 0, 95))
                     shadow.setColorAt(1, QColor(0, 0, 0, 0))
@@ -989,7 +1010,7 @@ class MotionView(ViewportBase):
             painter.drawText(self.rect().adjusted(25,60,-25,-60),Qt.AlignCenter|Qt.TextWordWrap,
                 self._empty_people_notice)
         painter.setPen(QColor("#ffffff"))
-        painter.drawText(18, 23, "User Perspective" if self.view_name == "Perspective" else self.view_name + " Perspective")
+        painter.drawText(18, 23, ("User" if self.view_name in ("Perspective","Orthographic") else self.view_name) + (" Orthographic" if self.orthographic else " Perspective"))
         if correction_plane_visible:
             from .floor_overlay import COLOR,label
             title,status=label(self.correction_floor,self.grid_floor,self.correction_floor_auto,

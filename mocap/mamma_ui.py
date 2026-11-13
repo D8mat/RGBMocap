@@ -347,7 +347,7 @@ class MammaWorkspace:
         self.mamma_camera_note.setText(message[:240]+('…' if len(message)>240 else ''))
         self.mamma_camera_note.setToolTip(message)
         self.mamma_camera_note.setVisible(manual)
-        self.mamma_camera_import.setEnabled(not self.busy);self.mamma_camera_export.setEnabled(not self.busy);self.mamma_camera_editor.setEnabled(not self.busy);self.mamma_camera_restore.setEnabled(not self.busy);self.mamma_tags.setEnabled(not self.busy);self.mamma_calculate.setEnabled(not self.busy)
+        self.mamma_camera_import.setEnabled(not self.busy)
         self.mamma_camera_mode.setEnabled(not self.busy)
         self.mamma_height.setEnabled(not self.busy and not manual)
         self.mamma_people.setEnabled(not self.busy)
@@ -416,7 +416,7 @@ class MammaWorkspace:
             except (OSError,ValueError,RuntimeError) as error:
                 self.mamma_setup_notice.setText(str(error));self.mamma_setup_notice.show()
                 self.run_button.setEnabled(False)
-            self.mamma_camera_import.setEnabled(not self.busy);self.mamma_camera_export.setEnabled(not self.busy);self.mamma_camera_editor.setEnabled(not self.busy);self.mamma_camera_restore.setEnabled(not self.busy);self.mamma_tags.setEnabled(not self.busy);self.mamma_calculate.setEnabled(not self.busy)
+            self.mamma_camera_import.setEnabled(not self.busy)
             self.mamma_camera_mode.setEnabled(not self.busy)
         else:
             self.run_button.setToolTip('Create 3D motion for checked people in the trimmed video range using the selected model.')

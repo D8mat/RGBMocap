@@ -111,4 +111,4 @@ third_party/**/.git/
 /temp/
 
 # Bundled character for Import Puppet
-!assets/characters/rgb_mocap_puppet_V4.fbx
+!assets/characters/rgb_mocap_puppet_V5.fbx
