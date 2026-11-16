@@ -1,3 +1,5 @@
+This is a fork with custom modifications. Original project by [toyxyz](https://github.com/toyxyz/toyxyz_RGBMocap).
+
 # RGB MoCap
 
 ![RGB MoCap workspace showing video tracking and a 3D motion preview](docs/images/rgbmocap-workspace.png)
@@ -98,7 +100,14 @@ For optional text-prompt and click-guided **Find person** tracking on Windows,
 run `Setup_SAM31.cmd` after the base setup. Then choose **SAM 3.1** next to
 **Find person** and use **Auto Download** on its 1.75 GB checkpoint row in
 **Model Manager**. SAM 3.1 uses more VRAM than **Default** tracking.
+**Resource Mode > Automatic** can offload tracking state and masks to system
+RAM when VRAM is tight and retry once after CUDA runs out of memory.
 See the [SAM 3.1 tracker guide](docs/models/SAM31.md#vram-use).
+
+**Track Face** adds CPU face tracking for saved video. The 3D viewport shows
+facial landmarks on SMPL-X, SMPL-H and SOMA surfaces. **Export Face** saves
+ARKit-style coefficients alongside the chosen motion as TXT or Unreal Live Link Face CSV.
+See [Face capture](docs/USER_GUIDE.md#face-capture).
 
 ### Install with an AI agent
 
@@ -141,9 +150,10 @@ do not put passwords or account tokens in the agent chat.
 - Reconstruct one or several people and preview the body mesh and animation bones.
 - Reduce sliding with foot/palm contact correction and editable contact timings.
 - Retarget motion to Mixamo FBX, VRM and PMX humanoid characters.
-- Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with optional leading T-pose, per-person origin placement and symmetrical rest pose; export characters as FBX with or without meshes,
+- Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with FBX A/T reference poses, an optional leading reference frame, per-person origin placement and symmetrical rest pose; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
+- Export the current take, all takes for checked people, or individual takes. The export dialog shows what to do for each unavailable take. [Export guide](docs/USER_GUIDE.md#fbx-and-blender)
 - Stream selected people's bones to Blender during playback or scrubbing, then bake their full recorded motion into Blender Actions. [Download the Blender add-on ZIP](blender_addon/rgbmocap_bone_stream.zip?raw=1) · [Installation and controls](docs/USER_GUIDE.md#stream-bones-to-blender)
 - Preview and correct GEM-X's native SOMA motion, retarget to humanoid characters, and export the Native77 skeleton as FBX or BVH. The Blender bundle includes the evaluated surface and input video.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).

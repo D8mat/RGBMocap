@@ -168,13 +168,51 @@ shared People publishing code and a discovery identity covering the media,
 tracker implementation, checkpoint, prompt and relevant frame/markers. Preserve
 the previous People result if a prompt or marker fails. Retain source trim
 validation and the nearest valid working frame, including the final frame of a
-high-FPS source. Keep the separate worker entry point and Resource Safety
-controls. SAM 3.1 here applies to offline discovery for the three listed models.
+high-FPS source. Keep the detector's final forward batch within the trim.
+Resource Mode can offload tracker state and mask caches to CPU RAM. The SAM 3.1
+entry point retries a fast CUDA OOM once in a fresh ExMR process and publishes
+only the completed result. Preserve Resource Safety and retain OOM recovery
+when its limits are disabled. SAM 3.1 applies to offline discovery for the three
+listed models.
 MAMMA and PromptHMR keep their reconstruction trackers, GEM-X keeps its primary
 person detector, and PEAR keeps its live detector.
 See the [recorded checks](VALIDATION.md#sam-31-person-discovery-2026-11-10).
 
 ## Standard GUI workflow
+
+The People take selector shows the saved frame range and the readiness of the
+selected motion result. Export can select exact take paths across people. Validate
+the chosen paths before opening the destination picker and again in the worker.
+Whole-scene MAMMA Blender exports and their optional face files resolve the
+same take paths. Legacy scene requests specifying only people include all of
+those people's takes.
+
+### Face capture
+
+**Track Face** starts the isolated ExMR-Python CPU worker after successful body
+processing or when enabled on a prepared project. `face_runtime.py` stages
+hash-pinned MediaPipe wheels and model assets into the optional app cache.
+`face_capture.npz` is a project-local derived file keyed to the working video
+and Person track generations. The project view stores **Track Face** separately
+from the archive. Restore the checkbox with its signal blocked so opening a
+project can reuse the archive without launching capture. **Save Project As**
+copies the archive and preserves the timestamps used to validate it.
+Per-person validity determines a deterministic
+last-observation hold on the viewport and in exports, including backward seeks.
+Keep capture off the GUI thread and never feed it into body inference or contact
+correction. MAMMA and PromptHMR locate faces in the primary camera with saved
+initial joints and the take camera. The viewport binds expression contours to
+the installed mesh surface in the same per-take transform. GEM-X retains its primary person boxes
+for new results; legacy single-person projects use CPU face search and tracking.
+Face sidecars use the selected export’s FPS and timeline offsets. The default
+TXT includes source timing and tracking status. `face_export.py` writes optional
+Live Link Face CSV in the recorded iOS ARKit column order with a 30 fps timecode
+clock and fractional frames for other export rates. The Unreal importer infers
+30 or 60 fps from the largest frame field, so keep the CSV timecode base at 30.
+Verify per-person associations, hold behavior, zero placeholders, leading frames
+and imported Level Sequence timing. For playback, open the imported sequence
+in Sequencer and bind the assembled MetaHuman actor to its Live Link subject.
+The user guide lists the controls verified in Unreal Engine 5.7.
 
 ### PromptHMR setup and verification
 
@@ -308,7 +346,7 @@ change is needed. Paired 7/14.2-second mask tests cut time 17–21%, changed RAM
 3. Choose camera and processing settings, then **Reconstruct 3D**. Processing runs on a 30 fps working clip, without changing the original video. Progress and cancellation are in the app. **Prepare Preview** rebuilds previews from existing motion without rerunning inference.
 4. Review motion and contacts. **Enable Correction** selects corrected output; Foot defaults on and Hand off for new work. Flat Ground uses a common floor; Multi Level retains inferred contact heights and does not reconstruct terrain. Inspect automatic contacts; hand contacts represent support, not hanging/object tracking.
 5. Edit L/R foot and hand intervals on the timeline, then **Apply Correction**. Pending changes are not applied until then; stale corrected export is blocked. Applying also refreshes linked retargeted characters. Correction and preview do not require fresh AI inference.
-6. **File > Export...** opens FBX/BVH/Blender format selection, the BVH-only Generic/Blender (default) or 3ds Max Biped profile, and the default-off **Add T-pose before motion** option. Multiple checked people/takes produce separate named files. Source skeleton exports use the committed 52-bone Hips hierarchy; the Biped profile renames joints in the exported copy. Optional T-pose export adds one reference frame without editing the cached motion or contacts; original motion shifts by one frame. Blender creates portable video/camera bundles; MAMMA additionally offers whole-scene PC2 bodies and every calibrated camera without a T-pose. Character exports keep their separate FBX/VMD dialog.
+6. Open **File > Export...** and select FBX, BVH or Blender. Use **Export scope** to choose the current take, all takes for checked people, or individual takes through **Choose takes…**. A blocked export lists each affected person and frame range with the cause and next action. FBX and BVH save separate files for separate takes. Blender can also combine the selected takes in one file; MAMMA whole-scene export keeps the original timeline and all calibrated cameras. The BVH profile renames joints in the exported copy when Biped is selected. An optional leading reference frame shifts the exported motion by one frame and follows the FBX A/T reference-pose choice. Character exports have their own FBX/VMD dialog.
 
 See [the full workflow and controls](USER_GUIDE.md#start-here). Do not confuse viewport toggles, automatic detection and applied motion corrections. No general scene geometry or collision reconstruction is implied.
 
@@ -343,7 +381,7 @@ projects, input media and output videos outside the public source package.
 
 See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender). Install `blender_addon/rgbmocap_bone_stream.zip` from Blender's **Add-ons > Install from Disk** menu. The ZIP contains the adjacent Python source as `rgbmocap_bone_stream/__init__.py` and the MIT license. Keep the packaged source and the hash in `installer/source-resources.json` synchronized when the add-on changes.
 
-`mocap/stream_ui.py` samples ready frames for checked offline people, independently of People visibility. Multi-person streams use each take's shared scene transform. Selecting PEAR stops the stream. `mocap/bone_stream.py` sends Blender Z-up rest and pose matrices on a background thread and keeps only the latest live snapshot. The listener binds to `127.0.0.1:49168`. Selection metadata is requested by compatible receivers.
+`mocap/stream_ui.py` samples ready frames for checked offline people, independently of People visibility. Multi-person streams use each take's shared scene transform. Selecting PEAR stops the stream. `mocap/bone_stream.py` sends Blender Z-up rest and pose matrices on a background thread and keeps only the latest live snapshot. The listener binds to `127.0.0.1` on the port selected in the Stream tab, default `49168`. The port is a session setting and **Reset** restores the default when available. Bind the replacement listener before closing an active stream so a port conflict leaves the current connection intact. The receiver must use the same port and reconnect after a successful change. Selection metadata is requested by compatible receivers.
 
 `blender_addon/rgbmocap_bone_stream.py` applies poses on Blender's main thread, within the scene and view layer chosen at Connect. The stream collection stores references to its original armatures, keyed by person and rest skeleton. Keep those references when reusing rigs. Clean checks selection and scene references again at confirmation and skips armatures used by other objects. Bake reads the recorded takes on the sender thread, writes a separate Action in Blender, and detaches only after the action is assigned successfully. The app unchecks that person after Blender acknowledges completion.
 
@@ -432,8 +470,15 @@ Reuse the existing rest-pose sampler so the final FBX keeps the original bind
 pose and writes animation keys to bones. Verify the source generation again
 before publishing the converted file. The worker owns and cleans its staging
 folder using the Blender export marker.
-The optional leading pose is animation, not a replacement bind pose; validate
-both original-frame and fractional-frame suffix poses in Blender after changes.
+Source FBX requests may set `fbx_rest_pose` to `t` or `a`, including Native77.
+Apply the pose after any symmetrical-rest geometry changes. Rotate the entire
+upper-arm subtree about the shoulder so child offsets and terminal tip offsets
+stay fixed in parent space. Write the choice to the bind-pose table and static
+arm rotations. Keep the same PreRotation and motion key values so FBX tracks
+keep their interpolation between keys. The optional first frame follows the
+selected reference. Older requests without the field use the legacy writer
+behavior. Validate the bind and keyed/fractional poses after reimport, including
+the Blender compatibility pass.
 
 ### Portable Blender export implementation
 
@@ -465,6 +510,11 @@ interval, transport the skeleton once through its existing shared placement, and
 use cameras already in that common world without applying the placement twice.
 Optional camera tracking, movement scale and background refinement affect only
 exported cameras. T-pose shifts both motion and video by one frame.
+One-file requests use a single staging bundle and assign take offsets from the
+earliest selected source start at the common export frame rate. The Blender
+builder offsets each armature action, keys take visibility and binds background
+cameras to timeline markers. Reuse identical video files and keep paths relative
+to the bundle. When enabled, the leading T-pose occupies one shared frame.
 
 `blend_multicam_export.py` adapts PR #18's full-scene pipeline: current checked
 MAMMA people/takes, full selected SMPL-X LBS surfaces streamed one frame at a
@@ -502,6 +552,12 @@ runtime dependency, source motion or contact change is part of export.
 - MAMMA retargeting must use `mocap.mamma_body.body_path(project)`, including its actor-specific folded shape data. Never substitute the standard SMPL-X body used by ExMR/GVHMR, or require that extra model for a MAMMA-only workflow.
 
 ## Projects, state and protection
+
+**Save Project As** counts shared hardlinked files once and creates any new
+links entirely inside the copy. If a destination cannot create a hardlink,
+recheck the space budget before falling back to copying. Keep project manifests
+independent so staging can rewrite location metadata. Character index writes
+preserve unreadable input files before committing a replacement.
 
 - Default projects live under `<installation>/projects/`; **Save Project As** creates and switches to a copy at a user-selected location. Open the saved `project.json` using **File > Open Project**. A project contains model-specific `exmr`, `flowhmr`, `gvhmr`, `mamma` or `prompthmr` result folders; model switching loads existing results when available. MAMMA saves all input camera videos. People, takes, contact edits and imported characters are project data.
 - `models/`, `projects/`, `cache/`, `character_scenes/`, `runtime*/` and `.setup/` are local data, not source artifacts. User project folders can also be outside the checkout. Never assume `.gitignore` protects a path that was already tracked or will be force-added. Check `git status` and tracked files before committing; do not upload model weights, video, personal data, credentials, generated motion or caches. Explicitly approved README sample assets are exceptions.
@@ -873,6 +929,10 @@ The GUI uses separate incremental UTF-8 decoders for each worker channel and
 character job. Preserve decoder state between pipe chunks and flush at EOF;
 never decode each arbitrary chunk independently. Keep existing buffer limits.
 PEAR's binary IPC remains binary and must not pass through these decoders.
+Single and batch workers report the original failure even if writing an error log
+fails. Use the Windows path diagnostic for the console and preview messages.
+A GUI handler exception stops the pending queue, drains logs and releases the
+finished process. Invalid protocol lines are logged as malformed.
 
 Use `mocap.image_io.read_image` / `write_image` for filesystem-backed OpenCV
 images on Windows. They retain the existing codec and pixels, while Python
