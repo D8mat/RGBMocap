@@ -209,7 +209,7 @@ are downloaded locally; compiled camera modules and weights are not in Git.
   intentionally change poses. Export through **File > Export...** (FBX, BVH or Blender), or retarget
   to an imported character.
 
-The working video is sampled at 30 fps. The current adapter accepts **4–1,800
+The working video is sampled at 30 fps. The current adapter accepts **4–5,000
 working frames** and **up to eight people**. Available RAM/VRAM may require less.
 These are app limits, not claimed upstream limits. Long unobserved absences are
 not displayed as stationary poses or replaced with another actor.

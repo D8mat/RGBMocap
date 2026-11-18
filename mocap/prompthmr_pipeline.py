@@ -68,8 +68,8 @@ def prepare(path,job):
     cfg=configuration()
     if missing('prompthmr_assets'):raise ValueError('Prepare the missing PromptHMR files in Model Manager first.')
     info=probe(Path(job['video']));n=round((job['end']-job['start'])*30)
-    if job['end']>info['duration']+1e-3 or not 4<=n<=1800:
-        raise ValueError('Use a trim of 4–1,800 frames (at 30 fps) within the source video. No frames were dropped.')
+    if job['end']>info['duration']+1e-3 or not 4<=n<=5000:
+        raise ValueError('Use a trim of 4–5,000 frames (at 30 fps) within the source video. No frames were dropped.')
     identity=dict(version=1,input=dict(path=job['video'],stat=file_stat(job['video'])),start=job['start'],frames=n,
         options=job['options'],models={k:file_stat(BY_KEY[k].path) for k in KEYS},runtime=cfg['managed_id'],engine=cfg['engine_files'],
         code={name:inference_code_hash(ROOT/'mocap'/name) for name in ('prompthmr_pipeline.py','image_io.py')})

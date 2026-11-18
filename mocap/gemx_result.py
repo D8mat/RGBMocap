@@ -41,7 +41,7 @@ def current(project, state=None):
         record = json.loads(receipt.read_text(encoding='utf-8'))
         return (record['version'] == 1 and record['skeleton'] == 'soma-native77'
                 and record['frames'] == state['frames']
-                and record['fps'] == state['fps'] == FPS and 4 <= state['frames'] <= 1800
+                and record['fps'] == state['fps'] == FPS and 4 <= state['frames'] <= 5000
                 and state['pipeline']['model'] == 'gemx' and state['pipeline']['result'] in ('initial', 'corrected_initial')
                 and set(record['outputs']) == set(FILES)
                 and all(file_stat(project / name) == record['outputs'][name] for name in FILES))

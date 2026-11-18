@@ -683,7 +683,7 @@ instead of an invented percentage. FlowHMR is limited to 5,000 frames per take
 (about 166.7 seconds); available memory may require a shorter clip. MAMMA's
 adapter accepts 4–5,000 common frames and at most eight people. It requires
 two or more synchronized fixed-camera videos, with no fixed camera-count
-maximum. PromptHMR accepts one fixed- or moving-camera video, 4–1,800 working frames at
+maximum. PromptHMR accepts one fixed- or moving-camera video, 4–5,000 working frames at
 30 fps and up to eight people. Four thumbnails per row is only a layout choice. These limits do not
 guarantee that a workload fits RAM or VRAM.
 
@@ -1198,3 +1198,27 @@ Overlay images are capped at 640 pixels on the longest edge while retaining the
 full mesh topology. Disabled extra views release their decoders; turning the
 overlay off releases its GPU resources. This is an interactive preview, not a
 new composite-video export mode.
+
+
+### Camera video planes in the 3D viewport
+
+Enable **Camera Video** beside **Camera** in the 3D viewport footer to show the currently previewed
+video on a reference plane at its saved camera. Select the camera in the existing
+video controls. In MAMMA, the active camera and visible auxiliary videos (up to
+four) can appear together. Duplicate camera selections draw only one plane.
+Saved camera calibration and a reconstructed project are required; PEAR and
+GEM-X do not expose this control. Perspective and orthographic views are supported.
+
+These are reference cards drawn behind character overlays, not depth-tested
+scene meshes. They use the saved camera intrinsics and pose; **Motion x** follows
+the existing approximate camera displacement display. No camera calibration,
+actor motion or reconstruction data is modified. Frames come from the existing
+video decoders, without opening additional video streams. A camera plane waits
+for the matching timeline frame instead of displaying an out-of-sync image.
+
+For multiple MAMMA videos, **Extra videos: 360p / 720p** controls auxiliary preview
+resolution. The default 360p uses a 16 MiB cache and one decoder thread per extra
+view; 720p uses 64 MiB. The primary view retains its existing quality. Original
+files, AI input resolution and source animation exports are unchanged. Hidden
+auxiliary panes stop their decoders. Actual playback speed still depends on video
+codec, source resolution and machine load.

@@ -4,7 +4,7 @@ import time
 import numpy as np
 from PySide6.QtCore import QThread,Signal,Qt,QPointF
 from PySide6.QtGui import QPainter,QPen,QColor
-from PySide6.QtWidgets import QDoubleSpinBox
+from PySide6.QtWidgets import QDoubleSpinBox,QCheckBox
 from .viewer import VideoView
 from .camera_tracks import at,load,centers
 
@@ -108,9 +108,32 @@ class CameraTools:
         self.scale.setPrefix('Motion x ');self.scale.setSpecialValueText('Rotation only');self.scale.setMaximumWidth(150)
         self.scale.setToolTip('Estimated camera movement: 1 uses the stored estimate, 0 fixes the camera center. Adjust the approximate distance scale. Camera gizmos only; video overlays and motion are unchanged.')
         header.addWidget(self.scale);self.scale.hide();self.scale.valueChanged.connect(self.scale_changed)
+        self.video_planes=QCheckBox('Camera Video')
+        self.video_planes.setToolTip('Show the currently previewed camera videos on their saved camera planes in 3D. Shares decoded frames; no extra video streams. Reference display, not scene geometry.')
+        self.video_planes.toggled.connect(self.sync)
+        w.motion_view.camera_video_provider=self.plane_frames
         self.loader=CameraLoader(w);self.loader.ready.connect(self.loaded);self.loader.failed.connect(self.failed);self.loader.activity.connect(self.activity);self.loader.start()
         w.video_view.frame_presented.connect(self.canvas.mirror)
         w.video_view.projected_overlay=self.paint_video_overlay
+    def plane_frames(self):
+        w=self.w
+        if not self.video_planes.isChecked() or not self.data or w.busy or not w.info:return []
+        source=w.video_view
+        if source.external_mode or source.frame is None:return []
+        panel=getattr(w,'mamma_video_pair',None)
+        videos=panel.all_videos if self.data['model']=='mamma' and hasattr(panel,'all_videos') else [source]
+        cameras={c['name']:c for c in self.data['cameras']}
+        result=[];seen=set()
+        for n,video in enumerate(videos):
+            if n and not video.isVisible():continue
+            if video.frame is None or video.index!=source.index:continue
+            ident=panel.camera_id(n) if self.data['model']=='mamma' else self.data['cameras'][0]['name']
+            if ident in seen or ident not in cameras:continue
+            camera=cameras[ident]
+            matrix=at(camera,w.motion_view.scene_time,self.scale.value())
+            if matrix is not None:result.append((camera,matrix,video.frame));seen.add(ident)
+        return result
+
     def background_options(self):
         return {model:bool(getattr(self.w,model+'_background',None) and getattr(self.w,model+'_background').isChecked()) for model in ('flowhmr','exmr')}
     def restore_background(self,values):
@@ -132,9 +155,10 @@ class CameraTools:
         if name!='Camera Preview':self.w.motion_view.set_view(name)
         else:self.canvas.mirror()
         self.sync()
-    def sync(self):
+    def sync(self,*_):
         w=self.w;view=w.motion_view;pear=getattr(w,'_pear_active',False)
         native_soma=w.model_choice.currentData()=='gemx'
+        self.video_planes.setVisible(not pear and not native_soma)
         self.scale.setVisible(bool(self.data and not pear and view.show_cameras and not self.preview() and any(c['displacement'] is not None for c in self.data['cameras'])))
         item=w.view_choice.model().item(w.view_choice.findText('Camera Preview'))
         if item is not None:item.setEnabled(not pear and not native_soma)
@@ -144,11 +168,11 @@ class CameraTools:
         left=w.video_view.show_observations and w.project is not None and w.preview_data is not None
         panel=getattr(w,'mamma_video_pair',None)
         overlay=panel is not None and hasattr(panel,'overlay_wanted') and panel.overlay_wanted()
-        wanted=(view.show_cameras or self.preview() or left or overlay) and not pear and not native_soma
+        wanted=(view.show_cameras or self.video_planes.isChecked() or self.preview() or left or overlay) and not pear and not native_soma
         background=self.background_options().get(w.model_choice.currentData(),False)
         key=(str(w.project),str(w.people_root),id(w.preview_data),bool(w.busy),pear,wanted,background)
         if key==self.key:
-            self.canvas.mirror();return
+            self.canvas.mirror();view.update();return
         self.key=key;self.loader.cancel();self.token=self.loader.generation;self.data=None;self.scale.hide()
         view.camera_records=[];view.camera_message='';self.canvas.frame=None;self.canvas.pair=None
         self.message=''
@@ -225,4 +249,5 @@ class CameraTools:
                 painter.drawText(rect.adjusted(12,10,-12,-12),Qt.AlignTop|Qt.TextWordWrap,message)
         finally:painter.restore()
     def close(self):
+        self.w.motion_view.camera_video_provider=None
         self.loader.close();self.w.video_view.projected_overlay=None;self.data=None;self.w.motion_view.camera_records=[];self.canvas.shutdown();self.canvas.frame=None

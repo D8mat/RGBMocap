@@ -31,6 +31,7 @@ class VideoView(QWidget):
         self.boxes = self.observed = self.keypoints = self.confidence = None
         self.index = 0
         self.requested_index = 0
+        self.preview_decode_options={}
         self.decoder = None
         self.source_size = (1, 1)
         self.generation = 0
@@ -146,7 +147,7 @@ class VideoView(QWidget):
         self.frame = None
         self.boxes = self.observed = self.keypoints = self.confidence = None
         if self.decoder is None:
-            self.decoder = PreviewDecoder(parent=self)
+            self.decoder = PreviewDecoder(parent=self,**self.preview_decode_options)
             self.decoder.available.connect(self._available)
             self.decoder.opened.connect(self._opened)
             self.decoder.failed.connect(self._failed)

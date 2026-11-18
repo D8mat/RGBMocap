@@ -43,8 +43,8 @@ class GemXWorkspace:
                 self.open_model_manager()
                 return
             start, end = self.processing_range()
-            if end - start > 60.001 or round((end - start) * 30) < 4:
-                raise ValueError('Trim to 4–1,800 frames at 30 fps (up to 60 seconds).')
+            if not 4 <= round((end - start) * 30) <= 5000:
+                raise ValueError('Trim to 4–5,000 frames at 30 fps (up to 166.7 seconds).')
             root = self.workspace_root or PROJECTS / (
                 self.video_path.stem[:80] + '_' +
                 project_key(self.video_path, 0, self.info['duration']) + '_project')

@@ -13,7 +13,7 @@ class PreviewDecoder(QThread):
     opened = Signal(int, object)
     failed = Signal(int, str)
 
-    def __init__(self, path=None, parent=None, budget_bytes=64 * 1024**2):
+    def __init__(self, path=None, parent=None, budget_bytes=64 * 1024**2, max_size=(1280,720), decoder_threads=2):
         super().__init__(parent)
         self.condition = Condition()
         self.cache = OrderedDict()
@@ -21,6 +21,7 @@ class PreviewDecoder(QThread):
         self.stopping = False
         self.capacity = 24
         self.budget = budget_bytes
+        self.max_size=max_size;self.decoder_threads=decoder_threads
         self.seek_count = self.decoded_count = 0
         self.generation = 0
         self.path = str(path) if path else None
@@ -88,7 +89,7 @@ class PreviewDecoder(QThread):
                         if capture is not None:
                             capture.release()
                         capture = cv2.VideoCapture(path, cv2.CAP_FFMPEG,
-                            [cv2.CAP_PROP_N_THREADS, 2, cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 1500,
+                            [cv2.CAP_PROP_N_THREADS, self.decoder_threads, cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 1500,
                              cv2.CAP_PROP_READ_TIMEOUT_MSEC, 1500])
                         if not capture.isOpened():
                             raise ValueError("Cannot open the video.")
@@ -128,13 +129,13 @@ class PreviewDecoder(QThread):
                     if self._obsolete(generation, wanted):
                         continue
                     height, width = frame.shape[:2]
-                    scale = min(1.0, 1280 / width, 720 / height,
+                    scale = min(1.0, self.max_size[0] / width, self.max_size[1] / height,
                                 math.sqrt(self.budget / (4 * 3 * width * height)))
                     if scale < 1:
                         frame = cv2.resize(frame, (max(1, int(width * scale)), max(1, int(height * scale))),
                                            interpolation=cv2.INTER_AREA)
-                    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    image = QImage(rgb.data, rgb.shape[1], rgb.shape[0], rgb.strides[0], QImage.Format_RGB888).copy()
+                    # Qt supports BGR directly; avoid a second full-frame conversion.
+                    image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888).copy()
                     with self.condition:
                         if generation != self.generation:
                             continue

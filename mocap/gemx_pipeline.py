@@ -107,9 +107,9 @@ def reconstruct(request, cfg):
     local_start = start - offset
     length = round((end-start)*FPS)
     if (job.get('version') != 1 or not math.isfinite(start) or not math.isfinite(end)
-            or not math.isfinite(offset) or not 0 <= local_start < end-offset <= source['duration'] + .002 or not 4 <= length <= 1800
-            or end-start > 60.001):
-        raise ValueError('Select 4–1,800 frames at 30 fps, up to 60 seconds, within the video.')
+            or not math.isfinite(offset) or not 0 <= local_start < end-offset <= source['duration'] + .002 or not 4 <= length <= 5000
+            or end-start > 5000/FPS + .001):
+        raise ValueError('Select 4–5,000 frames at 30 fps, up to 166.7 seconds, within the video.')
     if missing('gemx_assets'):
         raise ValueError('Prepare the required GEM-X files in Model Manager.')
     model_keys = ('gemx_pose', 'gemx_observations', 'gemx_motion', 'gemx_stats', 'gemx_detector',

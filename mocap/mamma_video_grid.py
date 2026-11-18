@@ -44,8 +44,23 @@ class MammaVideoGrid(MammaVideoPair):
         self.count.currentIndexChanged.connect(self.layout_changed)
         self.mode.currentIndexChanged.connect(self.overlay_changed)
         self.opacity.valueChanged.connect(self.repaint_videos)
+        self.quality=QComboBox()
+        self.quality.addItem('Extra videos: 360p',360);self.quality.addItem('Extra videos: 720p',720)
+        self.quality.setToolTip('Resolution of auxiliary video previews only. The main video, source files and reconstruction keep their quality. 360p reduces resize, drawing and cache costs.')
+        self.controls.layout().addWidget(self.quality)
+        self.quality.currentIndexChanged.connect(self.quality_changed)
+        for video in self.all_videos[1:]:
+            video.preview_decode_options=dict(max_size=(640,360),budget_bytes=16*1024**2,decoder_threads=1)
+            video.frame_presented.connect(lambda *_:owner.motion_view.update())
         self._extra_entries=None;self._overlay_source=None
         self.refresh()
+
+    def quality_changed(self,*_):
+        high=self.quality.currentData()==720
+        for video in self.all_videos[1:]:
+            video.shutdown()
+            video.preview_decode_options=dict(max_size=(1280,720) if high else (640,360),budget_bytes=(64 if high else 16)*1024**2,decoder_threads=1)
+        self.key=None;self.extra_keys=[None,None];self.refresh()
 
     def camera_id(self,n):
         inputs=getattr(self.owner,'mamma_inputs',[])

@@ -206,6 +206,7 @@ def build_workspace(w):
             w.motion_view.update()
         check.toggled.connect(toggle)
         viewport_footer.addWidget(check)
+        if attribute=='show_cameras':viewport_footer.addWidget(w.camera_tools.video_planes)
         if attribute=='checker_floor':
             w.floor_opacity=QSpinBox();w.floor_opacity.setRange(0,100);w.floor_opacity.setSuffix(' %')
             w.floor_opacity.setValue(round(w.motion_view.checker_floor_opacity*100))

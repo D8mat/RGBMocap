@@ -65,8 +65,8 @@ def discover(project, prompt, anchor_time, points, emit, *, force_offload=False)
     count, width, height = (manifest.get(key) for key in ('frames', 'width', 'height'))
     if any(type(value) is not int or value < 1 for value in (count, width, height)):
         raise ValueError('SAM 3.1 needs the prepared working video for this motion model.')
-    if not 1 <= count <= 1800:
-        raise ValueError('Trim SAM 3.1 discovery to 1,800 working frames or fewer.')
+    if not 1 <= count <= 5000:
+        raise ValueError('Trim SAM 3.1 discovery to 5,000 working frames or fewer.')
     seed = 0
     if points:
         if not manifest['start'] <= anchor_time < manifest['end']:

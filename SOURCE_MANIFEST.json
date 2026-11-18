@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-16",
+  "date": "2026-11-18",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -136,8 +136,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 83773,
-      "sha256": "33e85a7928a4516830bbcdc2cb3f81e5d99b6abc4d05fae84f5f5de3097e6408"
+      "bytes": 83776,
+      "sha256": "cda87352042cff5b529cf498e15834f2c20e92f92d077fa1df3b5b9518ab2d39"
     },
     {
       "path": "docs/BUILD.md",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 86202,
-      "sha256": "1417dce958d17eda3acb59cd90f484c1b13fd5465145f5df3f0c96d293287a0a"
+      "bytes": 87690,
+      "sha256": "da92710820c603ffd781eda9a9c29fa104d857e94531523f9594920019096816"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -237,7 +237,7 @@
     {
       "path": "docs/models/GEMX.md",
       "bytes": 7290,
-      "sha256": "14aa4755f145ffb81953c7431d68a632dab13a064e3047910f8e3e47d185f0e0"
+      "sha256": "19e4d3ee28235a0f5e6f6baff00d154e867058e5c5a8da49a84bac8585c304c3"
     },
     {
       "path": "docs/models/GVHMR.md",
@@ -252,7 +252,7 @@
     {
       "path": "docs/models/PROMPTHMR.md",
       "bytes": 20852,
-      "sha256": "de76056793eefaab35694ba7fbaac3e0b95fb3e63998ff3796c1100c24f787d8"
+      "sha256": "b3e24b258ab0db0e62d3ebb1fdeb1f81f212eb1c3ee425f1b5667b0a042b4d80"
     },
     {
       "path": "docs/models/README.md",
@@ -262,7 +262,7 @@
     {
       "path": "docs/models/SAM31.md",
       "bytes": 4846,
-      "sha256": "fe9db6e83d9701e90af7f7f1a13949b152395d44f7fdc72dbdfae1f672ed25d8"
+      "sha256": "184da3df1ba86658d733697acc0603fb2dba2a5e6d8ca7c3a08a7041702d7916"
     },
     {
       "path": "docs/samples/character-retargeting.jpg",
@@ -1316,8 +1316,13 @@
     },
     {
       "path": "mocap/camera_ui.py",
-      "bytes": 16167,
-      "sha256": "da8ec788e7a40f7ec21ea5c63138d6a01785fb7630d89d77066aba236f83109a"
+      "bytes": 17785,
+      "sha256": "5f5183c060260c0e859493e9f5a4562834e273dc82e802ea23c6d333faaaffe7"
+    },
+    {
+      "path": "mocap/camera_video_plane.py",
+      "bytes": 2410,
+      "sha256": "c6b075d44300c56a17ac2694a891527d1cdf67f2a2bda14dbfd13525a49f7e96"
     },
     {
       "path": "mocap/capture.py",
@@ -1676,13 +1681,13 @@
     },
     {
       "path": "mocap/gemx_pipeline.py",
-      "bytes": 15640,
-      "sha256": "a17c2cb7f8118435ebb019a3a0d03e474cdc99ff1824f42b0f15303eec25ea38"
+      "bytes": 15652,
+      "sha256": "e1313acae6df25cd958aceade010e48af2734542abf288d51f9546f2d3c7d640"
     },
     {
       "path": "mocap/gemx_result.py",
       "bytes": 6321,
-      "sha256": "47624241627dc4885da06360492765d2e5a5f473f08d3b5629767db25970658a"
+      "sha256": "3851516f598a2f7278530a55020f732f934a022620c0344b52ee01d2d92622a8"
     },
     {
       "path": "mocap/gemx_retarget.py",
@@ -1701,8 +1706,8 @@
     },
     {
       "path": "mocap/gemx_ui.py",
-      "bytes": 2776,
-      "sha256": "c8d26ad5d02578307f1a5ef6ec2f333c36b9c893357f38fb6a59c08291d9115d"
+      "bytes": 2768,
+      "sha256": "8a645bc7a929a11119adff6a73b815fd1e63f3ac45b6709b3bba3ee6b16ed295"
     },
     {
       "path": "mocap/gpu_offload.py",
@@ -1851,8 +1856,8 @@
     },
     {
       "path": "mocap/mamma_video_grid.py",
-      "bytes": 7901,
-      "sha256": "985017526198ae722e32bb58a50ad40581dfce3f85967aac8d418b92b7a57e39"
+      "bytes": 8967,
+      "sha256": "508c63dea85a49e0ff9df5c4700e84b58024e9ac4af5b7053a24efd78e1df6c3"
     },
     {
       "path": "mocap/memory_mode.py",
@@ -1886,8 +1891,8 @@
     },
     {
       "path": "mocap/model_guide.py",
-      "bytes": 14885,
-      "sha256": "f435c4efda823c39b48650727ef3484f2924d8523e1ac78d2378d7dd41374d90"
+      "bytes": 14920,
+      "sha256": "72eaa90d57008a76254c941c217d61bcf4d34f43175540c4af297617ecca55d8"
     },
     {
       "path": "mocap/model_session.py",
@@ -1906,8 +1911,8 @@
     },
     {
       "path": "mocap/multi_preview.py",
-      "bytes": 9635,
-      "sha256": "1047b34d3d46f5884dded204d9885f686dd2e0419d9fbb9dedf543c3dc54b0bb"
+      "bytes": 9657,
+      "sha256": "9c21f47e7cd5b8aa2a7fe481f5e24eac260c90e25473d3a8b13a092b9c96c4eb"
     },
     {
       "path": "mocap/multilevel_contacts.py",
@@ -2202,7 +2207,7 @@
     {
       "path": "mocap/prompthmr_pipeline.py",
       "bytes": 13150,
-      "sha256": "82b1d570030f4858683064d10a214be1ded4b1d93de190d8971ad0847ac5314e"
+      "sha256": "bfbc098342e0a0c02e86e45a39b2a35fd9291c37d7a71000fb23fd1e40acaba3"
     },
     {
       "path": "mocap/prompthmr_publish.py",
@@ -2387,7 +2392,7 @@
     {
       "path": "mocap/sam31_discovery.py",
       "bytes": 13155,
-      "sha256": "7a56352aadd295da891bfe8ee6092045186bd914fe64c0f4aba3b589025f8466"
+      "sha256": "7eb2854b077b412439f836cb6d658b3dca8bb8e7dd5989b12840ef159790fbf2"
     },
     {
       "path": "mocap/sam31_engine.py",
@@ -2561,18 +2566,18 @@
     },
     {
       "path": "mocap/video_preview.py",
-      "bytes": 7710,
-      "sha256": "44ef1de1cfe752e35ddf62afd29e7a17709f1450a486af5ec35d7101c8b6e55f"
+      "bytes": 7892,
+      "sha256": "885c303a64158ce3487fe1aa8722ff8b7dd3d71b2e7c15855f3233333e53bf78"
     },
     {
       "path": "mocap/viewer.py",
-      "bytes": 11682,
-      "sha256": "93303e77847ca23f0c05a45876a633aa7170edfaee3101dbcf1eda13314eab3d"
+      "bytes": 11752,
+      "sha256": "d2d7120add0ab2868281c6e75fecb5f237e05c55dca09cdab10a57cd3664e326"
     },
     {
       "path": "mocap/viewport.py",
-      "bytes": 59296,
-      "sha256": "8e3a804a8b9535ff8fbbe64702cfcc17422789bfbf20db59ba91b68de79e586d"
+      "bytes": 59499,
+      "sha256": "520398c5eabe4eee9a1cd6316a992022c5c5e6d854404dd65b57108fbd9ed62f"
     },
     {
       "path": "mocap/worker.py",
@@ -2586,8 +2591,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 44740,
-      "sha256": "2fb5fd8fc2f9d836327d6791fc4af2e71462dcc776cd622e6627325a63112b5c"
+      "bytes": 44833,
+      "sha256": "325b5dff5c0c488f949c667ee640af03f25e64d431b1bd55afadb728d614363b"
     },
     {
       "path": "native_compat/LICENSE",

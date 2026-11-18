@@ -79,8 +79,8 @@ class MotionView(ViewportBase):
         self.view_name = "Perspective"
         self.orthographic = False
         self.show_grid = True
-        self.checker_floor = False
-        self.checker_floor_opacity = .5
+        self.checker_floor = True
+        self.checker_floor_opacity = .2
         self.checker_floor_tile_size = self.GRID_SPACING
         self._checker_tile_size = None
         self._checker_texture = None
@@ -92,6 +92,7 @@ class MotionView(ViewportBase):
         self.show_trajectory = True
         self.show_foot_locks = True
         self.show_names = True
+        self.camera_video_provider=None
         self.show_cameras=False;self.camera_records=[];self.camera_message='';self.camera_translation_scale=0.
         self.actor_name = 'Person 1'
         self.scene_names = {}
@@ -925,6 +926,9 @@ class MotionView(ViewportBase):
         painter.setRenderHint(QPainter.Antialiasing, True)
         if self.live_active:
             painter.setPen(QColor("#dddddd"));painter.drawText(self.rect(),Qt.AlignCenter|Qt.TextWordWrap,self.live_message);painter.end();return
+        if self.camera_video_provider is not None:
+            from .camera_video_plane import draw
+            draw(self,painter,self.camera_video_provider())
         correction_plane_visible=self.draw_correction_floor(painter,lines3d)
         self.name_labels_presented=[]
         bone_actors=[]

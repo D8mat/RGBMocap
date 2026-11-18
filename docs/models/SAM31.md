@@ -35,7 +35,7 @@ live detector.
 
 ## Track people
 
-1. Open a video and trim it to at most **1,800 working frames** at 30 fps
+1. Open a video and trim it to at most **5,000 working frames** at 30 fps
    (about one minute). If you plan to mark people, pause at a clear frame
    inside the trim where they are visible.
 2. Select **SAM 3.1** and click **Find person**. Enter a text prompt and

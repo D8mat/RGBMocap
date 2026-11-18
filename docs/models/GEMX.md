@@ -36,7 +36,7 @@ an update, rerun `Setup_GEMX.cmd`.
 ## Reconstruct and export
 
 1. Use **File > Open Video**. Keep the camera fixed and the intended person
-   visible. Choose a trim of 4–1,800 frames at the working rate of 30 fps.
+   visible. Choose a trim of 4–5,000 frames at the working rate of 30 fps.
 2. Click **Reconstruct 3D**. GEM-X detects the primary person automatically
    and runs 2D observations, body features, temporal motion and native geometry
    evaluation. Play the result in the normal timeline. **Bone Overlay** shows
