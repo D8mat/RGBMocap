@@ -112,3 +112,13 @@ LICENSE-WEIGHTS is retained with support files. No TensorRT engine/runtime is di
 Face capture and setup adapted from [Chamiseul_RGBMocap](https://github.com/mayalhc/Chamiseul_RGBMocap/commit/f5eccc5ff7c64d6f420415068c4a75e27b58fe69), MIT; full notice in [docs/FACE_CAPTURE.md](docs/FACE_CAPTURE.md). Google MediaPipe Face Landmarker uses Apache-2.0. Optional dependencies retain their packaged licenses.
 
 MediaPipe face landmark connection topology is adapted from `tasks/python/vision/face_landmarker.py` (MediaPipe 1.2.2), Copyright 2023 The MediaPipe Authors. Connections are converted to sorted unique undirected JSON edge pairs. See [Apache license](docs/licenses/mediapipe-LICENSE.txt) and [upstream notices](docs/licenses/mediapipe-NOTICE.txt).
+
+
+## Toyxyz Blender Retargeter 0.4.30
+
+Original: https://github.com/toyxyz/toyxyz-blender-retargeter
+Source and GPL-3.0-or-later license are retained under
+`third_party/toyxyz_retargeter/toyxyz_live_retarget/`.
+Local changes adapt Action-curve groups to Blender 4.5, lower the declared
+minimum to 4.5, and add an explicit Puppet V5 Hips-to-Reference mapping preset.
+The optional integration invokes the add-on in the Blender character worker.

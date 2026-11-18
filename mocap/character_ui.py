@@ -250,13 +250,14 @@ class CharacterWorkspace:
         self.update_readiness()
         self.motion_view.update()
 
-    def retarget_character(self,c,source):
+    def retarget_character(self,c,source,*,toyxyz_options=None):
         if self.busy or self.contact_saving:return
         if self.active_result.startswith('corrected_') and self.current_export() is None:
             self.status.setText('Apply contact changes before retargeting.');return
         folder=c['id']+'/animation-'+uuid.uuid4().hex
         job=dict(mode='retarget',output=str(self.character_path(folder)),asset=str(self.character_path(c['asset'])),id=c['id'],
                  animation=folder,result=self.active_result,source_name=source['name'],takes=source['takes'])
+        if toyxyz_options is not None:job['toyxyz_options']=toyxyz_options
         self.start_character_job(job)
 
     def prepare_character_refresh(self,jobs):
@@ -277,6 +278,7 @@ class CharacterWorkspace:
         job=dict(plan,mode='retarget',output=str(self.character_path(folder)),
                  asset=str(self.character_path(c['asset'])),animation=folder,
                  refresh_label=f"Updating {c['name']} · {self.character_refresh_total-len(self.character_refresh_queue)}/{self.character_refresh_total}")
+        if c.get('toyxyz_options') is not None:job['toyxyz_options']=c['toyxyz_options']
         self.start_character_job(job)
 
     def start_character_job(self,job):
@@ -351,6 +353,8 @@ class CharacterWorkspace:
                 else:
                     old=next(c for c in self.characters if c['id']==job['id'])
                     c=dict(old,animation=job['animation'],takes=result['takes'],source_name=result['source_name'],result=result['result'])
+                    if job.get('toyxyz_options') is not None:c['toyxyz_options']=job['toyxyz_options']
+                    else:c.pop('toyxyz_options',None)
                     c.pop('_starts',None)
                     c.pop('needs_retarget',None)
                     changed=[c]

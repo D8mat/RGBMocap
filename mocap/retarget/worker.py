@@ -59,7 +59,12 @@ def main(args):
             for name in [f'{kind}-rest.blend',f'{kind}-rig.json',f'{kind}-canonical.npz',f'{kind}-contact-geometry.npz','import.json']:
                 shutil.copy2(asset/name,folder/name)
             project=Path(take['project'])
-            if gemx_result.is_project(project):
+            if job.get('toyxyz_options') is not None:
+                from .toyxyz_bridge import prepare as prepare_toyxyz
+                receipt=prepare_toyxyz(project,job['result'],folder,job['toyxyz_options'])
+                invoke('bake_toyxyz',folder,kind)
+                diagnostic=dict(engine='Toyxyz 0.4.30 Blender 4.5',options=job['toyxyz_options'])
+            elif gemx_result.is_project(project):
                 from mocap.motion_tools import result_is_current
                 from mocap.gemx_correct import selected
                 if not result_is_current(project, job['result']):

@@ -609,6 +609,14 @@ def build_workspace(w):
     content_layout.addStretch()
     w.settings_scroll=scroll
     w.model_choice.currentIndexChanged.connect(w.select_model)
+    from PySide6.QtWidgets import QTabWidget
+    from .toyxyz_retarget_ui import RetargetPanel
+    tabs=QTabWidget();model_page=QWidget();page_layout=QVBoxLayout(model_page);page_layout.setContentsMargins(0,0,0,0)
+    while side_layout.count():page_layout.addItem(side_layout.takeAt(0))
+    tabs.addTab(model_page,'AI Models')
+    w.toyxyz_retarget_panel=RetargetPanel(w)
+    retarget_scroll=SettingsScrollArea();retarget_scroll.setWidgetResizable(True);retarget_scroll.setWidget(w.toyxyz_retarget_panel)
+    tabs.addTab(retarget_scroll,'Retarget');side_layout.addWidget(tabs)
     main.addWidget(sidebar)
     w.models_collapse=PanelCollapse(sidebar,main,'AI Models')
     main.setSizes([1120, 260])

@@ -61,8 +61,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 12554,
-      "sha256": "1646f28e77843ac3e2d58263109b139a69489d95a0f89cfdd93a79da5164ee0f"
+      "bytes": 13121,
+      "sha256": "a8039d21065af93c0fda6a2fea284c16990deacb8c634a51e777ae4e3b2a43ea"
     },
     {
       "path": "app.py",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 87690,
-      "sha256": "da92710820c603ffd781eda9a9c29fa104d857e94531523f9594920019096816"
+      "bytes": 90131,
+      "sha256": "7dadfe259c02408b8289c1b9094201b8570d27e8482633a5d87cc1f84633ea09"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1361,8 +1361,8 @@
     },
     {
       "path": "mocap/character_ui.py",
-      "bytes": 25278,
-      "sha256": "90a994e63f0caae6a7a86397b8269ae5922acc6da0ebb1361bf1e028a3fec622"
+      "bytes": 25625,
+      "sha256": "0ddc1ae6a32bdd2d99a34eee07f9939dea743722b1799c8a01660381a4ddd2a7"
     },
     {
       "path": "mocap/checker_floor.py",
@@ -2271,8 +2271,8 @@
     },
     {
       "path": "mocap/retarget/blender_io.py",
-      "bytes": 13274,
-      "sha256": "431cecfc0b82dea62f788ae64f33ce29bd76ec90a9bc9c08e5b42757a95360d1"
+      "bytes": 13647,
+      "sha256": "afe511f6c7c3c26af639c6070cd802cb984a9bb9adfd2706b79872c680aef4d0"
     },
     {
       "path": "mocap/retarget/blender_soma.py",
@@ -2360,14 +2360,24 @@
       "sha256": "5d31daefbd6a35a1ba3bb2adbe96c3293219ead58bc444293076501dfbab5eaa"
     },
     {
+      "path": "mocap/retarget/toyxyz_blender.py",
+      "bytes": 3064,
+      "sha256": "f9924cb09aef6cd87d1f46b47a2a6272f83807dbeb77ce305350b55b9adc9551"
+    },
+    {
+      "path": "mocap/retarget/toyxyz_bridge.py",
+      "bytes": 1356,
+      "sha256": "affde73a564f22a654b582c6946ab9b8e4f49c05237bb5a7bac1c4638c2ca5d4"
+    },
+    {
       "path": "mocap/retarget/vmd_export.py",
       "bytes": 8742,
       "sha256": "97ba9c1164a72f9250c1a024b094f4c3d627615904834f283df73e2d3f8de5f8"
     },
     {
       "path": "mocap/retarget/worker.py",
-      "bytes": 5874,
-      "sha256": "9682a9ef7480334244699264cf89b45b89a13b04352501e3fdb7c5842a87770b"
+      "bytes": 6337,
+      "sha256": "3b5288d797ab182771aac500ae92e43f0267a7668bdae81fa0f1edc90c449627"
     },
     {
       "path": "mocap/rig_gl.py",
@@ -2525,6 +2535,21 @@
       "sha256": "64ca19fa8c381fb6e1eb2c619cafd387e04b97f3567856da43ca526ecf54be52"
     },
     {
+      "path": "mocap/toyxyz_mapping.py",
+      "bytes": 2751,
+      "sha256": "356f00e60faf6791eceb95a207e5366fb8105e69c86209f1ba901a86ad609219"
+    },
+    {
+      "path": "mocap/toyxyz_mapping_ui.py",
+      "bytes": 6425,
+      "sha256": "cd60279dfa6101bf518d0ed0ba9f69797410cbcade0143e0769f47ae3862d59f"
+    },
+    {
+      "path": "mocap/toyxyz_retarget_ui.py",
+      "bytes": 7106,
+      "sha256": "790978896ae3512513a70293dd309eaa38193796c447510a55867fddb5f40989"
+    },
+    {
       "path": "mocap/ui_refresh.py",
       "bytes": 805,
       "sha256": "31264b89c10f76cc409d6d6e4fe1abe91c8a47bfa62dc9b42ea997c985282752"
@@ -2591,8 +2616,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 44833,
-      "sha256": "325b5dff5c0c488f949c667ee640af03f25e64d431b1bd55afadb728d614363b"
+      "bytes": 45418,
+      "sha256": "25071f9ff423cab6f19a503f9aae3264a1374e8095efd175fd58a137f3435bee"
     },
     {
       "path": "native_compat/LICENSE",
@@ -13278,6 +13303,116 @@
       "path": "third_party/manopth/manopth/tensutils.py",
       "bytes": 1388,
       "sha256": "87297fb5695c4472e3760ab1ec91df40a4f94254de4d3a7ed81f2a585cbafae5"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/LICENSE",
+      "bytes": 35821,
+      "sha256": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/README.md",
+      "bytes": 2068,
+      "sha256": "78414e6e61476f4dd560b6691754f72f4bb86e38e4bf5cc03c1a3e9be687de59"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/RGBMOCAP_COMPATIBILITY.md",
+      "bytes": 736,
+      "sha256": "900da34d5762a7f7487b354dac5a8b09b1d7f4d238007b59d94dc7f375239cf7"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/__init__.py",
+      "bytes": 32539,
+      "sha256": "62b9b81dc626bd7444f6e5e405554ce4ed73213bd7fa60d8e16cc8e2bf98d6ef"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/_core/__init__.py",
+      "bytes": 78,
+      "sha256": "917a2ee4398cecebfabbf69385d417707b96b48684434f9bca887a478318e7ac"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/_core/arm_reach.py",
+      "bytes": 5609,
+      "sha256": "4219af42f11e96ade6c351425c443f5c79f2f627059c966e2065e5f98ff8f744"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/_core/leg_reach.py",
+      "bytes": 17298,
+      "sha256": "af4547f85464952bcc6f01febf0af925f7fe76e20e217978035054fa0d5df800"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/_core/pose.py",
+      "bytes": 3125,
+      "sha256": "5756fda092cce6dcc99f800d2530b0d9e98b4ab10ba24a256246e2c046ef30d9"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/_core/reach_geometry.py",
+      "bytes": 2338,
+      "sha256": "4d1a1ce75f3be1bf7683ed40df3b127dac64c4a6d59a83755027c0fe3bc483a0"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/actors.py",
+      "bytes": 2193,
+      "sha256": "babb8aae79b00eaa62718d46988d25f4d739a8ed5ce1a07beb238aa30f72fcb6"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/arp_fk.py",
+      "bytes": 4289,
+      "sha256": "7d0109984afdb0a96b13acf27d98dcdf489aff5243e16de8530dc776f53566e4"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/bake.py",
+      "bytes": 20709,
+      "sha256": "b09c7ce746f7f8ba8b59a4e1578a28bc0ab13579ffac76173ceb7162945942ee"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/blender_manifest.toml",
+      "bytes": 450,
+      "sha256": "73dfefde8298882adb1a07f475f891a50e34b413693b31c67c20642f61cb342f"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/docs/USER_GUIDE.md",
+      "bytes": 17668,
+      "sha256": "04dea6aeb18a3665090760674627880febcc1b7774bfa84dd916166e7ee42b09"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/docs/images/addon-interface.png",
+      "bytes": 65141,
+      "sha256": "e144c08c2b26b4b14fa9429c7d2c18b433ee3ac4382ff1a03ebce7ac6602ca0e"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/floor_markers.py",
+      "bytes": 11536,
+      "sha256": "7e06006ab9c3ae98899b128c3dca32b2d56eb8f42b833f07449269cfd0ea453b"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/mapping.py",
+      "bytes": 16916,
+      "sha256": "c00d686ce459627bf00288d5f9cb987315f3d93a16107d8c307920d7f03f99e8"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/mapping_ui.py",
+      "bytes": 14409,
+      "sha256": "5aac40d62b13770e01e6d06ec154285854d1b8f8811e6516191e6872c34da02d"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/naming.py",
+      "bytes": 8190,
+      "sha256": "7c0828d18b90bea8c135f31afdec1b96ec5dcaa45f340086c67392cdd7fc6062"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/reference.py",
+      "bytes": 10890,
+      "sha256": "1c6f8261c314b6661f0f6afc3d512ccbbcd3bf5daad2d127a488b8e8abe7941f"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/retarget.py",
+      "bytes": 20918,
+      "sha256": "a7810291c4c49de8fb1e359b2067eb3d3c0f9db29d72269153344731525d9a4d"
+    },
+    {
+      "path": "third_party/toyxyz_retargeter/toyxyz_live_retarget/runtime.py",
+      "bytes": 21332,
+      "sha256": "11d731fbb8c0d0066a7b3aaa47c755155659ac098a03951226970c460956aaee"
     },
     {
       "path": "tools/KinectCapture.cs",

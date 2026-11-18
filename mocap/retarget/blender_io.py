@@ -184,8 +184,11 @@ def main(args):
         bpy.ops.wm.open_mainfile(filepath=io_path(out/f'{kind}-rest.blend'),load_ui=False)
         from .blender_textures import extract
         extract(out)
-    elif mode in ('bake','bake_soma'):
-        if mode=='bake_soma':
+    elif mode in ('bake','bake_soma','bake_toyxyz'):
+        if mode=='bake_toyxyz':
+            from .toyxyz_blender import bake
+            arm,keyed=bake(out,rest[0])
+        elif mode=='bake_soma':
             from .blender_soma import bake
             arm,keyed=bake(out,rest[0],Path(rest[1]),Path(rest[2]) if len(rest)>2 else None)
         else:

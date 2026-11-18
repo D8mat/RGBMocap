@@ -1222,3 +1222,35 @@ view; 720p uses 64 MiB. The primary view retains its existing quality. Original
 files, AI input resolution and source animation exports are unchanged. Hidden
 auxiliary panes stop their decoders. Actual playback speed still depends on video
 codec, source resolution and machine load.
+
+
+### Toyxyz retargeter (Blender 4.5 compatibility)
+
+Use the **Retarget** tab beside **AI Models** to select prepared source motion
+and an imported character. Adjust solver strength, hand/foot reach, hip height,
+root travel and floor contact, then **Apply Toyxyz Retarget**. This runs the
+patched Toyxyz 0.4.30 solver in the existing isolated Blender 4.5 worker; no
+Blender 5 installation is required. Results use the normal viewport and character
+FBX export. Cancel Job uses the existing character-worker cancellation.
+
+For the bundled Puppet V5, **Puppet V5: Hips → Reference** explicitly maps the
+source Hips role to the target Reference bone, as requested for this workflow.
+It does not modify the original FBX. Other targets use automatic bone mapping.
+Options are saved on the character after success and reused after corrections.
+The original context-menu retarget remains available and restores its own engine.
+
+The first integrated panel exposes batch retarget/bake and the controls listed
+above. It does not embed Blender's interactive reference-pose or contact-marker
+editors. GEM-X Native77 currently retains the original retarget route. The new
+route requires a valid prepared source BVH; stale results must be prepared first.
+
+Validation: Blender 4.5.0 registration, Puppet V5 automatic and explicit Reference
+mapping, a 20-frame MAMMA BVH retarget with evaluated-pose bake validation,
+application preview generation and FBX export. Blender 5.0.1 also passed the
+compatibility bake. Long clips and every target rig family are not yet validated.
+
+### Manual Toyxyz bone mapping
+
+In the Retarget tab, select prepared source motion and an imported character, then open **Bone Mapping**. Choose source and target bones for the body, fingers and toes. Set independent spine and neck chain lengths and assign bones from bottom to top. Auto keeps automatic matching; None disables an optional role. Required roles and hierarchy are checked before baking. Explicit mapping overrides the Puppet V5 preset (Hips → Reference).
+
+Mapping is saved with the character after successful retargeting and reused for motion refresh. Changing the source clears the current mapping draft. Import JSON accepts RGB MoCap mappings and original Toyxyz mapping files; Export JSON saves RGB MoCap overrides for reuse here (not a complete Blender add-on preset). GEM-X Native77 continues to use the original retargeter.
