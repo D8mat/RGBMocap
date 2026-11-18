@@ -49,7 +49,14 @@ def import_character(filename, out):
     arms=[o for o in bpy.context.scene.objects if o.type=='ARMATURE']
     if len(arms)!=1:raise ValueError('Import one humanoid armature per character file.')
     arm=arms[0]
-    mapping=body_mapping(kind,arm.data.bones.keys(),semantic)
+    automatic_profile=None
+    try:mapping=body_mapping(kind,arm.data.bones.keys(),semantic)
+    except ValueError:
+        if kind!='mixamo':raise
+        from .blender_humanoid import recognize
+        semantic,automatic_profile=recognize(arm)
+        mapping=body_mapping(kind,arm.data.bones.keys(),semantic)
+        report('Recognized humanoid FBX; preserving original bone names and hierarchy')
     trajectory_root=body_trajectory_root({b.name:b.parent.name if b.parent else None for b in arm.data.bones},mapping)
     for o in bpy.context.scene.objects:
         o.animation_data_clear()
@@ -75,12 +82,16 @@ def import_character(filename, out):
     count=sum(len(o.data.vertices) for o in meshes)
     if not 0<count<=1_000_000:raise ValueError('Character preview supports 1 to 1,000,000 vertices.')
     rig=dict(kind=kind,armature=arm.name,semantic=semantic,trajectory_root=trajectory_root,bones=[dict(name=b.name,parent=b.parent.name if b.parent else None) for b in arm.data.bones],meshes=[dict(name=o.name,vertices=len(o.data.vertices)) for o in meshes])
+    if automatic_profile is not None:rig['humanoid_mapping']=automatic_profile
     Path(io_path(out/f'{kind}-rig.json')).write_text(json.dumps(rig,ensure_ascii=False),encoding='utf8')
     np.savez(io_path(out/f'{kind}-canonical.npz'),rest=rest,names=mapping,parents=PARENTS)
     from .blender_geometry import register
     report('Registering soles, palms and humanoid proportions')
     register(out,kind,rig,arm,mapping,rest)
-    bpy.ops.file.pack_all()
+    for image in bpy.data.images:
+        if image.packed_file or image.source not in {'FILE','TILED'}:continue
+        try:image.pack()
+        except RuntimeError:report('Warning: texture unavailable; keeping material fallback: '+image.name)
     save_blend(out/f'{kind}-rest.blend')
     preview(out,arm,None,1)
     metadata=dict(kind=kind,name=filename.stem,vertices=count,bones=len(arm.data.bones))
@@ -113,7 +124,7 @@ def vertex_colors(obj):
                 node=next((n for n in nodes if n.type=='TEX_IMAGE' and n.image and ('shade' not in n.name.lower())),None)
                 if node:tex=node.image
         pixels=None
-        if tex and tex.size[0]*tex.size[1]<=16_777_216:
+        if tex and 0<tex.size[0]*tex.size[1]<=16_777_216:
             pixels=np.empty(tex.size[0]*tex.size[1]*4,np.float32)
             tex.pixels.foreach_get(pixels);pixels=pixels.reshape(tex.size[1],tex.size[0],4)
         materials.append((col,pixels))

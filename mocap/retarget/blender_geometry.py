@@ -11,6 +11,14 @@ def register(OUT,kind,rig,arm,mapping,rest):
   parent=b
   while parent and parent.name not in mapped:parent=parent.parent
   bone_map[b.name]=mapped[parent.name] if parent else 0
+ palm_bones=[{mapping[20+h]} for h in (0,1)]
+ if rig.get('humanoid_mapping'):
+  for h,side in enumerate(('Left','Right')):
+   for digit in ('Index','Middle','Ring','Pinky'):
+    finger=arm.data.bones.get(rig['semantic'].get(side+'Hand'+digit+'1',''))
+    parent=finger.parent if finger else None
+    while parent and parent.name!=mapping[20+h]:
+     palm_bones[h].add(parent.name);parent=parent.parent
  vertices=[];weights=[];wrist_weights=[];mesh_names=[];mesh_counts=[]
  for obj in bpy.context.scene.objects:
   if obj.type!='MESH':continue
@@ -23,7 +31,7 @@ def register(OUT,kind,rig,arm,mapping,rest):
     name=obj.vertex_groups[group.group].name
     if name in bone_map:w[vertex.index,bone_map[name]]+=group.weight
     for h in [0,1]:
-     if name==mapping[20+h]:hw[vertex.index,h]+=group.weight
+     if name in palm_bones[h]:hw[vertex.index,h]+=group.weight
   total=w.sum(1);missing=total<1e-8;w[missing,0]=1.;w/=np.maximum(w.sum(1,keepdims=True),1e-8);weights.append(w);wrist_weights.append(hw)
  v=np.concatenate(vertices);W=np.concatenate(weights);HW=np.concatenate(wrist_weights);height=float(rest[:,1].max()-rest[:,1].min());payload=dict(rest=rest,mesh_names=mesh_names,mesh_counts=mesh_counts)
  counts=[]
@@ -39,6 +47,7 @@ def register(OUT,kind,rig,arm,mapping,rest):
   lookup={value:i for i,value in enumerate(ids)}
   payload.update({f'foot_v{side}':v[ids],f'foot_w{side}':W[ids],f'foot_ids{side}':ids,f'heel{side}':np.array([lookup[i] for i in heel]),f'toe{side}':np.array([lookup[i] for i in fore])})
   wrist=20+side;finger=[b for b in arm.data.bones if b.name.startswith(mapping[wrist]) and b.name!=mapping[wrist]]
+  if rig.get('humanoid_mapping'):finger=[b for b in arm.data.bones if arm.data.bones[mapping[wrist]] in b.parent_recursive]
   # Registered palm region excludes finger-dominant vertices.
   palm_length=max(.025,float(np.median([np.linalg.norm(np.array(arm.matrix_world@b.head_local)@A-rest[wrist]) for b in finger if np.linalg.norm(np.array(arm.matrix_world@b.head_local)@A-rest[wrist])>.015])) if finger else .055)
   hand_dist=np.linalg.norm(v-rest[wrist],axis=1)

@@ -342,12 +342,12 @@ def build_workspace(w):
     workspace_split.setSizes([650, 150])
     workspace_split.setStretchFactor(0, 1)
     workspace_split.setStretchFactor(1, 0)
+    workspace_split.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Expanding)
     main.addWidget(workspace_split)
 
     sidebar = QWidget()
     sidebar.setObjectName("modelSidebar")
     sidebar.setMinimumWidth(235)
-    sidebar.setMaximumWidth(330)
     side_layout = QVBoxLayout(sidebar)
     side_layout.setContentsMargins(4, 0, 4, 0)
     side_layout.setSpacing(7)
@@ -612,7 +612,11 @@ def build_workspace(w):
     from PySide6.QtWidgets import QTabWidget
     from .toyxyz_retarget_ui import RetargetPanel
     tabs=QTabWidget();model_page=QWidget();page_layout=QVBoxLayout(model_page);page_layout.setContentsMargins(0,0,0,0)
-    while side_layout.count():page_layout.addItem(side_layout.takeAt(0))
+    while side_layout.count():
+        item=side_layout.takeAt(0)
+        if item.widget():page_layout.addWidget(item.widget(),1)
+        elif item.layout():page_layout.addLayout(item.layout())
+        else:page_layout.addItem(item)
     tabs.addTab(model_page,'AI Models')
     w.toyxyz_retarget_panel=RetargetPanel(w)
     retarget_scroll=SettingsScrollArea();retarget_scroll.setWidgetResizable(True);retarget_scroll.setWidget(w.toyxyz_retarget_panel)

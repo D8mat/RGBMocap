@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 90131,
-      "sha256": "7dadfe259c02408b8289c1b9094201b8570d27e8482633a5d87cc1f84633ea09"
+      "bytes": 91395,
+      "sha256": "980af5e1509f425f64bcae13d952a213980acbd643cb4ce52428d3f84e6245c7"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -2256,8 +2256,8 @@
     },
     {
       "path": "mocap/retarget/blender_bake.py",
-      "bytes": 8690,
-      "sha256": "546a19542c082d79da7eae4be1f7ce954d9c3ced0ffee3f29607e37c306f23c7"
+      "bytes": 8732,
+      "sha256": "11a68c14540f8ad0e5a390359e3074e33ebb01a7f9b43f5f5578865b7bb0dfb5"
     },
     {
       "path": "mocap/retarget/blender_entry.py",
@@ -2266,13 +2266,18 @@
     },
     {
       "path": "mocap/retarget/blender_geometry.py",
-      "bytes": 3837,
-      "sha256": "08e807facc8f54a341aeeace379cc471aa8fb2c8bdedabfdd8da8d015a0ff7ce"
+      "bytes": 4374,
+      "sha256": "58a03c1d2d4ed59a9ec83ca5635973c6080a4baa58d01006e0b388f36b853970"
+    },
+    {
+      "path": "mocap/retarget/blender_humanoid.py",
+      "bytes": 1808,
+      "sha256": "b68cbf4b0dfb92e46c14a2af9f646d839ac7f2152a14af81946a08b101b3c48c"
     },
     {
       "path": "mocap/retarget/blender_io.py",
-      "bytes": 13647,
-      "sha256": "afe511f6c7c3c26af639c6070cd802cb984a9bb9adfd2706b79872c680aef4d0"
+      "bytes": 14293,
+      "sha256": "7f268902c0ad81893590a88602a1daeb369f29d4114ca825e50a8967fa9090ef"
     },
     {
       "path": "mocap/retarget/blender_soma.py",
@@ -2311,8 +2316,8 @@
     },
     {
       "path": "mocap/retarget/mapping.py",
-      "bytes": 2519,
-      "sha256": "d0ff3be6d21beb3e98ccdb4e9ef21137d6f75e45f6a0d6315bd51ecb24de501a"
+      "bytes": 2771,
+      "sha256": "f1319125f3749e85ee8b012a86fa815cb00b86f3079d6538d9bf7132d10b9e0a"
     },
     {
       "path": "mocap/retarget/measured.py",
@@ -2540,14 +2545,24 @@
       "sha256": "356f00e60faf6791eceb95a207e5366fb8105e69c86209f1ba901a86ad609219"
     },
     {
+      "path": "mocap/toyxyz_mapping_preview.py",
+      "bytes": 2821,
+      "sha256": "bf3b436dd662526f26eb0ef18564a29909d3144c73cafe637db3e79eb0348866"
+    },
+    {
+      "path": "mocap/toyxyz_mapping_probe.py",
+      "bytes": 1813,
+      "sha256": "97107cc4554396085c6a54f067d05ff6936baeb6d9709a413934362911ab5c0e"
+    },
+    {
       "path": "mocap/toyxyz_mapping_ui.py",
-      "bytes": 6425,
-      "sha256": "cd60279dfa6101bf518d0ed0ba9f69797410cbcade0143e0769f47ae3862d59f"
+      "bytes": 7262,
+      "sha256": "309de187bffaafd47dc48bc79389e5caaee89dd41d2c05fc4e7b952243b6c38d"
     },
     {
       "path": "mocap/toyxyz_retarget_ui.py",
-      "bytes": 7106,
-      "sha256": "790978896ae3512513a70293dd309eaa38193796c447510a55867fddb5f40989"
+      "bytes": 9540,
+      "sha256": "bc1e5d5ce1a2afe0a06f662adffecc9611cb768c1eca498c8597a919525ccdce"
     },
     {
       "path": "mocap/ui_refresh.py",
@@ -2616,8 +2631,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 45418,
-      "sha256": "25071f9ff423cab6f19a503f9aae3264a1374e8095efd175fd58a137f3435bee"
+      "bytes": 45627,
+      "sha256": "93a8ff78a342c7ad45c5f06b1438783322518187c5139fa17442cc6b5b9eaa7f"
     },
     {
       "path": "native_compat/LICENSE",

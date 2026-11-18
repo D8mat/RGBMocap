@@ -26,6 +26,10 @@ def body_trajectory_root(parents, mapped):
 def body_mapping(kind,bones,semantic):
     names=set(bones)
     if kind=='mixamo':
+        if all(n in semantic for n in NAMES):
+            mapped=[semantic[n] for n in NAMES]
+            if len(set(mapped))!=22 or any(n not in names for n in mapped):raise ValueError('Invalid stored humanoid mapping.')
+            return mapped
         suffix={}
         for name in names:
             suffix.setdefault(name.split(':')[-1],[]).append(name)

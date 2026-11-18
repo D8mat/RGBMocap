@@ -1251,6 +1251,12 @@ compatibility bake. Long clips and every target rig family are not yet validated
 
 ### Manual Toyxyz bone mapping
 
-In the Retarget tab, select prepared source motion and an imported character, then open **Bone Mapping**. Choose source and target bones for the body, fingers and toes. Set independent spine and neck chain lengths and assign bones from bottom to top. Auto keeps automatic matching; None disables an optional role. Required roles and hierarchy are checked before baking. Explicit mapping overrides the Puppet V5 preset (Hips → Reference).
+In the Retarget tab, select prepared source motion and an imported character, then edit **Bone Mapping** directly below the retarget controls. Choose source and target bones for the body, fingers and toes. Set independent spine and neck chain lengths and assign bones from bottom to top. Auto displays the actual automatically matched bone name; None disables an optional role. The automatic spine and neck chains show their bone names and counts. Matches load asynchronously using the same Blender matcher as the bake, and can be reloaded with Refresh automatic mapping. Required roles and hierarchy are checked before baking. Explicit mapping overrides the Puppet V5 preset (Hips → Reference).
 
 Mapping is saved with the character after successful retargeting and reused for motion refresh. Changing the source clears the current mapping draft. Import JSON accepts RGB MoCap mappings and original Toyxyz mapping files; Export JSON saves RGB MoCap overrides for reuse here (not a complete Blender add-on preset). GEM-X Native77 continues to use the original retargeter.
+
+### Humanoid FBX conventions
+
+Import Character retains the original Mixamo path and recognizes additional humanoid names using the Toyxyz hierarchy matcher, including Unreal pelvis/thigh/calf, Unity-style LeftUpperLeg/LeftLowerLeg and Blender side-suffixed deform bones. Original names, skin weights and extra bones are preserved. This is humanoid FBX support, not arbitrary Unity avatar or Blender control-rig import. The canonical import currently requires three distinct spine bones, a neck, shoulders and toe bases; unsupported rigs are rejected rather than assigned guessed joints. Longer chains remain intact and are handled fully by Toyxyz retargeting. Missing texture files produce a warning and material fallback instead of aborting import.
+
+Validated: YellowBird FBX import, 20-frame Toyxyz retarget, native preview and FBX export; Unity/Blender name-convention fixtures; Puppet V5 regression. Missing YellowBird normal map must be supplied separately for its intended surface appearance.
