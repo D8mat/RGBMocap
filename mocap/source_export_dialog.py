@@ -72,8 +72,9 @@ class SourceExportDialog(QDialog):
         self.fbx_rest_pose = QComboBox()
         self.fbx_rest_pose.addItem('T-pose', 't')
         self.fbx_rest_pose.addItem('A-pose', 'a')
+        self.fbx_rest_pose.addItem('Original rest pose', None)
         self.fbx_rest_pose.setToolTip(
-            f'Choose the exported FBX reference pose. A-pose lowers the upper arms to '
+            f'Choose the exported skeleton reference pose. A-pose lowers the upper arms to '
             f'{FBX_A_POSE_DEGREES}° below horizontal. Motion keys keep their original poses.')
         self.fbx_rest_label = QLabel('Rest pose')
         form.addRow(self.fbx_rest_label, self.fbx_rest_pose)
@@ -126,9 +127,9 @@ class SourceExportDialog(QDialog):
         self.fbx_compatibility.setVisible(fmt=='fbx' and not unreal)
         self.blend_layout_label.setVisible(blend and not whole)
         self.blend_layout.setVisible(blend and not whole)
-        self.fbx_rest_label.setVisible(fmt == 'fbx' and not unreal)
-        self.fbx_rest_pose.setVisible(fmt == 'fbx' and not unreal)
-        leading = self.fbx_rest_pose.currentText() if fmt == 'fbx' and not unreal else 'T-pose'
+        self.fbx_rest_label.setVisible((fmt == 'fbx' and not unreal) or (blend and self.model!='gemx'))
+        self.fbx_rest_pose.setVisible((fmt == 'fbx' and not unreal) or (blend and self.model!='gemx'))
+        leading = self.fbx_rest_pose.currentText() if (fmt == 'fbx' and not unreal) or (blend and self.model!='gemx') else 'T-pose'
         self.tpose.setText(f'Add {leading} before motion')
         self.tpose.setToolTip(f'Insert the {leading} at the first motion frame root position. The original motion starts one frame later.')
         self.whole_scene.setVisible(blend and self.model=='mamma');self.tpose.setEnabled(not whole);self.tpose.setVisible(not whole)
@@ -198,6 +199,7 @@ class SourceExportDialog(QDialog):
         value['unreal_preview']=value['unreal'] and self.unreal_preview.isChecked()
         if fmt == 'fbx' and not value['unreal']:
             value['fbx_compatibility'] = self.fbx_compatibility.isChecked()
+        if (fmt == 'fbx' and not value['unreal']) or (fmt=='blend' and self.model!='gemx'):
             value['fbx_rest_pose'] = self.fbx_rest_pose.currentData()
         value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))
         if fmt=='blend':value.update(blend_layout=self.blend_layout.currentData(),animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())

@@ -1260,3 +1260,7 @@ Mapping is saved with the character after successful retargeting and reused for 
 Import Character retains the original Mixamo path and recognizes additional humanoid names using the Toyxyz hierarchy matcher, including Unreal pelvis/thigh/calf, Unity-style LeftUpperLeg/LeftLowerLeg and Blender side-suffixed deform bones. Original names, skin weights and extra bones are preserved. This is humanoid FBX support, not arbitrary Unity avatar or Blender control-rig import. The canonical import currently requires three distinct spine bones, a neck, shoulders and toe bases; unsupported rigs are rejected rather than assigned guessed joints. Longer chains remain intact and are handled fully by Toyxyz retargeting. Missing texture files produce a warning and material fallback instead of aborting import.
 
 Validated: YellowBird FBX import, 20-frame Toyxyz retarget, native preview and FBX export; Unity/Blender name-convention fixtures; Puppet V5 regression. Missing YellowBird normal map must be supplied separately for its intended surface appearance.
+
+### Blender reference pose
+
+Source Blender export offers T-pose, A-pose and Original rest pose, using the same reference-skeleton conversion as FBX. It works for separate/combined take bundles and MAMMA whole-scene reference skeletons. Animation and synchronized mesh caches retain their motion. The optional leading frame follows the chosen pose for take bundles; whole-scene export keeps its existing synchronized timeline. GEM-X Native77 Blender bundles retain the native reference pose.

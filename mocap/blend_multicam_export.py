@@ -99,7 +99,7 @@ def run(request, emit=lambda *a, **k: None):
                         out.write(vertices.astype('<f4').tobytes())
                         if f%30==0:emit('progress',stage='save_blend_scene',current=f,total=len(frames),message='Mesh '+a['name'])
             finally:frames._mmap.close()
-            nested=temporary/'fbx-request.json';nested.write_text(json.dumps([dict(project=str(a['project']),kind=kind,source=str(a['source']),target=str(temporary/(stem+'.fbx')),rig_name=a['name'],scene=a['scene'])]),encoding='utf8')
+            nested=temporary/'fbx-request.json';nested.write_text(json.dumps([dict(project=str(a['project']),kind=kind,source=str(a['source']),target=str(temporary/(stem+'.fbx')),rig_name=a['name'],scene=a['scene'],fbx_rest_pose=spec.get('fbx_rest_pose'))]),encoding='utf8')
             export_fbx(nested)
             job_actors.append(dict(name=a['name'],color=a['color'],first=a['first'],end=a['end'],cache=cache,geometry=stem+'.npz',fbx=stem+'.fbx'))
         job=dict(target=target.name,frames=n,fps=fps,actors=job_actors,cameras=[{k:v for k,v in c.items() if k!='source'} for c in camera_jobs],bounds=np.asarray(bounds).tolist())

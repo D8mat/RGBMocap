@@ -2053,7 +2053,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 row['unreal_preview']=getattr(self,'_source_export_options',{}).get('unreal_preview',False)
                 row['unreal_resume']=getattr(self,'_source_export_options',{}).get('unreal_resume',True)
                 if compatible:row['fbx_compatibility']=True
-                if options.get('format') == 'fbx' and 'fbx_rest_pose' in options:
+                if options.get('format') in ('fbx','blend') and 'fbx_rest_pose' in options:
                     row['fbx_rest_pose'] = options['fbx_rest_pose']
                 for key in ('place_at_origin','symmetric_rest'):
                     row[key]=getattr(self,'_source_export_options',{}).get(key,False) and getattr(self,'_source_export_options',{}).get('format','fbx') in ('fbx','bvh') and not row['unreal']
