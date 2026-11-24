@@ -12,6 +12,7 @@ from .bone_stream import BoneStream, MAX_ACTORS, MAX_BAKE_FRAMES, PORT
 from .paths import ROOT
 from .unreal_stream import UnrealStream, subject_name
 from .unity_stream import UnityStream
+from .max_stream import MaxStream
 
 
 def stream_rig(asset):
@@ -25,7 +26,7 @@ class StreamWorkspace:
         column.setContentsMargins(5, 5, 5, 5)
         column.addWidget(QLabel('Target'))
         self.stream_target = QComboBox()
-        self.stream_target.addItems(['None', 'Blender', 'Unreal Live Link', 'Unity'])
+        self.stream_target.addItems(['None', 'Blender', 'Unreal Live Link', 'Unity', '3ds Max'])
         self.stream_target.setAccessibleName('Stream target')
         column.addWidget(self.stream_target)
         self.stream_port_controls = QWidget()
@@ -59,6 +60,19 @@ class StreamWorkspace:
         self.stream_unity_package.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(ROOT / 'unity_plugin' / 'RGBMoCap'))))
         column.addWidget(self.stream_unity_package)
         self.stream_unity_package.hide()
+        self.stream_max_controls = QWidget()
+        max_layout = QVBoxLayout(self.stream_max_controls)
+        note = QLabel('RGB MoCap plug-in for 3ds Max 2025. Run max_plugin/rgbmocap_max.py in Max, connect on port 49169 and map an FBX skeleton. Live Preview, Record and Bake are controlled in Max.')
+        note.setWordWrap(True);max_layout.addWidget(note)
+        retry = QPushButton('Reconnect 3ds Max')
+        retry.clicked.connect(self.restart_max_stream);max_layout.addWidget(retry)
+        guide = QPushButton('3ds Max Setup Guide')
+        guide.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(ROOT/'docs/3DS_MAX_STREAMING.md'))))
+        max_layout.addWidget(guide)
+        plugin = QPushButton('Open 3ds Max Plugin Folder')
+        plugin.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(ROOT/'max_plugin'))))
+        max_layout.addWidget(plugin);column.addWidget(self.stream_max_controls)
+        self.stream_max_controls.hide()
         self.stream_unreal_controls = QWidget()
         unreal_controls = QVBoxLayout(self.stream_unreal_controls)
         unreal_controls.setContentsMargins(0, 0, 0, 0)
@@ -110,6 +124,7 @@ class StreamWorkspace:
         blender = index == 1 and not self._pear_active
         unreal = index == 2 and not self._pear_active
         unity = index == 3 and not self._pear_active
+        self.stream_max_controls.setVisible(index == 4 and not self._pear_active)
         self.stream_unity_note.setVisible(unity)
         self.stream_unity_package.setVisible(unity)
         self.stream_port_controls.setVisible(blender or unity)
@@ -120,9 +135,18 @@ class StreamWorkspace:
             self.apply_stream_port()
         elif unreal:
             self.restart_unreal_stream()
+        elif index == 4 and not self._pear_active:
+            self.restart_max_stream()
         else:
             self.close_stream()
             self.stream_tab_changed(self.people_tabs.currentIndex())
+
+    def restart_max_stream(self):
+        if self.stream_target.currentIndex() != 4 or self._pear_active:return
+        self.close_stream()
+        self._stream_sender = MaxStream()
+        self._stream_port_error = None
+        self.stream_tab_changed(self.people_tabs.currentIndex())
 
     def restart_unreal_stream(self):
         if self.stream_target.currentIndex() != 2 or self._pear_active:
@@ -417,7 +441,7 @@ class StreamWorkspace:
         else:
             error = sender.error()
             if error:
-                target = 'Unreal Live Link' if isinstance(sender, UnrealStream) else ('Unity stream' if isinstance(sender, UnityStream) else 'Blender stream')
+                target = 'Unreal Live Link' if isinstance(sender, UnrealStream) else ('3ds Max stream' if isinstance(sender, MaxStream) else ('Unity stream' if isinstance(sender, UnityStream) else 'Blender stream'))
                 self.log.append(f'{target}: {error}')
                 if isinstance(sender, UnrealStream):
                     self._stream_port_error = str(error)
@@ -473,7 +497,7 @@ class StreamWorkspace:
             elif unreal and not connected:
                 status = 'Waiting for Unreal. Add Message Bus Source > RGB MoCap.'
             elif not connected:
-                status = f'Waiting for {"Unity" if isinstance(sender, UnityStream) else "Blender"}\n127.0.0.1:{sender.port}'
+                status = f'Waiting for {"3ds Max receiver" if isinstance(sender, MaxStream) else ("Unity" if isinstance(sender, UnityStream) else "Blender")}\n127.0.0.1:{sender.port}'
             elif not self._stream_checked:
                 status = 'Connected. Check people to stream.'
             else:

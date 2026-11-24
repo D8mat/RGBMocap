@@ -146,3 +146,7 @@ source checkout. The separately downloadable Unreal sample contains a generated
 MetaHuman assembly under its applicable Epic terms; its own asset notices
 distinguish that content from RGB MoCap-authored MIT material.
 The receiver uses Unreal's built-in Live Link Message Bus Source.
+
+## Chamiseul 3ds Max streaming protocol
+
+The earlier experimental Max adapter referenced mayalhc/Chamiseul_RGBMocap, commit 142d06d268447c715140a7ad53ed3ae59f1ff13a, mocap/max_link.py (Copyright (c) 2026 Chamiseul, MIT; see third_party/chamiseul/LICENSE). It has been replaced by our own receiver using the existing RGB MoCap bone stream protocol. No Chamiseul receiver is bundled or required.

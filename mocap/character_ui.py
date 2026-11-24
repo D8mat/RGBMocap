@@ -174,6 +174,14 @@ class CharacterWorkspace:
             QMessageBox.warning(self,'Import Puppet','The bundled puppet file is missing: '+str(path));return
         self.choose_character(path)
 
+    def import_unreal_character(self, target):
+        if not self.import_character_action.isEnabled():return
+        if target not in ('Manny','Quinn'):raise ValueError('Choose Manny or Quinn.')
+        path=ROOT/'assets/characters'/(target+'.fbx')
+        if not path.is_file():
+            QMessageBox.warning(self,'Import Unreal Character','The bundled character file is missing: '+str(path));return
+        self.choose_character(path)
+
     def character_sources(self):
         from .motion_tools import result_is_current
         from .gemx_result import RECEIPT, is_project

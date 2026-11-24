@@ -136,6 +136,16 @@
       "path": "third_party/ue5_mannequin/reference.json",
       "bytes": 35878,
       "sha256": "4e133ce1a5540c1b064c632173976d471b003e2b0cc6bbebef3f08bb25443a27"
+    },
+    {
+      "path": "assets/characters/Manny.fbx",
+      "bytes": 3649020,
+      "sha256": "cff92c336e8b52d23490927789d05e3d964224f09d9db61255ccf6b2a06716c6"
+    },
+    {
+      "path": "assets/characters/Quinn.fbx",
+      "bytes": 3394684,
+      "sha256": "862a32d35aca97f862646ba4bf56b9cd5838b28a794e4a56d7048f9352898093"
     }
   ]
 }

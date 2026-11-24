@@ -718,6 +718,13 @@ def build_workspace(w):
     w.import_puppet_action.setToolTip('Add the bundled RGB MoCap puppet to the scene for retargeting.')
     w.import_character_action.changed.connect(lambda:w.import_puppet_action.setEnabled(w.import_character_action.isEnabled()))
     w.import_puppet_action.setEnabled(w.import_character_action.isEnabled())
+    w.import_unreal_menu=file_menu.addMenu('Import Unreal Character')
+    for target in ('Manny','Quinn'):
+        action=w.import_unreal_menu.addAction(target)
+        action.setToolTip('Import '+target+' with its original Unreal skeleton and mesh for retargeting.')
+        action.triggered.connect(lambda checked=False,name=target:w.import_unreal_character(name))
+    w.import_character_action.changed.connect(lambda:w.import_unreal_menu.setEnabled(w.import_character_action.isEnabled()))
+    w.import_unreal_menu.setEnabled(w.import_character_action.isEnabled())
     w.save_project_action = file_menu.addAction('Save Project As...', w.save_project_as)
     w.save_project_action.setShortcut('Ctrl+Shift+S')
     w.save_project_action.setToolTip(tooltip_text('Save a separate project folder with a new name and location, including its video, motion and settings. Continue working in the saved copy.'))

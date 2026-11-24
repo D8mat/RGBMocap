@@ -113,3 +113,7 @@ third_party/**/.git/
 
 # Bundled character for Import Puppet
 !assets/characters/rgb_mocap_puppet_V5.fbx
+
+# Bundled Unreal template characters for one-click import
+!assets/characters/Manny.fbx
+!assets/characters/Quinn.fbx
