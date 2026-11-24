@@ -6,15 +6,14 @@ import socket
 import time
 import uuid
 import numpy as np
-from .face_data import FaceCache
 
 PORT=49169
 
 
 class FaceFeed:
     def __init__(self):
-        self.condition=Condition();self.request=None;self.output=None;self.asset=None;self.calibration_status='Neutral: Off'
-        self.use_ai=False;self.smoothing=False;self.asset_request=None;self.closed=False;self.session=uuid.uuid4().hex
+        self.condition=Condition();self.request=None;self.output=None;self.asset=None
+        self.asset_request=None;self.closed=False;self.session=uuid.uuid4().hex
         self.thread=Thread(target=self.run,name='Face preview and stream',daemon=True);self.thread.start()
 
     def submit(self,request):
@@ -28,7 +27,7 @@ class FaceFeed:
         self.thread.join(5)
 
     def run(self):
-        cache=FaceCache();sequence=0;last=None;last_sent=0.;was_streaming=False
+        sequence=0;last=None;last_sent=0.;was_streaming=False
         sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);sock.setblocking(False)
         try:
             while True:
@@ -45,18 +44,14 @@ class FaceFeed:
                         loaded['key']=str(asset);self.asset=(loaded,None)
                     except Exception as error:self.asset=(None,str(error))
                 if request is None:continue
-                token,project,frame,label,stream=request
+                token,weights,status,frame,label,stream=request
                 now=time.monotonic()
                 if request!=last or now-last_sent>=.25:
-                    cache.smoothing=self.smoothing
-                    cache.use_ai=self.use_ai
-                    values=cache.frame(project,frame)
-                    status=cache.last_status
-                    self.calibration_status=cache.calibration_status
+                    values=np.asarray(weights,dtype=np.float32)
                     self.output=(token,values,status)
                     if stream or was_streaming:
                         packet=dict(version=1,session=self.session,sequence=sequence,frame=int(frame),
-                                    label=str(label)[:160],valid=bool(stream and status=='Ready'),
+                                    label=str(label)[:160],valid=bool(stream and status in ('Ready','Held expression')),
                                     values=values.tolist() if stream else [0.]*52)
                         try:sock.sendto(json.dumps(packet,separators=(',',':'),allow_nan=False).encode(),('127.0.0.1',PORT))
                         except OSError as error:self.output=(token,values,'Stream error: '+str(error))

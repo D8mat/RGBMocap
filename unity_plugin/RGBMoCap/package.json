@@ -1,0 +1,7 @@
+{
+  "name": "com.rgbmocap.streaming",
+  "version": "0.1.0",
+  "displayName": "RGB MoCap Streaming",
+  "description": "Local body, fingers and pelvis/root-motion streaming for multiple RGB MoCap actors.",
+  "unity": "6000.0"
+}

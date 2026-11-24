@@ -35,6 +35,9 @@ def bake(out,kind):
         for name in ('solver_strength','hip_offset','floor_contact','hand_position_reach','foot_position_reach'):
             if name in options:setattr(settings,name,options[name])
         if options.get('travel') in {'PROPORTIONAL','SOURCE','IN_PLACE'}:settings.travel=options['travel']
+        from .target_reference import configure
+        configure(settings.target,options.get('target_pose','REST'))
+        report('Toyxyz: target reference '+options.get('target_pose','REST'))
         report('Toyxyz: connecting mapped source and target')
         active=runtime.start(bpy.context,key=row.key)
         keyed=sorted(active.target.mapped.values())

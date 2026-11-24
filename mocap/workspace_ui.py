@@ -5,13 +5,15 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QLabel, QPushButton, QComboBox, QCheckBox,
     QVBoxLayout, QHBoxLayout, QGroupBox, QSplitter,
-    QSpinBox, QDoubleSpinBox, QProgressBar, QTextEdit, QMessageBox, QSizePolicy, QStackedWidget)
+    QSpinBox, QDoubleSpinBox, QProgressBar, QTextEdit, QMessageBox, QSizePolicy, QStackedWidget, QApplication, QDialog)
 from .viewer import VideoView, MotionView
 from .timeline import TimelineSlider
 from .motion_tools import MOTION_TOOLS
 from .paths import ROOT
 from .correction_settings import PRESETS
 from .sidebar_scroll import SettingsScrollArea
+from .theme import AppearanceDialog, apply_appearance, current_appearance, ui_px
+from .project_workspace_ui import DEFAULT_RESOURCE_MODE
 
 
 class WrappedLabel(QLabel):
@@ -69,6 +71,41 @@ class SettingsStack(QStackedWidget):
     def minimumSizeHint(self):
         page=self.currentWidget()
         return page.minimumSizeHint() if page else QSize(0,0)
+
+
+def resize_appearance_controls(window):
+    window.slider.refresh_appearance()
+    timeline=getattr(window,'timeline_collapse',None)
+    if timeline is not None:timeline.minimum.setHeight(ui_px(260))
+    if timeline is None or timeline.button.isChecked():window.timeline_panel.setMinimumHeight(ui_px(260))
+    window.timeline_help_button.setFixedWidth(ui_px(26))
+    window.play_button.setFixedWidth(ui_px(34))
+    window.play_button.setIconSize(QSize(ui_px(16), ui_px(16)))
+    window.frame_number.setMinimumWidth(ui_px(70))
+    models=getattr(window,'models_collapse',None)
+    if models is not None:models.minimum.setWidth(ui_px(235))
+    if models is None or models.button.isChecked():window.appearance_sidebar.setMinimumWidth(ui_px(235))
+    window.log.setMaximumHeight(ui_px(110))
+
+
+def show_appearance_settings(window):
+    old = current_appearance()
+    dialog = AppearanceDialog(window)
+    if dialog.exec() != QDialog.DialogCode.Accepted:
+        return
+    choices = dialog.theme.currentData(), dialog.scale.currentData()
+    if choices == old:
+        return
+    apply_appearance(QApplication.instance(), *choices)
+    resize_appearance_controls(window)
+    if choices[1] > old[1] and not (window.isMaximized() or window.isFullScreen()):
+        area = window.screen().availableGeometry()
+        decorations = window.frameGeometry().size() - window.size()
+        ratio = choices[1] / old[1]
+        window.resize((window.size() * ratio).boundedTo(area.size() - decorations))
+        frame = window.frameGeometry()
+        window.move(max(area.left(), min(frame.left(), area.right() - frame.width() + 1)),
+                    max(area.top(), min(frame.top(), area.bottom() - frame.height() + 1)))
 
 
 def build_workspace(w):
@@ -251,7 +288,6 @@ def build_workspace(w):
     w.slider.contacts_reset.connect(w.reset_foot_contacts)
     timeline_panel, timeline_header = editor("Timeline", w.slider)
     w.timeline_panel = timeline_panel
-    timeline_panel.setMinimumHeight(260)
     w.timeline_help_dialog = QMessageBox(w)
     w.timeline_help_dialog.setWindowTitle("Timeline Help")
     w.timeline_help_dialog.setTextFormat(Qt.PlainText)
@@ -269,7 +305,6 @@ def build_workspace(w):
         "Apply Correction updates the preview motion and FBX after timing edits.")
     w.timeline_help_dialog.setStandardButtons(QMessageBox.Close)
     w.timeline_help_button = QPushButton("?")
-    w.timeline_help_button.setFixedWidth(26)
     w.timeline_help_button.setAccessibleName("Timeline Help")
     w.timeline_help_button.setToolTip('Show how to seek, trim and edit contact timings.')
     w.timeline_help_button.clicked.connect(w.timeline_help_dialog.open)
@@ -283,8 +318,6 @@ def build_workspace(w):
     w.previous_frame.setToolTip(tooltip_text("Previous Frame (Left Arrow)"))
     w.play_button = button("", w.toggle_play, timeline_header)
     w.play_button.setObjectName("transport")
-    w.play_button.setFixedWidth(34)
-    w.play_button.setIconSize(QSize(16, 16))
     w.play_icon = QIcon(str(ROOT / "assets/icons/play.svg"))
     w.pause_icon = QIcon(str(ROOT / "assets/icons/pause.svg"))
     w.set_playback_indicator(False)
@@ -297,7 +330,6 @@ def build_workspace(w):
     timeline_header.addStretch()
     w.frame_number = QSpinBox()
     w.frame_number.setRange(1, 1)
-    w.frame_number.setMinimumWidth(70)
     w.frame_number.setToolTip(tooltip_text("Enter a frame number to jump to it. The first frame is 1."))
     w.frame_number.valueChanged.connect(lambda value: w.slider.setValue(value - 1))
     timeline_header.addWidget(w.frame_number)
@@ -320,9 +352,11 @@ def build_workspace(w):
     w.clip_label.setMinimumWidth(0)
     w.clip_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
     action_bar.addWidget(w.clip_label, 1)
-    from .character_position import apply as position_character
+    from .character_position import apply as position_character,move_dialog
     w.recenter_character_button=button('Recenter Character',lambda:position_character(w),action_bar)
     w.recenter_character_button.setToolTip('Center the selected source take at the current frame on the ground plane; applies to preview and exports. Height and motion are preserved.')
+    w.move_character_button=button('Move Character...',lambda:move_dialog(w),action_bar)
+    w.move_character_button.setToolTip('Move the selected person or imported character on world X/Z axes; preview and export use the same placement.')
     w.reset_character_position_button=button('Reset Position',lambda:position_character(w,True),action_bar)
     w.reset_footlocks_button=button('Reset Locks',w.reset_foot_contacts,action_bar)
     w.reset_footlocks_button.setToolTip(tooltip_text('Restore automatic foot and hand contact timings for this person. Click Apply Correction to update the motion.'))
@@ -348,6 +382,7 @@ def build_workspace(w):
     sidebar = QWidget()
     sidebar.setObjectName("modelSidebar")
     sidebar.setMinimumWidth(235)
+    w.appearance_sidebar = sidebar
     side_layout = QVBoxLayout(sidebar)
     side_layout.setContentsMargins(4, 0, 4, 0)
     side_layout.setSpacing(7)
@@ -364,7 +399,8 @@ def build_workspace(w):
     w.model_choice.setToolTip(tooltip_text('Choose the AI model used to create motion. Open Model Guide for a comparison.'))
     for tool in MOTION_TOOLS.values():
         w.model_choice.addItem(tool.label, tool.key)
-    w.model_choice.setCurrentIndex(w.model_choice.findData('exmr'))
+    from .local_choices import start_model
+    w.model_choice.setCurrentIndex(w.model_choice.findData(start_model()))
     w.model_choice.setItemData(w.model_choice.findData('gvhmr'), tooltip_text('GVHMR: body tracking with optional hand and foot refinement. Sometimes better for unusual poses such as backflips in our subjective tests.'), Qt.ToolTipRole)
     selector.addWidget(w.model_choice)
     w.htd_refine = QCheckBox("HTD Refine")
@@ -556,11 +592,28 @@ def build_workspace(w):
     w.track_face = QCheckBox('Track Face')
     w.track_face.setToolTip(tooltip_text('Track each checked person’s face with MediaPipe on CPU. First use downloads the optional runtime and model. Holds the last tracked expression through gaps.'))
     w.track_face.toggled.connect(w.track_face_toggled)
-    settings.addWidget(w.track_face)
+    face_row = QHBoxLayout()
+    face_row.addWidget(w.track_face, 1)
+    w.set_neutral_face = QPushButton('Set Neutral')
+    w.set_neutral_face.setToolTip(tooltip_text('Use the current timeline frame as the selected person’s neutral face. Choose an eyes-open, mouth-relaxed frame with successful face tracking. Applies to preview, streaming and face export.'))
+    w.set_neutral_face.clicked.connect(w.set_current_neutral_face)
+    face_row.addWidget(w.set_neutral_face)
+    settings.addLayout(face_row)
+    neutral_row = QHBoxLayout()
+    w.neutral_face_note = WrappedLabel('Neutral: Default')
+    w.neutral_face_note.setObjectName('muted')
+    neutral_row.addWidget(w.neutral_face_note, 1)
+    w.reset_neutral_face = QPushButton('Reset')
+    w.reset_neutral_face.setToolTip(tooltip_text('Clear the selected person’s neutral face calibration. Original captured data are preserved.'))
+    w.reset_neutral_face.clicked.connect(w.reset_current_neutral_face)
+    neutral_row.addWidget(w.reset_neutral_face)
+    settings.addLayout(neutral_row)
+    w.set_neutral_face.setEnabled(False)
+    w.reset_neutral_face.setEnabled(False)
     processing = group("Processing Resources", settings)
     processing.addWidget(QLabel('Resource Mode'))
     w.compute_mode = QComboBox()
-    w.compute_mode.addItem("Automatic", "auto")
+    w.compute_mode.addItem("Automatic", DEFAULT_RESOURCE_MODE)
     w.compute_mode.addItem("Low Memory", "low_memory")
     w.compute_mode.setToolTip(tooltip_text("Automatic uses the fast path when memory is available and switches supported stages to Low Memory when needed. Low Memory uses CPU loading and offloading; it can be slower and use more RAM. Model precision and video frames are unchanged."))
     processing.addWidget(w.compute_mode)
@@ -597,8 +650,6 @@ def build_workspace(w):
     w.run_button = button("Reconstruct 3D", w.run_full, action_buttons)
     w.run_button.setToolTip(tooltip_text('Create 3D motion for checked people in the trimmed video range using the selected model and settings. Reuses valid completed steps.'))
     w.run_button.setObjectName("primary")
-    w.face_capture_button=button("Capture Face",w.extract_face,action_buttons)
-    w.face_capture_button.setToolTip("Capture ARKit facial animation from the selected video or take.")
     w.mesh_button = button("Prepare Preview", w.prepare_mesh, action_buttons)
     w.mesh_button.setToolTip(tooltip_text('Prepare the 3D mesh and skeleton from the selected motion result. Available after reconstruction; does not run AI inference again.'))
     w.cancel_button = button("Cancel Job", w.cancel_job, action_buttons)
@@ -621,6 +672,8 @@ def build_workspace(w):
     w.toyxyz_retarget_panel=RetargetPanel(w)
     retarget_scroll=SettingsScrollArea();retarget_scroll.setWidgetResizable(True);retarget_scroll.setWidget(w.toyxyz_retarget_panel)
     tabs.addTab(retarget_scroll,'Retarget');side_layout.addWidget(tabs)
+    # Connected after select_model so a refused pick is already reverted.
+    w.model_choice.currentIndexChanged.connect(w.remember_model_pick)
     main.addWidget(sidebar)
     w.models_collapse=PanelCollapse(sidebar,main,'AI Models')
     main.setSizes([1120, 260])
@@ -648,12 +701,12 @@ def build_workspace(w):
     w.log.setReadOnly(True)
     w.log.setUndoRedoEnabled(False)
     w.log.document().setMaximumBlockCount(500)
-    w.log.setMaximumHeight(110)
     w.log.setVisible(False)
     w.details = button("Console", lambda: w.log.setVisible(not w.log.isVisible()), footer)
     w.details.setToolTip('Show or hide processing details and error messages.')
     root.addLayout(footer)
     root.addWidget(w.log)
+    resize_appearance_controls(w)
 
     file_menu = w.menuBar().addMenu("File")
     from .kinect_ui import open_kinect
@@ -669,6 +722,9 @@ def build_workspace(w):
     w.save_project_action.setShortcut('Ctrl+Shift+S')
     w.save_project_action.setToolTip(tooltip_text('Save a separate project folder with a new name and location, including its video, motion and settings. Continue working in the saved copy.'))
     file_menu.addSeparator()
+    file_menu.addAction('Save Settings as Default', w.save_default_settings).setToolTip(tooltip_text('Start new videos and the next session with the current model options, motion correction, Track Face and Resource Mode. Trim, floor, people and opened projects are unchanged.'))
+    file_menu.addAction('Reset Default Settings', w.reset_default_settings).setToolTip(tooltip_text('Start new videos and the next session with the built-in settings again. Current settings and projects are unchanged.'))
+    file_menu.addSeparator()
     w.export_action = file_menu.addAction("Export...", w.save_fbx)
     w.export_action.setToolTip(tooltip_text('Export the displayed motion as FBX, BVH or a portable Blender project. Choose the current take or all takes of checked people when available. MAMMA also offers a whole-scene Blender bundle.'))
     w.export_preview_action = file_menu.addAction('Export Preview...', w.save_preview)
@@ -677,12 +733,9 @@ def build_workspace(w):
     w.export_preview_action.setToolTip(tooltip_text('Save the selected input video beside the current 3D viewport as MP4 over the timeline trim. Keeps the current view, visible people/characters and viewport overlays. Includes source audio when available. Not available in PEAR live mode.'))
     w.export_preview_action.setEnabled(False)
     file_menu.addAction('Face Preview && Stream...', w.open_face_preview)
-    file_menu.addAction('Select Face to Track...',w.select_face_to_track)
-    w.face_neutral_action=file_menu.addAction('Use Current Frame as Neutral Face',w.calibrate_face_neutral)
-    w.face_neutral_reset_action=file_menu.addAction('Reset Neutral Face',lambda:w.calibrate_face_neutral(reset=True))
-    w.face_capture_action = file_menu.addAction('Capture Face from Video (ARKit)...', w.extract_face)
-    w.face_capture_action.setToolTip('Capture facial expressions for the selected person/take. Requires Setup_Face.cmd; streams to the updated Blender add-on.')
     file_menu.addAction("Open Project Folder", w.open_folder)
+    file_menu.addSeparator()
+    file_menu.addAction("Settings...", lambda: show_appearance_settings(w))
     file_menu.addSeparator()
     file_menu.addAction("Exit", w.close)
     help_menu = w.menuBar().addMenu("Help")
@@ -696,6 +749,7 @@ def build_workspace(w):
         'Open Video...': 'Choose a video to create motion from.',
         'Open Project...': 'Open saved motion and settings without reconstructing the video.',
         'Open Project Folder': 'Open the current project folder in File Explorer.',
+        'Settings...': 'Choose the app theme and UI scale.',
         'Exit': 'Close RGB MoCap.',
         'Check System': 'Check hardware and required software. Results appear in the Console.',
         'Controls': 'Show keyboard shortcuts and workspace controls.',

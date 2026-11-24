@@ -114,7 +114,8 @@ class CharacterWorkspace:
         accepted=dialog.exec();options=dialog.options();dialog.deleteLater()
         if not accepted:return
         extension=options['format'];label=extension.upper()
-        stem=export_stem(c['name']);takes=c['takes']
+        from .character_position import imported_transform
+        stem=export_stem(c['name']);takes=[dict(t,transform=imported_transform(c,t.get('transform')).tolist()) for t in c['takes']]
         if len(takes)==1:
             name,_=QFileDialog.getSaveFileName(self,'Export Character',stem+'.'+extension,f'{label} (*.{extension})')
             if not name:return
@@ -426,4 +427,6 @@ class CharacterWorkspace:
             if not data:
                 self.character_loader.request(path,frame,self.character_path(c['asset']));continue
             matrix=self.character_loader.frame(path,frame)
-            if matrix is not None:yield c,data,matrix,frame,transform
+            if matrix is not None:
+                from .character_position import imported_transform
+                yield c,data,matrix,frame,imported_transform(c,transform)

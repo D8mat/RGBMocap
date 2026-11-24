@@ -14,8 +14,7 @@ COMPAT = ROOT / "native_compat"
 
 def worker_command(stage: str, *args: str) -> list[str]:
     if stage == 'face':
-        from .face_runtime import legacy_command
-        return legacy_command(args)
+        raise RuntimeError('Capture Face was retired. Use the original Track Face option.')
     if stage == 'face_track':
         from .face_runtime import command as face_command
         return face_command(args)

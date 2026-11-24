@@ -120,7 +120,7 @@ def capture(project, requested, emit):
         previous = FaceArchive(project)
     except (ValueError,OSError,KeyError):
         previous = None
-    if previous is not None and set(wanted) <= set(previous.ids):
+    if previous is not None and previous.landmarks is not None and set(wanted) <= set(previous.ids):
         return len(wanted), True
 
     count, fps = info['frames'], info['fps']
@@ -152,6 +152,7 @@ def capture(project, requested, emit):
                                          delegate=mp.tasks.BaseOptions.Delegate.CPU),
         running_mode=task.RunningMode.VIDEO,num_faces=1,output_face_blendshapes=True)
     geometry = np.zeros((len(actors),count,len(POINTS),3),np.float32)
+    landmarks = np.zeros((len(actors),count,478,2),np.float16)
     values = np.zeros((len(actors),count,52),np.float32)
     valid=np.zeros((len(actors),count),bool)
     channels=CHANNELS
@@ -195,6 +196,7 @@ def capture(project, requested, emit):
                 scores['tongueOut']=0.
                 if neutral is None or set(scores)!=set(channels):
                     raise ValueError('Face Landmarker returned a different blendshape schema.')
+                landmarks[slot,frame]=raw[:,:2]/[image.shape[1],image.shape[0]]
                 geometry[slot,frame]=raw[POINTS]
                 values[slot,frame]=np.clip([scores[name] for name in channels],0,1)
                 candidates[slot]=raw
@@ -220,7 +222,8 @@ def capture(project, requested, emit):
     if fingerprint(project,media,info,tracks)!=identity:
         raise ValueError('The input or Person tracks changed during face capture.')
     write(project,identity=identity,ids=np.asarray(actors,dtype=np.int32),channels=np.asarray(channels),
-          valid=valid,values=values,offsets=offsets,indices=indices,weights=weights,binding_type=binding)
+          valid=valid,values=values,offsets=offsets,indices=indices,weights=weights,binding_type=binding,
+          landmarks=landmarks,overlay_version=np.int32(1))
     return len(wanted),False
 
 

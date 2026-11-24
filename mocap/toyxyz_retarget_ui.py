@@ -12,6 +12,10 @@ class RetargetPanel(QWidget):
         note=QLabel('Apply prepared mocap to an imported character. The result appears in the existing viewport and character export.');note.setWordWrap(True);box.addWidget(note)
         form=QFormLayout();box.addLayout(form)
         self.source=QComboBox();self.target=QComboBox();form.addRow('Source',self.source);form.addRow('Target',self.target)
+        self.target_pose=QComboBox()
+        for label,key in [('Original rig rest (default)','REST'),('T-pose','T'),('A-pose','A')]:self.target_pose.addItem(label,key)
+        self.target_pose.setToolTip('Reference pose of the imported target. A-pose uses a virtual T-pose arm calibration; the original FBX and skin bind remain unchanged.')
+        form.addRow('Target reference pose',self.target_pose)
         self.puppet=QCheckBox('Puppet V5: Hips → Reference');self.puppet.setToolTip('Explicit target mapping requested for Puppet V5. Off uses automatic anatomical mapping.');box.addWidget(self.puppet)
         self.strength=self.number(form,'Solver strength',0,100,100,' %')
         self.hands=self.number(form,'Hand reach',0,100,0,' %');self.feet=self.number(form,'Foot reach',0,100,100,' %')
@@ -62,6 +66,7 @@ class RetargetPanel(QWidget):
     def restore(self,*_):
         c=next((c for c in getattr(self.w,'characters',[]) if c['id']==self.target.currentData()),{})
         settings=c.get('toyxyz_options',{})
+        self.target_pose.setCurrentIndex(max(0,self.target_pose.findData(settings.get('target_pose','REST'))))
         self.mapping_value=settings.get('mapping')
         self.puppet.setChecked(settings.get('puppet_reference','puppet' in c.get('name','').lower() and 'v5' in c.get('name','').lower()))
         for field,key,default in [(self.strength,'solver_strength',100),(self.hands,'hand_position_reach',0),(self.feet,'foot_position_reach',100),(self.hip,'hip_offset',0)]:field.setValue(settings.get(key,default))
@@ -72,7 +77,7 @@ class RetargetPanel(QWidget):
         self.refresh();w=self.w
         if not self.run.isEnabled():return
         c=next(c for c in w.characters if c['id']==self.target.currentData())
-        options=dict(puppet_reference=self.puppet.isChecked(),solver_strength=self.strength.value(),hand_position_reach=self.hands.value(),foot_position_reach=self.feet.value(),hip_offset=self.hip.value(),floor_contact=self.floor.isChecked(),travel=self.travel.currentData())
+        options=dict(target_pose=self.target_pose.currentData(),puppet_reference=self.puppet.isChecked(),solver_strength=self.strength.value(),hand_position_reach=self.hands.value(),foot_position_reach=self.feet.value(),hip_offset=self.hip.value(),floor_contact=self.floor.isChecked(),travel=self.travel.currentData())
         if self.editor is not None:
             try:self.mapping_value=self.editor.value()
             except ValueError as e:QMessageBox.warning(self,'Bone Mapping',str(e));return

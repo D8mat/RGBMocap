@@ -35,8 +35,10 @@ def main():
         from .blend_export_worker import main as save_main
         return save_main(emit)
     if stage=='face_neutral':
-        from .face_neutral import main as neutral_main
-        return neutral_main(emit)
+        raise RuntimeError('Use Track Face neutral controls instead of legacy face calibration.')
+    if stage=='stream_reference':
+        from .stream_reference import main as reference_main
+        return reference_main(emit)
     if stage=='camera_background':
         from .camera_background_worker import main as camera_main
         return camera_main()
