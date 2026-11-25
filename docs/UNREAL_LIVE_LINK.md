@@ -8,10 +8,28 @@ remains **None**. Blender streaming keeps its existing port and add-on.
 For file-based animation on stock Manny or Quinn, see
 [UE5 Mannequin FBX](USER_GUIDE.md#ue5-mannequin-fbx).
 
+## Prebuilt downloads
+
+Each Windows 64-bit bundle contains the RGB MoCap Connect 0.5.0 receiver,
+the RGB MoCap sender, install instructions and checksums. Match the exact
+Epic Games Launcher engine build.
+
+| Unreal Engine | BuildId | Download |
+| --- | ---: | --- |
+| 5.6.1 | `43139311` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.6.1_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.6.1_Win64.zip.sha256) |
+| 5.7.4 | `47537391` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.7.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.7.4_Win64.zip.sha256) |
+| 5.8.4 | `55116800` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.8.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.8.4_Win64.zip.sha256) |
+
+These packages use your installed Unreal Editor. The prebuilt route runs
+without a local C++ build. For a different Unreal build, use
+[source setup](#build-the-sender-locally).
+
 ## Recommended MetaHuman connection
 
 Use [RGB MoCap Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md)
-for the direct source-to-target panel. [Download 0.5.0 for UE 5.7.4 / Win64](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip).
+for the direct source-to-target panel. Use the receiver ZIP from the
+[matching bundle](#prebuilt-downloads), or
+[build the receiver](../unreal_plugin/RGBMoCapMetaHuman/README.md#build-and-verification).
 Close Unreal and place the extracted `RGBMoCapMetaHuman` folder in your
 project's `Plugins` folder. Replace the entire existing plugin folder when upgrading. Then complete sender setup below, reopen Unreal and use
 **Tools > RGB MoCap Connect**. Set **Target type** to **MetaHuman** in 0.5.0
@@ -43,15 +61,40 @@ subjects the app publishes.
 
 ## Prepare once
 
+### Install a prebuilt sender
+
+Use the current RGB MoCap `main` checkout and complete the normal
+`install.cmd` setup. For an existing installation, close the app and run
+`update.cmd` first to get `--prebuilt` support. Extract the outer bundle and
+keep the inner sender ZIP intact. Open PowerShell in the RGB MoCap app folder
+and run the following, adjusting the path for your extracted sender ZIP.
+
+```powershell
+.\Setup_UnrealStream.cmd --prebuilt "C:\Downloads\RGBMoCapSender_UE5.8.4_Win64.zip"
+```
+
+Setup finds the exact installed engine, checks the package against the app
+source and starts the sender to verify the connection. The prebuilt route uses
+the installed Unreal editor without a Visual Studio or Windows SDK build.
+If the engine is installed outside the default Epic Games folder, add
+`--engine` with the installation root. Extract the separate RGB MoCap Connect
+receiver ZIP into the receiving project's `Plugins` folder.
+If setup reports an engine mismatch, check the engine patch and the
+`BuildId` in `Engine/Binaries/Win64/UnrealEditor.modules`. If it reports a
+sender source mismatch after an app update, use a sender ZIP for the updated
+source, or [build the sender locally](#build-the-sender-locally).
+
+### Build the sender locally
+
 1. Complete the normal RGB MoCap `install.cmd` setup first; this creates
-   `runtime\python.exe`. Install Unreal Engine **5.7 or later** and, in Visual
+   `runtime\python.exe`. Install Unreal Engine **5.6 or later** and, in Visual
    Studio Installer, add Visual Studio 2022 **Desktop development with C++**,
    including the MSVC C++ toolchain and a Windows SDK. An Unreal installation
    alone does not establish that these compiler components are installed.
-   The tested engine and prebuilt receiver are **5.7.4**. Sender setup has also
-   been built and startup-verified with installed UE **5.8.4**; other versions
-   are not independently verified, and other engine builds need a receiver
-   rebuild from source (see the plugin's Build and verification section).
+   The sender and receiver have been built on stock UE **5.6.1**, **5.7.4**
+   and **5.8.4**. Use a receiver ZIP built for your engine's exact BuildId
+   or build the receiver source with your project's engine. See the plugin's
+   [Build and verification](../unreal_plugin/RGBMoCapMetaHuman/README.md#build-and-verification).
 2. Close RGB MoCap. In File Explorer, open its app folder containing
    `RGBMoCap.cmd`, `install.cmd` and `Setup_UnrealStream.cmd`, then double-click
    **Setup_UnrealStream.cmd**. Keep the command window open until setup finishes.
@@ -66,7 +109,7 @@ subjects the app publishes.
    by the receiving project:
 
    ```powershell
-   .\Setup_UnrealStream.cmd --engine "D:\Epic Games\UE_5.7"
+   .\Setup_UnrealStream.cmd --engine "C:\Program Files\Epic Games\UE_5.6"
    ```
 
    Pass the Unreal installation root containing the `Engine` folder, not an
@@ -77,9 +120,10 @@ subjects the app publishes.
    starts it to verify the app/provider handshake, and records a source/module/
    engine receipt under `runtime_unreal_stream`. It downloads no models or
    Unreal binaries. The installed Unreal Engine must remain available.
-   Temporary compiler intermediates are removed after success; developers can
-   retain them with `--keep-build-cache`.
-4. Successful setup ends with **Live Link support built. In Stream choose
+   Each engine build has a separate sender build folder. The last successful
+   setup selects the active sender. Temporary compiler intermediates are removed
+   after success; developers can retain them with `--keep-build-cache`.
+4. Successful setup ends with **Live Link support is ready. In Stream choose
    Unreal Live Link, then check people.** Reopen RGB MoCap and choose
    **Stream > Target > Unreal Live Link**. This setup builds the app sender;
    installing the MetaHuman Connect ZIP in the receiving project is separate.
@@ -87,6 +131,8 @@ subjects the app publishes.
    press-any-key prompt as success. Read the preceding error: run `install.cmd`
    if the Python runtime is missing, select `--engine` if discovery failed, or
    repair the Visual Studio C++ workload/Windows SDK if compilation failed.
+   If UnrealBuildTool reports action paths over 260 characters, use a shorter
+   app folder such as `C:\RGBMoCap`, or use the matching prebuilt bundle.
    Retry after correcting the cause. Inspect/redact logs before sharing them;
    preserve projects, models and existing setup receipts.
 6. If the provider source or Unreal installation changes, rerun setup. A failed
@@ -99,8 +145,8 @@ Setup_UnrealStream.cmd after a source change. The local bridge build is frozen
 against source edits and verified before its receipt is accepted.
 
 This support is optional and separate from the inference runtimes.
-`install.cmd` and `update.cmd` do not compile it. Epic's terms apply to the
-separately installed Unreal Engine; RGB MoCap distributes its own bridge source.
+`install.cmd` and `update.cmd` leave it to `Setup_UnrealStream.cmd`. Epic's
+terms apply to the separately installed Unreal Engine.
 
 ## Send motion
 
@@ -113,10 +159,12 @@ separately installed Unreal Engine; RGB MoCap distributes its own bridge source.
 4. Choose **Add Source > Message Bus Source > RGB MoCap**.
    The app's status changes from starting/waiting to connected only after the
    provider reports a real Live Link connection.
-5. Play, pause or scrub the RGB MoCap timeline. Pausing holds the current pose
-   while continuing the Live Link heartbeat. An unchecked person, or a person
-   without motion at the current frame, has its subjects removed; returning to
-   valid motion declares them again.
+5. Play, pause or scrub the RGB MoCap timeline. For a single pass, turn off
+   **Loop** next to the playback buttons. Playback stops at the last frame of
+   the trimmed clip and Live Link keeps sending the pose for each checked
+   person with motion at that frame. Pausing also holds the current pose.
+   Unchecking a person or moving to a frame without their motion removes
+   their subjects. Returning to valid motion declares them again.
 
 **None**, switching to Blender, entering PEAR or closing the app stops the owned
 provider process. **Retry connection** restarts it after a startup/connection

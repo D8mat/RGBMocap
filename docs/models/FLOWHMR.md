@@ -45,7 +45,16 @@ replace `config.yml`, change inference settings or invalidate existing motion.
 | **Camera / Sampling** | Moving / Unknown - Auto | Automatically choose camera-estimation sampling when the camera moves or its behavior is uncertain. |
 | **Camera / Sampling > Static Camera** | Optional | Skip camera estimation for a fixed camera without zooming. This path does not require the VGGT weight. |
 | **Camera / Sampling > Every ... Frames** | Optional | Analyze the camera every 1, 2, 5, 10 or 30 frames. Denser camera sampling uses more memory. It does not reduce motion frame count. |
-| **Resource Mode** | Automatic | Use the fast GPU path when memory is sufficient; otherwise offload SAM/VGGT transformer blocks to CPU. Low Memory forces offloading. This can be slower and use more RAM; precision and motion frame count stay unchanged. |
+| **VGGT-Ω OPT** | On | Reduce peak GPU memory during camera estimation with BF16 weights and PyTorch SDPA. Turn it off to use standard VGGT-Omega. Static Camera skips this stage. |
+| **Resource Mode** | Automatic | Use the fast GPU path when memory is sufficient; otherwise offload SAM/VGGT transformer blocks to CPU. Low Memory forces offloading. This can be slower and use more RAM. |
+
+VGGT-Ω OPT keeps the same checkpoint, camera sampling and input resolution.
+It requires native CUDA BF16 support. Other GPUs use the standard VGGT path.
+The toggle applies to camera estimation and can change the estimated camera
+slightly. It needs no additional Python packages.
+It works in both Automatic and Low Memory. Low Memory adds CPU block offload
+while keeping the chosen VGGT inference mode.
+[Camera-stage VRAM with OPT on and off](../PERFORMANCE.md#vggt-camera-memory-with-opt)
 
 These options apply on **Reconstruct 3D**. Fast SAM is an extraction option,
 not MAMMA's SAM 2.1 masks, PromptHMR's SAM2 tiny tracker or the standalone
@@ -155,6 +164,10 @@ to **5,000 frames per take** (about 166.7 seconds at 30 fps), but available memo
 may require a shorter take. Results are kept under the project's `flowhmr/`
 folder. **Save Project As** copies saved work; switching models keeps their
 results separate.
+
+FlowHMR estimates root travel from the sequence of body observations, including
+with **Static Camera**. See [treadmill and walking-pad motion](../USER_GUIDE.md#treadmill-and-walking-pad-motion)
+for walking and sprinting previews with measured forward travel.
 
 ## Limitations and resources
 

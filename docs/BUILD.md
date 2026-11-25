@@ -37,10 +37,11 @@ or working on its native preview, retarget and Blender paths.
 
 ## Optional Unreal Live Link sender
 
-The Windows source build supports **Setup_UnrealStream.cmd** with an installed
-UE 5.7+ and Visual Studio 2022 C++ tools/Windows SDK. See
-[setup and implementation](UNREAL_LIVE_LINK.md). It compiles only the app-owned
-commandlet module, verifies startup and removes compiler intermediates by default.
+On Windows, **Setup_UnrealStream.cmd --prebuilt** installs a matching sender
+ZIP into an app-local bridge project and verifies startup. With no ZIP,
+**Setup_UnrealStream.cmd** builds the app-owned commandlet module using the
+installed UE 5.6+, Visual Studio C++ tools and Windows SDK. It verifies startup
+and removes compiler intermediates by default. See [setup](UNREAL_LIVE_LINK.md).
 Use `--engine "D:/Epic Games/UE_5.7"` for a custom engine path and
 `--keep-build-cache` for repeated development builds. Epic engine binaries are
 not packaged with RGB MoCap. Keep this optional support separate from base AI
@@ -177,6 +178,48 @@ Git attributes preserve exact source bytes for the source manifest, hash-pinned
 runtime registry and unpacked wheel contents. Avoid automatic line-ending rewrites
 of those files. When intentionally changing the registry, review and refresh the
 lock's registry hash; the development bootstrap rejects an unreviewed mismatch.
+
+## RGB MoCap Connect receiver ZIP
+
+Use the stock engine that matches the intended Win64 package. The packager
+supports UE 5.6.1, 5.7.4 and 5.8.4 with pinned editor BuildIds. From the app
+root, the following PowerShell commands build an editor package for UE 5.6.1
+in a new staging folder.
+
+```powershell
+$engine = 'C:\Program Files\Epic Games\UE_5.6'
+$work = Join-Path (Get-Location) 'dist\ue561-build'
+New-Item -ItemType Directory -Path $work -ErrorAction Stop | Out-Null
+Copy-Item -LiteralPath 'unreal_plugin\RGBMoCapMetaHuman' -Destination $work -Recurse
+& "$engine\Engine\Build\BatchFiles\RunUAT.bat" BuildPlugin "-Plugin=$work\RGBMoCapMetaHuman\RGBMoCapMetaHuman.uplugin" "-Package=$work\package" -HostPlatforms=Win64 -NoTargetPlatforms -NoP4 -Unattended
+if ($LASTEXITCODE -ne 0) { throw 'Unreal receiver build failed' }
+.\runtime\python.exe -I -X utf8 -B tools\package_unreal_plugin.py --build-plugin "$work\package" --engine-version 5.6.1 --output "$work\RGBMoCapConnect_UE5.6.1_Win64_v0.5.0.zip"
+```
+
+The build folder contains temporary files. Share the resulting ZIP and its
+SHA-256 sidecar. See [receiver verification](../unreal_plugin/RGBMoCapMetaHuman/VALIDATION.md)
+and load the exact extracted ZIP in a clean project before releasing it.
+
+## RGB MoCap prebuilt sender ZIP
+
+Copy `developer-build/unreal-live-link` to a new staging folder and build the
+`RGBMoCapLiveLinkEditor` target for Win64 Development with the intended engine.
+For MSVC builds, pass `-NoDebugInfo` and
+`-CompilerArguments=/d1trimfile:<absolute-staging-folder>` to UnrealBuildTool
+to keep local source paths out of the module. Package the built project:
+
+```powershell
+.\runtime\python.exe -I -X utf8 -B tools\package_unreal_sender.py --build "$work\sender-build" --engine-version 5.6.1 --output "$work\RGBMoCapSender_UE5.6.1_Win64.zip"
+```
+
+Put both inner ZIPs, their SHA-256 sidecars and a short install README in
+`RGBMoCapLiveLink_UE<version>_Win64.zip`. Publish a SHA-256 sidecar for the
+outer bundle too. Keep the inner sender ZIP intact for installation.
+The sender ZIP contains the authored DLL, its `.modules` file, a manifest and
+the app's license notice.
+Test `Setup_UnrealStream.cmd --prebuilt` in a clean app copy and run body and
+face streaming with the extracted receiver. The user's own installed editor
+hosts the sender.
 
 ## Optional SAM 3.1 tracker
 

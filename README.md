@@ -124,7 +124,7 @@ See the [SAM 3.1 tracker guide](docs/models/SAM31.md#vram-use).
 **Track Face** adds CPU face tracking for saved video. The 3D viewport shows
 facial landmarks on SMPL-X, SMPL-H and SOMA surfaces. **Export Face** saves
 ARKit-style coefficients alongside the chosen motion as TXT or Unreal Live Link Face CSV.
-Face preview landmarks and Unreal-streamed expression coefficients use One Euro smoothing automatically. **Set Neutral** beside Track Face calibrates the selected person from the current frame, with saved per-person baselines and Reset. Saved face coefficients can also accompany Unreal Live Link body streaming; enable **Face** in the separately installed MetaHuman Connect plugin. See [Face capture](docs/USER_GUIDE.md#face-capture) and [face streaming](docs/UNREAL_LIVE_LINK.md#optional-metahuman-face-streaming).
+Face preview landmarks and Unreal-streamed expression coefficients use One Euro smoothing automatically. **Set Neutral** beside Track Face calibrates the selected person from the current frame, with saved per-person baselines and Reset. Saved face coefficients can also accompany Unreal Live Link body streaming; enable **Face** in the separately installed RGB MoCap Connect plugin. See [Face capture](docs/USER_GUIDE.md#face-capture) and [face streaming](docs/UNREAL_LIVE_LINK.md#optional-metahuman-face-streaming).
 
 ### Install with an AI agent
 
@@ -162,6 +162,8 @@ MAMMA's [agent setup guide](docs/MAMMA_AGENT_SETUP.md) and the
 Provider login and license acceptance remain your responsibility;
 do not put passwords or account tokens in the agent chat.
 
+For scripted reconstruction, export and streaming, see the [command-line guide](docs/CLI.md).
+
 ## Features
 
 - Optionally use RIFE frame interpolation for videos below 30 fps before offline
@@ -177,12 +179,13 @@ do not put passwords or account tokens in the agent chat.
 - Export animation for the stock UE5 Manny or Quinn skeleton. Include the bundled skinned mesh when the Unreal project has no mannequin assets. [UE5 mannequin FBX guide](docs/USER_GUIDE.md#ue5-mannequin-fbx)
 - Export the current take, all takes for checked people, or individual takes. The export dialog shows what to do for each unavailable take. [Export guide](docs/USER_GUIDE.md#fbx-and-blender)
 - Stream selected people's bones to Blender during playback or scrubbing, then bake their full recorded motion into Blender Actions. [Download the Blender add-on ZIP](blender_addon/rgbmocap_bone_stream.zip?raw=1) · [Installation and controls](docs/USER_GUIDE.md#stream-bones-to-blender)
-- Stream motion to UE5 Manny and Quinn or to MetaHuman actors through Unreal Live Link. MetaHumans also support tracked expressions. [RGB MoCap Connect 0.5.0 plugin ZIP (UE 5.7.4 / Win64)](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip) · [Installation and controls](docs/UNREAL_LIVE_LINK.md)
+- Stream motion to UE5 Manny and Quinn or to MetaHuman actors through Unreal Live Link. MetaHumans also support tracked expressions. [Prebuilt Windows bundles and installation](docs/UNREAL_LIVE_LINK.md#prebuilt-downloads) · [Controls and manual retargeting](docs/UNREAL_LIVE_LINK.md)
 - Preview and correct GEM-X's native SOMA motion, retarget to humanoid characters, and export the Native77 skeleton as FBX or BVH. The Blender bundle includes the evaluated surface and input video.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
 - Save projects with separate results for each AI model.
 - Reduce FlowHMR memory use with query-batched attention and optional sparse hand sampling; optional HaMeR refines fingers. See [controls and trade-offs](docs/models/FLOWHMR.md#controls) and [measured time/memory comparisons](docs/PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
+- Reduce camera-estimation VRAM with default-on **VGGT-Ω OPT** in FlowHMR and automatic MAMMA calibration. It also works in Low Memory mode. [Measured camera VRAM](docs/PERFORMANCE.md#vggt-camera-memory-with-opt)
 - Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
 
 ## How it works

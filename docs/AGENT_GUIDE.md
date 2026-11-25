@@ -1,6 +1,15 @@
 # RGB MoCap: agent operating and development guide
 
-This guide is for agents helping users operate or modify RGB MoCap. It describes the Git/CMD version. User requests and newer verified behavior take precedence over historical benchmarks. The English GUI is the supported user interface; do not assume a general command-line inference or retargeting API exists. Avoid asking for the user's videos or model weights if the existing local project is sufficient.
+This guide is for agents helping users operate or modify RGB MoCap. It describes the Git/CMD version. User requests and newer verified behavior take precedence over historical benchmarks. The Windows distribution offers the English desktop interface and a command line for automation. Avoid asking for the user's videos or model weights if the existing local project is sufficient.
+
+See the [command-line guide](CLI.md) for offline models, export formats,
+project and model management, face capture, retargeting, preview rendering,
+streaming, PEAR sampling and batch jobs. The CLI uses the same installed
+runtimes and installation lock as the desktop. Keep worker arguments, event
+order and saved state in sync in `mocap/workflow_jobs.py` and
+`mocap/offline_jobs.py`. The latter builds requests for GEM-X, MAMMA and
+PromptHMR. Keep Qt viewport rendering in the preview helper. Do not introduce
+GUI dependencies into model workers or change their numerical defaults.
 
 ## Start and update
 
@@ -58,6 +67,17 @@ precision limits, use the [measured comparison table](PERFORMANCE.md#flowhmr-que
 Keep warm generator measurements separate from fresh feature jobs and the
 additional HaMeR child pass. HaMeR is an optional finger-accuracy refinement,
 not a guarantee of better results for every video.
+
+FlowHMR moving-camera estimation and automatic MAMMA calibration expose
+**VGGT-Ω OPT**, on by default. `mocap/vggt_camera_opt.py` uses BF16 and PyTorch
+SDPA with the same checkpoint and input samples. Keep the standard path
+available for an explicit opt-out and GPUs without native CUDA BF16. Camera
+receipts distinguish the active inference mode. PEAR alignment uses VGGT depth
+and stays on its separate path. The option needs no additional packages.
+**Resource Mode > Low Memory** can be combined with either VGGT mode. It
+offloads transformer blocks while keeping the selected precision and samples.
+Use the paired camera-stage measurements when describing VRAM savings.
+[VGGT OPT measurements in both resource modes](PERFORMANCE.md#vggt-camera-memory-with-opt)
 
 ## Models and model files
 
@@ -394,6 +414,20 @@ notices. Existing saved previews are not automatically replaced; use Apply
 Correction to recompute without inference. See the v9 measurements and limits
 in [validation](VALIDATION.md#contact-correction-v9-coherent-root-and-swing-transitions-2026-10-30).
 
+### Treadmill and walking-pad root motion
+
+FlowHMR and ExMR use the sequence of body observations to estimate root
+velocity. A visible gait on a moving belt can produce forward travel even
+when the performer remains in roughly the same place in the camera view.
+FlowHMR's **Static Camera** mode skips VGGT-Omega and continues to infer root
+motion. Preserve that behavior when changing camera inputs or contact correction.
+
+The walking-pad and sprint examples were verified with FlowHMR. The original
+reconstruction already contains the forward travel. When investigating a
+report, compare the original and corrected trajectories and record the selected
+camera mode. Use independently measured belt speed to assess speed accuracy.
+See [the sample previews and measurements](USER_GUIDE.md#treadmill-and-walking-pad-motion).
+
 ### Preview-video export
 
 **File > Export Preview...** saves one MP4 pairing the selected input-camera
@@ -410,7 +444,8 @@ off the GUI thread with a one-frame handoff, bounded FFmpeg logs and existing
 FFmpeg. Keep the window/viewport geometry fixed during capture, reject changing
 input generations and atomically replace only a finished destination. Cancel
 and window close must reap the encoder before destroying its QThread. Keep test
-projects, input media and output videos outside the public source package.
+projects and ordinary input and output media outside the public source package.
+Register approved documentation samples in `installer/source-resources.json`.
 
 ### Blender bone streaming
 
@@ -424,7 +459,8 @@ See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender)
 
 RGB MoCap Connect 0.5.0 supports MetaHuman and UE5 mannequin targets. The
 [Unreal installation and controls guide](UNREAL_LIVE_LINK.md) covers both
-connection types. The main README links to the 0.5.0 Win64 receiver ZIP.
+connection types. The main README links to the prebuilt Windows receiver
+and sender bundles for stock UE 5.6.1, 5.7.4 and 5.8.4.
 The inline
 [MetaHuman streaming demo](../README.md#unreal-engine-metahuman-live-streaming)
 lives under Sample videos. Use the [plugin guide](../unreal_plugin/RGBMoCapMetaHuman/README.md)
@@ -442,28 +478,31 @@ the target's original animation and preview tick settings.
 
 Stream target 2 is Unreal Live Link. Target 0 is None and target 1 is Blender.
 Keep PEAR excluded.
-`Setup_UnrealStream.cmd` / `tools/setup_unreal_stream.py` build the source in
-`developer-build/unreal-live-link` against the user's installed UE 5.7+ and
-verify commandlet startup before keeping a receipt in `runtime_unreal_stream`.
-They do not modify the shared inference registry or distribute engine binaries.
+`Setup_UnrealStream.cmd` / `tools/setup_unreal_stream.py` verify commandlet
+startup before keeping a receipt in `runtime_unreal_stream`. Verify that the
+normal `install.cmd` runtime exists and close RGB MoCap before either route.
 
-Before running it, verify the normal `install.cmd` runtime exists, close RGB
-MoCap and check Unreal plus Visual Studio 2022 **Desktop development with C++**
-(MSVC toolchain and Windows SDK). Do not infer compiler readiness merely from
-an installed Unreal editor. The prebuilt MetaHuman Connect receiver targets
-stock UE 5.7.4; use the receiving project's matching engine for sender setup.
-From the app root, run `.\Setup_UnrealStream.cmd` in PowerShell (or
-`Setup_UnrealStream.cmd` in CMD). For a custom/multiple-engine installation use
-`.\Setup_UnrealStream.cmd --engine "D:\Epic Games\UE_5.7"`; the argument is the
-installation root containing `Engine`, not the project or executable. Automatic
-discovery only checks the standard `Program Files\Epic Games\UE_5.*` location.
+- Run `.\Setup_UnrealStream.cmd --prebuilt <sender.zip>` in PowerShell with the
+  inner sender ZIP from the [matching bundle](UNREAL_LIVE_LINK.md#prebuilt-downloads).
+  Setup selects the exact Epic Launcher Win64 version and BuildId. It checks the
+  archive hashes and the app's sender source identity before starting the provider.
+- Run `.\Setup_UnrealStream.cmd` to build the module in
+  `developer-build/unreal-live-link` against the user's installed UE 5.6+.
+  Check Visual Studio **Desktop development with C++**, MSVC and the Windows SDK
+  for this route. In CMD, omit the leading `.\` from either command.
 
-Read the exit status and the **Live Link support built** completion line; the
+Match the receiver to the project's engine BuildId. Use `--engine` to specify
+the Unreal installation root containing `Engine` for a custom install path.
+Automatic discovery checks `Program Files\Epic Games\UE_5.*`. The last
+successful setup selects the app's active sender.
+
+Read the exit status and the **Live Link support is ready** completion line. The
 wrapper's final pause is not proof of success. Setup verifies the actual local
 provider handshake before accepting its receipt. On failure, resolve the stated
 runtime/compiler/engine error and retry; preserve user projects and previous
-receipts, and redact logs before sharing. Reopen the app after success. Rebuild
-after provider source or engine changes; this is not a per-session step.
+receipts, and redact logs before sharing. Reopen the app after success. Rerun
+setup with a corresponding build or sender ZIP after provider source or engine
+changes.
 `install.cmd`/`update.cmd` do not run this optional setup, and installing the
 receiver ZIP does not replace it. See [Prepare once](UNREAL_LIVE_LINK.md#prepare-once).
 
@@ -1251,12 +1290,20 @@ frame, raw preservation, valid/held rejection, offset take timing, reset/reload,
 and TXT/Live Link Face CSV with Smooth Face both on and off.
 
 
-### Public Unreal receiver package
+### Public Unreal Live Link packages
 
 Authored receiver source is in unreal_plugin/RGBMoCapMetaHuman. The release ZIP
 is built by tools/package_unreal_plugin.py from that source and matching locally
-compiled modules. Require the exact supported UE build ID, source-byte identity,
-an explicit allowlist, archive CRC/SHA-256 and a clean extracted-package load.
+compiled modules. Pass `--engine-version` for the exact stock Win64 build
+(5.6.1, 5.7.4 or 5.8.4). The packager stamps the receiver descriptor for
+that engine series and requires the matching BuildId and C++ source bytes.
+Keep the explicit allowlist, archive CRC/SHA-256 and a clean extracted-package load.
+See the [receiver ZIP build steps](BUILD.md#rgb-mocap-connect-receiver-zip).
+Use [the sender packager](BUILD.md#rgb-mocap-prebuilt-sender-zip) to build the
+matching sender ZIP. Publish paired ZIPs and checksums through Releases.
+Exercise the exact public bundle in a clean app copy and Unreal project. Check
+that the sender startup authenticates, the editor loads the receiver, body,
+reference and face subjects connect, and the prebuilt sender invokes no UBT.
 No engine/MetaHuman assets, private diagnostic modules, PDBs, screenshots of
 private projects, personal paths, capture arrays or local logs belong in the
 source or package. Logical #line filenames keep authored assertion diagnostics

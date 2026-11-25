@@ -240,7 +240,7 @@ the exported body animation for head motion.
 
 ### Face streaming to MetaHuman
 
-Saved Track Face data can accompany each checked Unreal Live Link person. Enable **Face** on that source row in the separately installed RGB MoCap MetaHuman Connect 0.4.0 plugin. No capture is started by streaming. Missing detections hold the last expression; missing face data do not block body motion. See [face streaming setup and limitations](UNREAL_LIVE_LINK.md#optional-metahuman-face-streaming).
+Saved Track Face data can accompany each checked Unreal Live Link person. Enable **Face** on that source row in the separately installed RGB MoCap Connect plugin. No capture is started by streaming. Missing detections hold the last expression; missing face data do not block body motion. See [face streaming setup and limitations](UNREAL_LIVE_LINK.md#optional-metahuman-face-streaming).
 
 
 ### Set a neutral face
@@ -613,6 +613,34 @@ models offer a 52-bone overlay and FBX/BVH export. GEM-X uses the 77-bone SOMA
 rig for its overlay and FBX, BVH and Blender exports. See the
 [GEM-X guide](models/GEMX.md) for its setup, correction and retargeting workflow.
 
+### Treadmill and walking-pad motion
+
+Monocular motion models such as FlowHMR and ExMR estimate root movement from
+the performer's pose and gait across frames. On a treadmill or walking pad,
+the belt carries the planted foot backward relative to the hips while the
+performer stays near the same spot in the room. That motion can give the model
+enough information to reconstruct forward walking or running in 3D.
+
+For a camera that stays fixed without zooming, choose **Static Camera**. Keep
+the feet visible through each stride. After **Reconstruct 3D**, turn on
+**Motion Path** in the viewport to see the estimated travel. Turn off
+**Enable Correction** to inspect the original reconstruction.
+
+Both previews below pair the input video with the FlowHMR result. The distance
+and speed come from the original pelvis trajectory. Motion Correction changed
+the measured forward distance by less than 1 cm in these examples.
+
+| Preview | Camera setting | Clip | Estimated forward travel | Estimated speed |
+| --- | --- | ---: | ---: | ---: |
+| [Walking-pad walk](samples/walking-pad-locomotion.mp4) | Moving / Unknown - Auto | 4.93 s | 4.22 m | 0.90 m/s (2.0 mph) |
+| [Treadmill sprint](samples/treadmill-sprint-locomotion.mp4) | Static Camera | 3.03 s | 14.55 m | 5.26 m/s (11.8 mph) |
+
+The walking video displays 3.5 mph, and the sprint video is titled *18mph
+Treadmill Sprint*. Those speeds come from the source videos. The output speed
+is an estimate, so it can differ from the belt speed. When the performer lifts
+each foot and puts it back in the same place on a fixed floor, the intended
+stride length and travel path are ambiguous.
+
 ### MAMMA multi-view reconstruction
 
 Select **MAMMA** before opening two or more synchronized fixed-camera videos.
@@ -814,6 +842,7 @@ line and Console report the result.
 | **FlowHMR → Fast SAM Acceleration** | Three default-on switches: **Adaptive Batching**, **GPU Hand Crops** and **4-Frame Hand Sampling**. Automatic selects 1, 2, 4, 8 or 16 spatial frames; Low Memory or disabling batching uses one. Four-frame hand sampling interpolates intermediate hand features: faster with less VRAM, but finger accuracy, body/wrist motion and contacts can change. Off uses every hand frame. Used only with Fast SAM, on Reconstruct 3D. Tooltips and the [FlowHMR guide](models/FLOWHMR.md#controls) explain measurements and differences. Query size, hand interval, batch selection and OOM retries appear in Console and CMD. |
 | **FlowHMR → HaMeR Finger Refinement** | Default off. Aims to improve finger tracking accuracy with every-frame HaMeR inference using ExMR crops and Gaussian rotation smoothing, preserving FlowHMR body/wrists/trajectory. Enables and locks Fast SAM and 4-Frame Hand Sampling while on. Slower and may still jitter; this is not ExMR learned HandMR inference. Prepare shared HaMeR/MANO files in Model Manager. Uses the existing ExMR runtime from install.cmd. Reconstruct 3D after changing it. |
 | **FlowHMR → Camera / Sampling** | Start with Moving / Unknown - Auto for moving or uncertain cameras. Static Camera skips camera estimation for locked footage. Explicit frame intervals control camera analysis only; denser sampling uses more memory. |
+| **FlowHMR / MAMMA → VGGT-Ω OPT** | On by default. Reduces VGGT camera VRAM with BF16 and PyTorch SDPA on compatible GPUs. Switch it off for standard VGGT inference. Applies on Reconstruct 3D and works with Low Memory. Static Camera and Manual Camera Data skip VGGT. [Measured VRAM](PERFORMANCE.md#vggt-camera-memory-with-opt) |
 | **GVHMR → HTD Refine** | Improve body-motion consistency over time. Runs before FootMR when both are enabled. |
 | **GVHMR → FootMR** | Refine ankle angles from foot observations. Separate from foot contact locking. |
 | **GVHMR → HandFlow** | Add finger tracking while preserving the selected body and wrist motion. Requires additional weights and MANO. |
@@ -928,6 +957,7 @@ an estimate and can leave residual sliding or penetration.
 | **Name** | Show list names above visible people and imported characters. Text stays upright and the same screen size as you move the camera. Rename a person from the list's right-click menu. |
 | **Timeline ruler / blue frame box** | Click or drag to seek. Track editing does not seek. Wheel zooms; middle drag or Shift+wheel pans. |
 | **Playback / frame number / speed** | Space plays/pauses; arrows step one frame, Shift+arrows one second. Enter a frame number to jump. Playback plays the video's audio when available. MAMMA uses the selected camera's audio. Playback speed affects preview only. |
+| **Loop** | Repeat the trimmed clip by default. Turn Loop off to play once and hold the last frame. Press Play after it stops to restart the clip. |
 | **Timeline Frame All / Reset Trim** | Fit the full timeline / restore the full clip range. |
 
 ExMR/FlowHMR/GVHMR process checked people independently; MAMMA and PromptHMR
@@ -957,9 +987,12 @@ Use **Bake** in Object Mode to save all recorded frames for the active streaming
 ## Stream bones to Unreal Live Link
 
 In **Stream > Target**, choose **Unreal Live Link** and check prepared offline people.
-Run **Setup_UnrealStream.cmd** once first; it requires an installed Unreal Engine
-5.7+ and Visual Studio C++ tools. In Unreal enable the built-in Live Link and UDP
-Messaging plugins, then add **Message Bus Source > RGB MoCap**.
+Set up the sender once with
+[`Setup_UnrealStream.cmd --prebuilt`](UNREAL_LIVE_LINK.md#install-a-prebuilt-sender)
+for a matching Win64 Epic Launcher build, or use the
+[local build option](UNREAL_LIVE_LINK.md#build-the-sender-locally) with an
+installed Unreal Engine 5.6+ and Visual Studio C++ tools. In Unreal enable
+Live Link and UDP Messaging, then add **Message Bus Source > RGB MoCap**.
 The stream includes body and finger bones, reference poses and bone lengths.
 Use [RGB MoCap Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md) to connect
 MetaHumans or UE5 Manny and Quinn. Select **Target type** for each new
